@@ -23,7 +23,6 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(gh pr create:*)",
-      "Bash(gh pr edit:*)",
       "Bash(gh pr merge:*)",
       "Bash(gh pr comment:*)",
       "Bash(gh pr review:*)",
