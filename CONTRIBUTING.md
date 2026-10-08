@@ -2,6 +2,8 @@
 
 このリポジトリに関わるときの手順と規約です。参加する前に [行動規範](CODE_OF_CONDUCT.md) を読んでください。
 
+個人の実験用リポジトリですが、issue・Pull Request とも歓迎します。事前に相談せず Pull Request を出してもかまいません。
+
 ## タイトルとコミットメッセージ
 
 コミットメッセージと、Pull Request・issue のタイトルは [Conventional Commits](https://www.conventionalcommits.org/ja/v1.0.0/) 形式で、内容は日本語で書いてください。
