@@ -43,6 +43,7 @@
     "allowUnsandboxedCommands": false,
     "autoAllowBashIfSandboxed": true,
     "excludedCommands": [
+      "gh *",
       "git push *"
     ],
     "credentials": {
