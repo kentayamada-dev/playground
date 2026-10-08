@@ -50,6 +50,9 @@
     "failIfUnavailable": true,
     "allowUnsandboxedCommands": false,
     "autoAllowBashIfSandboxed": true,
+    "excludedCommands": [
+      "git push *"
+    ],
     "credentials": {
       "files": [
         {
