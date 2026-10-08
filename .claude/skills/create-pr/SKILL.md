@@ -26,8 +26,8 @@ git status -sb
 
 1. 現在のブランチが `main` なら、作業ブランチを切るよう伝えて終了する
 2. `git status -sb` の先頭行で upstream の有無と `ahead` を確認する。upstream が無い、または `ahead` があれば、pushが必要なことを伝えて終了する
-3. `gh pr view --json number,url` で現在のブランチのPRを確認する。存在すれば新規作成せず「更新」に進む
-4. `git status -sb` の2行目以降に出力があれば、未コミットの変更はPRに含まれないことを伝えて終了する
+3. `git status -sb` の2行目以降に出力があれば、未コミットの変更はPRに含まれないことを伝えて終了する
+4. `gh pr view --json number,url` で現在のブランチのPRを確認する。存在すれば新規作成せず「更新」に進む
 
 ## 手順
 
