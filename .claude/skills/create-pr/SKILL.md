@@ -1,9 +1,6 @@
 ---
 name: create-pr
 description: このリポジトリの規約に沿ってPull Requestを作成・更新する。PRを作る・出す・上げる・更新するといった明示的な依頼があったとき、またはPRがあるブランチにpushした直後（本文の更新のみ）に使う。作業が一区切りついただけでは使わず、PR作成を提案するにとどめる
-allowed-tools:
-  - Bash(git branch --show-current)
-  - Bash(git status -sb)
 ---
 
 現在のブランチの変更内容でPRを作成する。起動後は途中で確認を挟まず最後まで実行してよい。例外は次の2つ。
