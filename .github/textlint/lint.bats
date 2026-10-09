@@ -76,3 +76,10 @@ textlint_arg_after() {
 
   [ "$(textlint_arg_after --rules-base-directory)" = "$repo/.github/textlint/node_modules" ]
 }
+
+@test "設定ファイルは textlint の自動探索に任せず、.github/textlint にあるものを渡す" {
+  run -0 "$repo/.github/textlint/lint.sh"
+
+  [ "$(textlint_arg_after --config)" = "$repo/.github/textlint/.textlintrc.json" ]
+  [ -f "$BATS_TEST_DIRNAME/.textlintrc.json" ]
+}
