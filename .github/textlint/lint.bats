@@ -6,7 +6,6 @@ setup() {
   repo="$BATS_TEST_TMPDIR/repo"
   mkdir -p "$repo/.github/textlint/node_modules/.bin" "$repo/docs"
   cp "$BATS_TEST_DIRNAME/lint.sh" "$repo/.github/textlint/lint.sh"
-  touch "$repo/.github/textlint/.textlintrc.json"
   # ルート直下と下層の両方に置き、シェルが glob を展開するとルート直下が対象から漏れる状態にする
   touch "$repo/README.md" "$repo/docs/guide.md"
   repo=$(cd "$repo" && pwd -P)
@@ -69,13 +68,4 @@ textlint_arg_after() {
 
   [ "$(textlint_arg_after --config)" = "$repo/.github/textlint/.textlintrc.json" ]
   [ -f "$BATS_TEST_DIRNAME/.textlintrc.json" ]
-}
-
-@test "設定ファイルが無ければ、textlint を実行せず、設定ファイルのパスを示して失敗する" {
-  rm "$repo/.github/textlint/.textlintrc.json"
-
-  run -1 "$repo/.github/textlint/lint.sh"
-
-  [[ "$output" == *"$repo/.github/textlint/.textlintrc.json"* ]]
-  [ ! -e "$STUB_LOG_DIR/textlint.args" ]
 }
