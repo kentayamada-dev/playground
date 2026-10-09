@@ -6,11 +6,13 @@ setup() {
   repo="$BATS_TEST_TMPDIR/repo"
   mkdir -p "$repo/.github/textlint/node_modules/.bin" "$repo/docs" "$BATS_TEST_TMPDIR/bin"
   cp "$BATS_TEST_DIRNAME/lint.sh" "$repo/.github/textlint/lint.sh"
+  touch "$repo/.github/textlint/.textlintrc.json"
   # ルート直下と下層の両方に置き、シェルが glob を展開するとルート直下が対象から漏れる状態にする
   touch "$repo/README.md" "$repo/docs/guide.md"
   repo=$(cd "$repo" && pwd -P)
 
   export STUB_LOG_DIR="$BATS_TEST_TMPDIR"
+  export STUB_TEXTLINT_OUTPUT='<?xml version="1.0" encoding="utf-8"?><checkstyle version="4.3"></checkstyle>'
   cat > "$repo/.github/textlint/node_modules/.bin/textlint" <<'EOF'
 #!/usr/bin/env bash
 pwd -P > "$STUB_LOG_DIR/textlint.pwd"
@@ -82,4 +84,24 @@ textlint_arg_after() {
 
   [ "$(textlint_arg_after --config)" = "$repo/.github/textlint/.textlintrc.json" ]
   [ -f "$BATS_TEST_DIRNAME/.textlintrc.json" ]
+}
+
+@test "設定ファイルが無ければ、textlint も reviewdog も実行せず、設定ファイルのパスを示して失敗する" {
+  rm "$repo/.github/textlint/.textlintrc.json"
+
+  run -1 "$repo/.github/textlint/lint.sh"
+
+  [[ "$output" == *"$repo/.github/textlint/.textlintrc.json"* ]]
+  [ ! -e "$STUB_LOG_DIR/textlint.args" ]
+  [ ! -e "$STUB_LOG_DIR/reviewdog.stdin" ]
+}
+
+@test "設定やルールを読み込めず textlint が checkstyle 以外を出力したら、reviewdog を実行せず、その出力を示して失敗する" {
+  export STUB_TEXTLINT_STATUS=1
+  export STUB_TEXTLINT_OUTPUT='== No rules found, textlint has not done anything =='
+
+  run -1 "$repo/.github/textlint/lint.sh"
+
+  [[ "$output" == *"$STUB_TEXTLINT_OUTPUT"* ]]
+  [ ! -e "$STUB_LOG_DIR/reviewdog.stdin" ]
 }
