@@ -9,7 +9,6 @@ report=$(mktemp)
 set +e
 # 相対パスだとルールの解決に失敗するため絶対パスで渡す（textlint は path.join した値をそのまま require.resolve する）
 "$textlint_dir/node_modules/.bin/textlint" \
-  --config "$textlint_dir/.textlintrc.json" \
   --rules-base-directory "$textlint_dir/node_modules" \
   -f checkstyle "**/*.md" > "$report"
 status=$?
