@@ -43,10 +43,6 @@
           {
             "context": "textlint",
             "integration_id": 15368
-          },
-          {
-            "context": "test",
-            "integration_id": 15368
           }
         ]
       }

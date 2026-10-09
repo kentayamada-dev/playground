@@ -24,4 +24,9 @@ jobs:
           node-version: 24
       - run: pnpm install --frozen-lockfile
         working-directory: .github/textlint
-      - run: .github/textlint/lint.sh
+      # 相対パスだとルールの解決に失敗するため絶対パスで渡す（textlint は path.join した値をそのまま require.resolve する）
+      - run: >-
+          .github/textlint/node_modules/.bin/textlint
+          --config "$GITHUB_WORKSPACE/.github/textlint/.textlintrc.json"
+          --rules-base-directory "$GITHUB_WORKSPACE/.github/textlint/node_modules"
+          "**/*.md"
