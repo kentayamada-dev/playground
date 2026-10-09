@@ -1,0 +1,51 @@
+name: textlint-verify
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  textlint-verify:
+    runs-on: ubuntu-26.04-arm
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12.10.1
+          cache: true
+          cache_dependency_path: .github/textlint/pnpm-lock.yaml
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile
+        working-directory: .github/textlint
+      - run: |
+          textlint="$GITHUB_WORKSPACE/.github/textlint/node_modules/.bin/textlint"
+          base="$GITHUB_WORKSPACE/.github/textlint/node_modules"
+          dir="$RUNNER_TEMP/textlint-verify"
+          mkdir -p "$dir/no-markdown"
+          : > "$dir/empty.json"
+          printf '{ "rules": ' > "$dir/broken.json"
+          printf '{ "rules": { "preset-ja-technical-writing": true, "does-not-exist": true } }' > "$dir/unknown-rule.json"
+          failed=0
+          check() {
+            local name=$1 expected=$2 workdir=$3 config=$4
+            local status=0
+            local output
+            output=$(cd "$workdir" && "$textlint" --config "$config" --rules-base-directory "$base" "**/*.md" 2>&1) || status=$?
+            echo "::group::$name: exit $status (expected $expected)"
+            printf '%s\n' "$output"
+            echo "::endgroup::"
+            if [ "$status" -ne "$expected" ]; then
+              echo "::error::$name: exit $status (expected $expected)"
+              failed=1
+            fi
+          }
+          check "設定ファイルが無い" 1 "$GITHUB_WORKSPACE" "$dir/missing.json"
+          check "設定ファイルが空" 1 "$GITHUB_WORKSPACE" "$dir/empty.json"
+          check "設定ファイルが壊れている" 1 "$GITHUB_WORKSPACE" "$dir/broken.json"
+          check "存在しないルールを含む" 1 "$GITHUB_WORKSPACE" "$dir/unknown-rule.json"
+          check "対象ファイルが無い" 2 "$dir/no-markdown" "$GITHUB_WORKSPACE/.github/textlint/.textlintrc.json"
+          exit "$failed"
