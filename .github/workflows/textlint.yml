@@ -1,0 +1,31 @@
+name: textlint
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  textlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: .github/textlint/package.json
+          cache: true
+          cache_dependency_path: .github/textlint/pnpm-lock.yaml
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile
+        working-directory: .github/textlint
+      # 相対パスだとルールの解決に失敗するため絶対パスで渡す（textlint は path.join した値をそのまま require.resolve する）
+      - run: >-
+          .github/textlint/node_modules/.bin/textlint
+          --rules-base-directory "$GITHUB_WORKSPACE/.github/textlint/node_modules"
+          "**/*.md"
