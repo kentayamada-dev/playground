@@ -2,4 +2,4 @@
 
 既存のtextlint違反。
 
-追加したtextlint違反。
+追加した textlint の行。
