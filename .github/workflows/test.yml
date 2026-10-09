@@ -1,0 +1,15 @@
+name: test
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-26.04-arm
+    steps:
+      - uses: actions/checkout@v7
+      # v1.14.0 は UTF-8 ロケールだと日本語のテスト名を実行できないため、イメージの既定に頼らず C ロケールにする（https://github.com/bats-core/bats-core/issues/1233）
+      - run: git ls-files -z '*.bats' | xargs -0 docker run --rm -e LC_ALL=C -v "$PWD:/code" bats/bats:1.14.0

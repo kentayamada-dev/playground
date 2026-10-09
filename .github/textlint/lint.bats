@@ -5,7 +5,7 @@ setup() {
 
   repo="$BATS_TEST_TMPDIR/repo"
   mkdir -p "$repo/.github/textlint/node_modules/.bin" "$repo/docs" "$BATS_TEST_TMPDIR/bin"
-  cp "$BATS_TEST_DIRNAME/../lint.sh" "$repo/.github/textlint/lint.sh"
+  cp "$BATS_TEST_DIRNAME/lint.sh" "$repo/.github/textlint/lint.sh"
   # ルート直下と下層の両方に置き、シェルが glob を展開するとルート直下が対象から漏れる状態にする
   touch "$repo/README.md" "$repo/docs/guide.md"
   repo=$(cd "$repo" && pwd -P)
