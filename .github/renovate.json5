@@ -7,6 +7,8 @@
   "semanticCommits": "enabled",
   // ruleset で squash マージだけを許可している
   "automergeStrategy": "squash",
+  // CONTRIBUTING.md の issue タイトルの規約に合わせる
+  "dependencyDashboardTitle": "chore(deps): 依存関係の更新状況",
   "packageRules": [
     {
       "matchUpdateTypes": ["minor", "patch"],
