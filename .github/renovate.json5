@@ -11,7 +11,7 @@
   "dependencyDashboardTitle": "chore(deps): 依存関係の更新状況",
   "packageRules": [
     {
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
       "automerge": true
     },
     // renovate-version には置き換えテンプレートが無く、ダイジェストを書き込めずに固定のグループごと失敗するため
@@ -63,6 +63,7 @@
     }
   },
   "lockFileMaintenance": {
-    "commitMessageAction": "ロックファイルを更新"
+    "commitMessageAction": "ロックファイルを更新",
+    "automerge": true
   }
 }
