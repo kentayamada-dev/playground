@@ -7,6 +7,8 @@
   "semanticCommits": "enabled",
   // ruleset で squash マージだけを許可している
   "automergeStrategy": "squash",
+  // 実行が1日1回なので、時間あたりの上限（既定 2）があると1日に作れる PR も2件までになる。同時に開く数は prConcurrentLimit（既定 10）で抑える
+  "prHourlyLimit": 0,
   // CONTRIBUTING.md の issue タイトルの規約に合わせる
   "dependencyDashboardTitle": "chore(deps): 依存関係の更新状況",
   "packageRules": [
