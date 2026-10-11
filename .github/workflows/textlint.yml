@@ -8,24 +8,43 @@ on:
 
 permissions:
   contents: read
+  # dorny/paths-filter が PR の変更ファイルを API で取得するため
+  pull-requests: read
 
 jobs:
   textlint:
     runs-on: ubuntu-26.04-arm
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
+      # on.pull_request.paths で絞ると、実行されなかった PR で必須チェックが Pending のまま残りマージできないため、ステップを if で飛ばす
+      # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks
+      - id: changes
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@v4
+        with:
+          # リポジトリ全体の .md を検査するので、ルール・依存・ワークフローの変更でも既存の文書の結果が変わる
+          filters: |
+            textlint:
+              - '**/*.md'
+              - '.github/textlint/**'
+              - '.github/workflows/textlint.yml'
+      - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
+        uses: actions/checkout@v7
+      - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
+        uses: pnpm/action-setup@v6
         with:
           version: 12.10.1
           cache: true
           cache_dependency_path: .github/textlint/pnpm-lock.yaml
-      - uses: actions/setup-node@v7
+      - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
+        uses: actions/setup-node@v7
         with:
           node-version: 24
-      - run: pnpm install --frozen-lockfile
+      - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
+        run: pnpm install --frozen-lockfile
         working-directory: .github/textlint
       # 相対パスだとルールの解決に失敗するため絶対パスで渡す（textlint は path.join した値をそのまま require.resolve する）
-      - run: >-
+      - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
+        run: >-
           .github/textlint/node_modules/.bin/textlint
           --config "$GITHUB_WORKSPACE/.github/textlint/.textlintrc.json"
           --rules-base-directory "$GITHUB_WORKSPACE/.github/textlint/node_modules"
