@@ -1,0 +1,17 @@
+{
+  "private": true,
+  "devDependencies": {
+    "@textlint-ja/textlint-rule-no-synonyms": "^1.3.0",
+    "sudachi-synonyms-dictionary": "^19.0.0",
+    "textlint": "^15.8.0",
+    "textlint-filter-rule-comments": "^1.3.0",
+    "textlint-rule-ja-no-space-around-parentheses": "^3.0.3",
+    "textlint-rule-ja-no-space-around-slash": "^3.0.3",
+    "textlint-rule-ja-no-space-between-full-width": "^3.0.3",
+    "textlint-rule-ja-space-around-code": "^3.0.3",
+    "textlint-rule-ja-space-around-link": "^3.0.3",
+    "textlint-rule-ja-space-between-half-and-full-width": "^3.0.3",
+    "textlint-rule-no-mixed-zenkaku-and-hankaku-alphabet": "^1.0.1",
+    "textlint-rule-preset-ja-technical-writing": "^12.0.2"
+  }
+}
