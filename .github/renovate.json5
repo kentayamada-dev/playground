@@ -12,6 +12,13 @@
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true
     },
+    // renovate-version には置き換えテンプレートが無く、ダイジェストを書き込めずに固定のグループごと失敗するため
+    // https://github.com/renovatebot/renovate/blob/44.149.3/lib/modules/manager/github-actions/known-actions/docker-dynamic.ts
+    {
+      "matchDepTypes": ["uses-with"],
+      "matchPackageNames": ["ghcr.io/renovatebot/renovate"],
+      "pinDigests": false
+    },
     // ここから下はタイトルの日本語化。語順が「action topic extra」で固定なので、action を空にして動詞を extra に入れる。
     // datasource（Docker など）の既定のメッセージより後に適用させるため packageRules に置く
     {
