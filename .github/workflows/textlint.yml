@@ -32,7 +32,8 @@ jobs:
       - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
-          version: 12.10.1
+          # pnpm の版は package.json の packageManager だけで管理する。Renovate もロックファイルの更新にこの版を使う
+          package_json_file: .github/textlint/package.json
           cache: true
           cache_dependency_path: .github/textlint/pnpm-lock.yaml
       - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
