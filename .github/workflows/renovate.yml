@@ -1,0 +1,27 @@
+name: renovate
+
+on:
+  schedule:
+    # renovate.json5 の lockFileMaintenance の schedule（月曜 0〜3 時）に入る時刻にする。
+    # 毎時 0 分は混雑で遅れやすいので避ける https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule
+    - cron: '17 0 * * *'
+      timezone: Asia/Tokyo
+  workflow_dispatch:
+
+# Renovate は secrets.RENOVATE_TOKEN で操作し、GITHUB_TOKEN は使わない
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+
+jobs:
+  renovate:
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: renovatebot/github-action@230ce922b08968d0a4f6f70f295601daff09ef1d # v46.3.7
+        with:
+          token: ${{ secrets.RENOVATE_TOKEN }}
+          renovate-version: 44.149.3
+        env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
