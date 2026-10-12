@@ -15,7 +15,7 @@ jobs:
   textlint:
     runs-on: ubuntu-26.04-arm
     # npm.flatt.tech に接続できないと pnpm install が止まり続け、既定の 360 分までジョブが続くため https://github.com/kentayamada-dev/playground/pull/45
-    timeout-minutes: 5
+    timeout-minutes: 2
     steps:
       # on.pull_request.paths で絞ると、実行されなかった PR で必須チェックが Pending のまま残りマージできないため、ステップを if で飛ばす
       # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks
@@ -42,6 +42,11 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
+      # 検証用: npm.flatt.tech を名前解決できなくし、pnpm install を止まらせる
+      - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
+        run: |
+          echo '0.0.0.0 npm.flatt.tech' | sudo tee -a /etc/hosts
+          echo ':: npm.flatt.tech' | sudo tee -a /etc/hosts
       - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
         run: pnpm install --frozen-lockfile
         working-directory: .github/textlint
