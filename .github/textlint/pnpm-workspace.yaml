@@ -2,6 +2,9 @@ engineStrict: true
 # デフォルト値と同じだが、明示したときだけ minimumReleaseAgeStrict がデフォルトで true になり、待機期間に満たないバージョンへ黙ってフォールバックしなくなる
 # https://pnpm.io/settings/dependency-resolution#minimumreleaseagestrict
 minimumReleaseAge: 1440
+# デフォルトの true だと、レジストリが公開日時を返さないときに待機期間と trustPolicy の確認が警告だけで素通りする
+# https://pnpm.io/settings/dependency-resolution#minimumreleaseageignoremissingtime
+minimumReleaseAgeIgnoreMissingTime: false
 trustPolicy: no-downgrade
 registries:
   default: https://npm.flatt.tech/
