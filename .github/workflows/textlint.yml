@@ -37,7 +37,7 @@ jobs:
         # https://github.com/pnpm/action-setup/blob/0977fd99725f1db4007ccb2928dbb4e90d06cc86/src/install-pnpm/run.ts https://pnpm.io/blog/releases/11.0
         env:
           npm_config_registry: https://npm.flatt.tech/
-          pnpm_config_registry: https://npm.flatt.tech/
+          pnpm_config_registry: https://registry.invalid/
         with:
           # pnpm のバージョンは package.json の packageManager だけで管理する。Renovate もロックファイルの更新にこのバージョンを使う
           package_json_file: .github/textlint/package.json
