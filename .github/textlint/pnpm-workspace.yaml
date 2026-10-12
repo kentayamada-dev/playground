@@ -1,4 +1,6 @@
 engineStrict: true
+# 既定値と同じだが、明示したときだけ minimumReleaseAgeStrict が既定で true になり、待機期間に満たない版へ黙ってフォールバックしなくなる
+# https://pnpm.io/settings/dependency-resolution#minimumreleaseagestrict
 minimumReleaseAge: 1440
 trustPolicy: no-downgrade
 registries:
