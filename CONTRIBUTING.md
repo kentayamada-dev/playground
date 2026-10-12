@@ -2,18 +2,18 @@
 
 このリポジトリに関わるときの手順と規約です。参加する前に [行動規範](CODE_OF_CONDUCT.md) を読んでください。
 
-個人の実験用リポジトリですが、issue・Pull Request とも歓迎します。事前に相談せず Pull Request を出してもかまいません。
+個人の実験用リポジトリですが、issue・PR とも歓迎します。事前に相談せず PR を出してもかまいません。
 
 ## タイトルとコミットメッセージ
 
-コミットメッセージと、Pull Request・issue のタイトルは [Conventional Commits](https://www.conventionalcommits.org/ja/v1.0.0/) 形式で、内容は日本語で書いてください。
-一覧で見て中身が分かるように書き、`修正` `改善` `update` `WIP` のような中身の分からないタイトルにしないでください。
+コミットメッセージと、PR・issue のタイトルは [Conventional Commits](https://www.conventionalcommits.org/ja/v1.0.0/) 形式で、内容は日本語で書いてください。
+一覧で見て中身が分かるように書き、`修正`・`改善`・`update`・`WIP` のような中身の分からないタイトルにしないでください。
 type は内容に合わせて選びます（不具合の修正は `fix`、機能の追加は `feat`、保守作業は `chore` や `refactor` など）。
 
 ```text
-feat(auth): Google OAuthログインを追加
-fix(api): ユーザー取得時のnull参照を修正
-fix: パスワード未入力時にログインAPIが500を返す
+feat(auth): Google OAuth ログインを追加
+fix(api): ユーザー取得時の null 参照を修正
+fix: パスワード未入力時にログイン API が 500 を返す
 ```
 
 ## issue
@@ -33,7 +33,7 @@ fix/login-null-pointer
 docs/contributing-guide
 ```
 
-## Pull Request
+## PR
 
 - 本文はテンプレートの各セクションを、コメントにある書き方のガイドに従って埋めてください
 - push して内容が変わったら、本文も最新のコードに合わせて更新してください

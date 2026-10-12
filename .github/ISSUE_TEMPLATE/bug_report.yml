@@ -6,13 +6,13 @@ body:
   - type: markdown
     attributes:
       value: |
-        セキュリティ上の問題は issue にせず、[SECURITY.md](https://github.com/kentayamada-dev/playground/blob/main/SECURITY.md) の手順で報告してください。
+        脆弱性は issue にせず、[SECURITY.md](https://github.com/kentayamada-dev/playground/blob/main/SECURITY.md) の手順で報告してください。
         タイトルの付け方などの規約は [CONTRIBUTING.md](https://github.com/kentayamada-dev/playground/blob/main/CONTRIBUTING.md) を参照してください。
   - type: textarea
     id: summary
     attributes:
       label: 概要
-      description: 何が起きているかを1〜2文で書いてください。
+      description: 何が起きているかを 1〜2 文で書いてください。
     validations:
       required: true
   - type: textarea
