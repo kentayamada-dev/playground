@@ -2,7 +2,7 @@
 
 ## Renovate
 
-依存関係の更新は Renovate で自動化しています。[`.github/workflows/renovate.yml`](.github/workflows/renovate.yml) が毎日 00:17（日本時間）に Renovate を実行します。設定は [`.github/renovate.json5`](.github/renovate.json5) にあります。
+依存関係の更新は Renovate で自動化しています。[`.github/workflows/renovate.yml`](.github/workflows/renovate.yml) が毎時 23 分に Renovate を実行します。設定は [`.github/renovate.json5`](.github/renovate.json5) にあります。
 
 ### トークンの準備
 

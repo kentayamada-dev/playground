@@ -2,10 +2,9 @@ name: renovate
 
 on:
   schedule:
-    # renovate.json5 の lockFileMaintenance の schedule（月曜 0〜3 時）に入る時刻にする。
+    # main の必須チェックは最新への追従を求めるので、同じ実行で作った PR の2件目以降は次の実行まで自動マージされない。待ちを短くするため毎時動かす。
     # 毎時 0 分は混雑で遅れやすいので避ける https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule
-    - cron: '17 0 * * *'
-      timezone: Asia/Tokyo
+    - cron: '23 * * * *'
   workflow_dispatch:
 
 # Renovate は secrets.RENOVATE_TOKEN で操作し、GITHUB_TOKEN は使わない
