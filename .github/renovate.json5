@@ -22,7 +22,7 @@
       "matchUpdateTypes": ["minor", "patch", "digest"],
       "minimumReleaseAge": "14 days"
     },
-    // renovate-version には置き換えテンプレートが無く、ダイジェストを書き込めずに固定のグループごと失敗するため
+    // renovate-version には置き換えテンプレートがなく、ダイジェストを書き込めずに固定のグループごと失敗するため
     // https://github.com/renovatebot/renovate/blob/44.149.3/lib/modules/manager/github-actions/known-actions/docker-dynamic.ts
     {
       "matchDepTypes": ["uses-with"],
