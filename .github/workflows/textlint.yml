@@ -14,6 +14,8 @@ permissions:
 jobs:
   textlint:
     runs-on: ubuntu-26.04-arm
+    # npm.flatt.tech に接続できないと pnpm install が止まり続け、既定の 360 分までジョブが続くため https://github.com/kentayamada-dev/playground/pull/45
+    timeout-minutes: 5
     steps:
       # on.pull_request.paths で絞ると、実行されなかった PR で必須チェックが Pending のまま残りマージできないため、ステップを if で飛ばす
       # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks
