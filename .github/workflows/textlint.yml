@@ -40,6 +40,14 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
+      # 検証用: npm.flatt.tech を名前解決できなくし、pnpm install がそこへ問い合わせているかを確かめる
+      - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
+        run: |
+          echo '0.0.0.0 npm.flatt.tech' | sudo tee -a /etc/hosts
+          echo ':: npm.flatt.tech' | sudo tee -a /etc/hosts
+          getent ahosts npm.flatt.tech || true
+          curl -sS -m 10 -o /dev/null -w 'npm.flatt.tech status=%{http_code}\n' https://npm.flatt.tech/is-number || true
+          curl -sS -m 10 -o /dev/null -w 'registry.npmjs.org status=%{http_code}\n' https://registry.npmjs.org/is-number || true
       - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
         run: pnpm install --frozen-lockfile
         working-directory: .github/textlint
