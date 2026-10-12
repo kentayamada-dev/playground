@@ -1,6 +1,12 @@
 {
   "private": true,
-  "packageManager": "pnpm@12.10.1",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.10.1",
+      "onFail": "download"
+    }
+  },
   "devDependencies": {
     "@textlint-ja/textlint-rule-no-synonyms": "1.3.0",
     "sudachi-synonyms-dictionary": "19.0.0",

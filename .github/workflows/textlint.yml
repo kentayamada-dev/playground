@@ -39,7 +39,7 @@ jobs:
           npm_config_registry: https://npm.flatt.tech/
           pnpm_config_registry: https://npm.flatt.tech/
         with:
-          # pnpm のバージョンは package.json の packageManager だけで管理する。Renovate もロックファイルの更新にこのバージョンを使う
+          # pnpm のバージョンは package.json の devEngines.packageManager だけで管理する。Renovate もロックファイルの更新にこのバージョンを使う
           package_json_file: .github/textlint/package.json
           cache: true
           cache_dependency_path: .github/textlint/pnpm-lock.yaml
