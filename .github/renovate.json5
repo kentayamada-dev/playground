@@ -31,7 +31,7 @@
     },
     // Renovate は1日に何度もリリースされ、毎時の実行だとそのたびに PR とマージが走るため、PR を作る時間帯を絞る
     {
-      "matchPackageNames": ["ghcr.io/renovatebot/renovate", "renovatebot/github-action"],
+      "matchPackageNames": ["renovate/renovate", "renovatebot/github-action"],
       "schedule": ["* 0-3 * * *"]
     },
     // ここから下はタイトルの日本語化。語順が「action topic extra」で固定なので、action を空にして動詞を extra に入れる。
