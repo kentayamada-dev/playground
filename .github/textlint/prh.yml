@@ -69,6 +69,17 @@ rules:
       - from: 確かめて
         to: 確認して
 
+  # ja-hiraku は「無い」しか検出しないため、活用形を補う。「無効」などの複合語は除く
+  - expected: な
+    pattern: /無(?=けれ|かっ|く)/
+    specs:
+      - from: 無ければ
+        to: なければ
+      - from: 無く終わる
+        to: なく終わる
+      - from: 無効
+        to: 無効
+
   # 「他人」「他社」などの複合語は除く
   - expected: ほか
     pattern: /他(?=[のにはを])/
