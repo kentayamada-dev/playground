@@ -1,6 +1,9 @@
 {
   "filters": {
-    "comments": true
+    "comments": true,
+    "allowlist": {
+      "allow": []
+    }
   },
   "rules": {
     "preset-ja-technical-writing": true,
@@ -23,8 +26,8 @@
     "prh": {
       "rulePaths": ["./prh.yml"]
     },
-    "@textlint-ja/morpheme-match": {
-      "dictionaryPathList": ["./morpheme-match.json"]
-    }
+    "ja-hiraku": true,
+    "ja-no-orthographic-variants": true,
+    "period-in-list-item": true
   }
 }
