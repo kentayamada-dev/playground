@@ -13,17 +13,6 @@ rules:
       - from: Pull requests
         to: Pull requests
 
-  # 「出版」「日本語版」などの複合語は除き、ひらがなに続く「版」だけを対象にする
-  - expected: バージョン
-    pattern: /(?<=[ぁ-ん])版/
-    specs:
-      - from: 悪意のある版
-        to: 悪意のあるバージョン
-      - from: この版を使う
-        to: このバージョンを使う
-      - from: 日本語版
-        to: 日本語版
-
   - expected: ルールセット
     pattern: /\b[Rr]ulesets?\b/
     specs:
@@ -41,12 +30,6 @@ rules:
     specs:
       - from: 既定の値
         to: デフォルトの値
-
-  - expected: 脆弱性
-    pattern: セキュリティ上の問題
-
-  - expected: 非公開に報告
-    pattern: 非公開で報告
 
   # 「確かめる」は活用によって「確認」の後ろが変わるため、活用形ごとに分ける
   - expected: 確認でき
