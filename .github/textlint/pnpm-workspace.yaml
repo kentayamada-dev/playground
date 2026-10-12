@@ -2,9 +2,16 @@ engineStrict: true
 # デフォルト値と同じだが、明示したときだけ minimumReleaseAgeStrict がデフォルトで true になり、待機期間に満たないバージョンへ黙ってフォールバックしなくなる
 # https://pnpm.io/settings/dependency-resolution#minimumreleaseagestrict
 minimumReleaseAge: 1440
-# デフォルトの true だと、レジストリが公開日時を返さないときに待機期間と trustPolicy の確認が警告だけで素通りする
+# デフォルトの true だと、レジストリが公開日時を返さないときに待機期間と trustPolicy の確認を飛ばしてインストールする
 # https://pnpm.io/settings/dependency-resolution#minimumreleaseageignoremissingtime
 minimumReleaseAgeIgnoreMissingTime: false
 trustPolicy: no-downgrade
+# 組み込みの npmjs:・gh: と @jsr スコープは別のレジストリへ直接向かい、依存先の package.json に書かれると Takumi Guard を通らないため上書きする
+# https://pnpm.io/registries
 registries:
-  default: https://npm.flatt.tech/
+  https://npm.flatt.tech/:
+    scopes: ["@", "@jsr"]
+    prefix: npmjs
+  # GitHub Packages は使わないため、名前解決されない .invalid に向けて gh: を失敗させる https://www.rfc-editor.org/rfc/rfc6761#section-6.4
+  https://gh.invalid/:
+    prefix: gh
