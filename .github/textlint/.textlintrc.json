@@ -19,6 +19,12 @@
       "after": true
     },
     "@textlint-ja/no-synonyms": true,
-    "no-mixed-zenkaku-and-hankaku-alphabet": true
+    "no-mixed-zenkaku-and-hankaku-alphabet": true,
+    "prh": {
+      "rulePaths": ["./prh.yml"]
+    },
+    "@textlint-ja/morpheme-match": {
+      "dictionaryPathList": ["./morpheme-match.json"]
+    }
   }
 }

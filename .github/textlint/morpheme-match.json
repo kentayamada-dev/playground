@@ -1,0 +1,34 @@
+[
+  {
+    "message": "存在しないことを表す「ない」は「無い」と書きます",
+    "expected": "が無い",
+    "tokens": [
+      { "surface_form": "が", "pos": "助詞", "pos_detail_1": "格助詞" },
+      { "surface_form": "ない", "pos": "形容詞", "pos_detail_1": "自立", "basic_form": "ない" }
+    ]
+  },
+  {
+    "message": "存在しないことを表す「なく」は「無く」と書きます",
+    "expected": "が無く",
+    "tokens": [
+      { "surface_form": "が", "pos": "助詞", "pos_detail_1": "格助詞" },
+      { "surface_form": "なく", "pos": "形容詞", "pos_detail_1": "自立", "basic_form": "ない" }
+    ]
+  },
+  {
+    "message": "存在しないことを表す「なけれ」は「無けれ」と書きます",
+    "expected": "が無けれ",
+    "tokens": [
+      { "surface_form": "が", "pos": "助詞", "pos_detail_1": "格助詞" },
+      { "surface_form": "なけれ", "pos": "形容詞", "pos_detail_1": "自立", "basic_form": "ない" }
+    ]
+  },
+  {
+    "message": "存在しないことを表す「なかっ」は「無かっ」と書きます",
+    "expected": "が無かっ",
+    "tokens": [
+      { "surface_form": "が", "pos": "助詞", "pos_detail_1": "格助詞" },
+      { "surface_form": "なかっ", "pos": "形容詞", "pos_detail_1": "自立", "basic_form": "ない" }
+    ]
+  }
+]

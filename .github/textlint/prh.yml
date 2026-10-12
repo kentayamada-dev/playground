@@ -1,0 +1,90 @@
+version: 1
+rules:
+  # 文字列のパターンは大文字・小文字を区別しないため正規表現で書き、README の権限名「Pull requests」は除く
+  - expected: PR
+    patterns:
+      - /[Pp]ull [Rr]equest(?!s)/
+      - /プルリク(エスト)?/
+    specs:
+      - from: Pull Request を作る
+        to: PR を作る
+      - from: プルリクエスト
+        to: PR
+      - from: Pull requests
+        to: Pull requests
+
+  # 「出版」「日本語版」などの複合語は除き、ひらがなに続く「版」だけを対象にする
+  - expected: バージョン
+    pattern: /(?<=[ぁ-ん])版/
+    specs:
+      - from: 悪意のある版
+        to: 悪意のあるバージョン
+      - from: この版を使う
+        to: このバージョンを使う
+      - from: 日本語版
+        to: 日本語版
+
+  - expected: ルールセット
+    pattern: /\b[Rr]ulesets?\b/
+    specs:
+      - from: ruleset で許可
+        to: ルールセット で許可
+
+  - expected: 自動マージ
+    pattern: /\b[Aa]uto-?merge\b/
+    specs:
+      - from: auto-merge の有効化
+        to: 自動マージ の有効化
+
+  - expected: デフォルト
+    pattern: 既定
+    specs:
+      - from: 既定の値
+        to: デフォルトの値
+
+  - expected: 脆弱性
+    pattern: セキュリティ上の問題
+
+  - expected: 非公開に報告
+    pattern: 非公開で報告
+
+  # 「確かめる」は活用によって「確認」の後ろが変わるため、活用形ごとに分ける
+  - expected: 確認でき
+    pattern: 確かめられ
+    specs:
+      - from: 確かめられない
+        to: 確認できない
+  - expected: 確認す
+    pattern: /確かめ(?=る|れ)/
+    specs:
+      - from: 確かめる
+        to: 確認する
+      - from: 確かめれば
+        to: 確認すれば
+  - expected: 確認し
+    pattern: /確かめ(?!られ|る|れ)/
+    specs:
+      - from: 確かめ、
+        to: 確認し、
+      - from: 確かめて
+        to: 確認して
+
+  # 「他人」「他社」などの複合語は除く
+  - expected: ほか
+    pattern: /他(?=[のにはを])/
+    specs:
+      - from: 他のコマンド
+        to: ほかのコマンド
+      - from: 他人
+        to: 他人
+
+  # インラインコードの間の「/」や半角スペースは、それだけで 1 つの Str ノードになる
+  - expected: ・
+    patterns:
+      - /^\/$/
+      - /^ $/
+    specs:
+      - from: /
+        to: ・
+      - from: バグ報告/機能要望
+        to: バグ報告/機能要望

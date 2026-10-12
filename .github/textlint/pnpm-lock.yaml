@@ -166,6 +166,9 @@ importers:
 
   .:
     devDependencies:
+      '@textlint-ja/textlint-rule-morpheme-match':
+        specifier: 2.0.0
+        version: 2.0.0
       '@textlint-ja/textlint-rule-no-synonyms':
         specifier: 1.3.0
         version: 1.3.0(sudachi-synonyms-dictionary@19.0.0)
@@ -202,6 +205,9 @@ importers:
       textlint-rule-preset-ja-technical-writing:
         specifier: 12.0.2
         version: 12.0.2
+      textlint-rule-prh:
+        specifier: 6.1.0
+        version: 6.1.0
 
 packages:
 
@@ -269,6 +275,9 @@ packages:
   '@modelcontextprotocol/server@2.3.1':
     resolution: {integrity: sha512-e59MfWuSssj6DoQ96JCTqdW1AXT5/XtnTl0WWd6MU1Ka434fFUGGosCLJbGNySDhHGvxQWoRWK137FXYFkYNWw==}
     engines: {node: '>=20'}
+
+  '@textlint-ja/textlint-rule-morpheme-match@2.0.0':
+    resolution: {integrity: sha512-lurk6gsi6P0ayIR3zuFabJYKH7GpFK9GDVXKEusRKSCzRoK/jUD12VFsHphZAdj5qYYyMY7EODVaFkg4UDjFYA==}
 
   '@textlint-ja/textlint-rule-no-synonyms@1.3.0':
     resolution: {integrity: sha512-mOB85gFGnSx6LgoUdCQFyATjcfsi0UaWO8Q4EBna/cq+ZGlmg2vcDGozk1hNLhX8u1PMzZDxDwrQOqx1zW+42w==}
@@ -1484,6 +1493,10 @@ packages:
     resolution: {integrity: sha512-iSk/J8efr8uPT/Z4eSUywnqyrQU7DSdMfdqK4iWEaUVVmcP5JcnpRqmVMwcwcnmI1ATFNgC5V90u09tBynNFKA==}
     engines: {node: '>=4'}
 
+  untildify@4.0.0:
+    resolution: {integrity: sha512-KK8xQ1mkzZeg9inewmFVDNkg3l5LUhoq9kN6iWYB/CC9YMG8HA+c1Q8HwDe6dEX7kErrEVNVBO3fWsVq5iDgtw==}
+    engines: {node: '>=8'}
+
   validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
 
@@ -1612,6 +1625,12 @@ snapshots:
     dependencies:
       '@modelcontextprotocol/core': 2.3.1
       zod: 4.6.5
+
+  '@textlint-ja/textlint-rule-morpheme-match@2.0.0':
+    dependencies:
+      kuromojin: 3.0.1
+      morpheme-match-textlint: 2.0.6
+      untildify: 4.0.0
 
   '@textlint-ja/textlint-rule-no-synonyms@1.3.0(sudachi-synonyms-dictionary@19.0.0)':
     dependencies:
@@ -3343,6 +3362,8 @@ snapshots:
       unist-util-visit-parents: 3.1.1
 
   untildify@3.0.3: {}
+
+  untildify@4.0.0: {}
 
   validate-npm-package-license@3.0.4:
     dependencies:
