@@ -2,22 +2,12 @@ version: 1
 rules:
   # 文字列のパターンは大文字・小文字を区別しないため正規表現で書き、README の権限名「Pull requests」は除く
   - expected: PR
-    patterns:
-      - /[Pp]ull [Rr]equest(?!s)/
-      - /プルリク(エスト)?/
+    pattern: /[Pp]ull [Rr]equest(?!s)/
     specs:
       - from: Pull Request を作る
         to: PR を作る
-      - from: プルリクエスト
-        to: PR
       - from: Pull requests
         to: Pull requests
-
-  - expected: ルールセット
-    pattern: /\b[Rr]ulesets?\b/
-    specs:
-      - from: ruleset で許可
-        to: ルールセット で許可
 
   - expected: 自動マージ
     pattern: /\b[Aa]uto-?merge\b/
