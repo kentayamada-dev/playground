@@ -31,6 +31,10 @@ jobs:
               - '.github/workflows/textlint.yml'
       - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - run: |
+          echo '0.0.0.0 npm.flatt.tech' | sudo tee -a /etc/hosts
+          if curl -sS --max-time 10 -o /dev/null https://npm.flatt.tech/pnpm; then echo 'npm.flatt.tech is NOT blocked'; exit 1; fi
+          echo 'npm.flatt.tech is blocked'
       - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         # action は pnpm 本体を ~/setup-pnpm での npm ci と pnpm self-update で取得し pnpm-workspace.yaml を読まないため、取得元を環境変数で渡す（pnpm は v11 から npm_config_* を読まない）
@@ -38,6 +42,7 @@ jobs:
         env:
           npm_config_registry: https://npm.flatt.tech/
           pnpm_config_registry: https://npm.flatt.tech/
+          npm_config_loglevel: http
         with:
           # pnpm のバージョンは package.json の packageManager だけで管理する。Renovate もロックファイルの更新にこのバージョンを使う
           package_json_file: .github/textlint/package.json
