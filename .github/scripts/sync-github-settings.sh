@@ -48,6 +48,14 @@ sync_rulesets() {
   done
 }
 
+# jq がないと定義の検査（if ! jq）が失敗し、定義の不備と誤って示すため、先に確かめる
+for command in gh jq; do
+  if ! command -v "$command" >/dev/null; then
+    echo "エラー: $command が見つかりません。インストールしてから実行してください" >&2
+    exit 1
+  fi
+done
+
 # gh はカレントディレクトリの remote から対象のリポジトリを決めるため、定義と同じリポジトリのルートで実行する
 cd "$(dirname "$0")/../.."
 sync_rulesets

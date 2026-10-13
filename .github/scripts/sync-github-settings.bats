@@ -87,6 +87,18 @@ assert_github_rulesets() {
   fi
 }
 
+# スクリプトが使うコマンドのうち、指定したものだけがない PATH を作る
+path_without() {
+  local dir="$BATS_TEST_TMPDIR/path-without-$1" command
+  mkdir -p "$dir"
+  for command in bash dirname gh jq; do
+    if [ "$command" != "$1" ]; then
+      ln -s "$(command -v "$command")" "$dir/$command"
+    fi
+  done
+  echo "$dir"
+}
+
 @test "同じ名前のルールセットが GitHub になければ作成する" {
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
@@ -230,6 +242,24 @@ assert_github_rulesets() {
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
   [[ $output != *"更新: main"* ]]
+}
+
+@test "jq がなければ、定義の不備とは示さず、jq が見つからないと示して失敗する" {
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+
+  run -1 env PATH="$(path_without jq)" "$repo/.github/scripts/sync-github-settings.sh"
+
+  [[ $output == *"jq が見つかりません"* ]]
+  [[ $output != *"main.json"* ]]
+  assert_github_rulesets '[]'
+}
+
+@test "gh がなければ、gh が見つからないと示して失敗する" {
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+
+  run -1 env PATH="$(path_without gh)" "$repo/.github/scripts/sync-github-settings.sh"
+
+  [[ $output == *"gh が見つかりません"* ]]
 }
 
 @test "どのディレクトリから実行しても、リポジトリのルートで定義を読み gh を実行する" {
