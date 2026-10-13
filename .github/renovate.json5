@@ -11,7 +11,7 @@
   "prHourlyLimit": 0,
   // CONTRIBUTING.md の issue タイトルの規約に合わせる
   "dependencyDashboardTitle": "chore(deps): 依存関係の更新状況",
-  // デフォルトでは PR にラベルを付けないため、.github/labels.json の dependencies を付ける
+  // デフォルトでは PR にラベルを付けないため、.github/settings/labels.json の dependencies を付ける
   "labels": ["dependencies"],
   "packageRules": [
     {

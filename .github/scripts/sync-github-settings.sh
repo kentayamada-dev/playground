@@ -20,7 +20,7 @@ gh_api() {
 }
 
 sync_rulesets() {
-  local files=(.github/rulesets/*.json) has_definitions=false
+  local files=(.github/settings/rulesets/*.json) has_definitions=false
   # 一致するファイルがないとパターンが文字列のまま残る。macOS の bash 3.2 は空配列の展開を set -u でエラーにするため、配列は空にせず存在で判定する
   if [ -e "${files[0]}" ]; then
     has_definitions=true
@@ -77,7 +77,7 @@ sync_rulesets() {
   done
 }
 
-repository_definition=.github/repository.json
+repository_definition=.github/settings/repository.json
 
 validate_repository() {
   if ! jq -e 'type == "object"' "$repository_definition" >/dev/null; then
@@ -92,7 +92,7 @@ sync_repository() {
   gh_api 'リポジトリの設定の反映' --method PATCH 'repos/{owner}/{repo}' --input "$repository_definition" --silent
 }
 
-security_definition=.github/security.json
+security_definition=.github/settings/security.json
 # true なら PUT、false なら DELETE で切り替える項目。_ を - にすると API のパスになる
 security_features='vulnerability_alerts automated_security_fixes private_vulnerability_reporting immutable_releases'
 
@@ -133,7 +133,7 @@ sync_security() {
   fi
 }
 
-actions_definition=.github/actions.json
+actions_definition=.github/settings/actions.json
 
 validate_actions() {
   if ! jq -e '
@@ -170,7 +170,7 @@ sync_actions() {
   fi
 }
 
-labels_definition=.github/labels.json
+labels_definition=.github/settings/labels.json
 
 validate_labels() {
   if ! jq -e '

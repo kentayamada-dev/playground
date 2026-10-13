@@ -2,20 +2,32 @@
 
 ## リポジトリの設定
 
-ルールセットは [`.github/rulesets`](.github/rulesets) に JSON で定義します。マージの方法や Wiki の有無などのリポジトリの設定は [`.github/repository.json`](.github/repository.json) に定義します。Dependabot や CodeQL などのセキュリティの設定は [`.github/security.json`](.github/security.json) に定義します。実行できるアクションなどの GitHub Actions の設定は [`.github/actions.json`](.github/actions.json) に定義します。issue と PR のラベルは [`.github/labels.json`](.github/labels.json) に定義します。どれも次のコマンドで GitHub に反映します。何度実行しても同じ状態になります。
-
-- ルールセット: 定義の `name` と同じ名前のルールセットがあれば定義の内容で更新し、なければ作成する。定義にないルールセットは削除し、リポジトリのルールセットを定義と一致させる
-- リポジトリの設定: 定義に書いた項目だけを更新する。シークレットスキャンとプッシュ保護は、リポジトリの設定と同じ API で変えるため、ここの `security_and_analysis` に書く
-- セキュリティの設定: 定義に書いた項目だけを、`true` なら有効に、`false` なら無効にする。CodeQL のデフォルトセットアップは、今の設定と違うときだけ更新する
-- GitHub Actions の設定: 実行できるのは、GitHub 公式と検証済み作成者のアクション、`patterns_allowed` に書いたアクションだけ。どれも完全なコミット SHA で固定する必要がある。ほかの作成者のアクションを使うときは、`patterns_allowed` に足す。外部の貢献者がフォークから出した PR のワークフローは、毎回承認してから動く。`permissions` を書かないワークフローの `GITHUB_TOKEN` は読み取りだけで、ワークフローから PR を承認できない
-- ラベル: 同じ名前のラベルがあれば色と説明を更新し、なければ作成する。定義にないラベルは削除する。GitHub の画面で作ったラベルも消え、issue や PR からも外れる
+GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し、次のコマンドで反映します。何度実行しても同じ状態になります。`gh` と `jq` が必要です。
 
 ```bash
 .github/scripts/sync-github-settings.sh
 ```
 
-- `gh` と `jq` が必要
-- GitHub の画面で作ったルールセットも、定義になければ削除される。Organization のルールセットは対象外
+| 定義 | 対象 | 反映のしかた |
+| --- | --- | --- |
+| [`rulesets`](.github/settings/rulesets) | ルールセット | `name` が同じルールセットを更新し、なければ作成する。定義にないものは削除する |
+| [`repository.json`](.github/settings/repository.json) | マージの方法・Wiki の有無・シークレットスキャン・プッシュ保護など | 定義に書いた項目だけを更新する |
+| [`security.json`](.github/settings/security.json) | Dependabot・CodeQL など | 定義に書いた項目だけを、`true` なら有効に、`false` なら無効にする |
+| [`actions.json`](.github/settings/actions.json) | GitHub Actions | 定義に書いた項目だけを更新する |
+| [`labels.json`](.github/settings/labels.json) | issue と PR のラベル | 名前が同じラベルの色と説明を更新し、なければ作成する。定義にないものは削除する |
+
+- 定義にないルールセットとラベルは、GitHub の画面で作ったものも削除される。消したラベルは issue や PR からも外れる。Organization のルールセットは対象外
+- シークレットスキャンとプッシュ保護は、リポジトリの設定と同じ API で変えるため、`repository.json` の `security_and_analysis` に書く
+- CodeQL のデフォルトセットアップは、今の設定と違うときだけ更新する
+
+### GitHub Actions の設定
+
+| 項目 | 設定 |
+| --- | --- |
+| 実行できるアクション | GitHub 公式と検証済み作成者のアクション、`patterns_allowed` に書いたアクションだけ。ほかの作成者のアクションを使うときは `patterns_allowed` に足す |
+| アクションのバージョン | 完全なコミット SHA で固定する |
+| フォークからの PR | 外部の貢献者の PR のワークフローは、毎回承認してから動く |
+| `GITHUB_TOKEN` の権限 | `permissions` を書かないワークフローでは読み取りだけ。ワークフローから PR を承認できない |
 
 ## Renovate
 
