@@ -35,10 +35,11 @@ labels="${github}labels.json"
 fork_pr_approval="${github}fork-pr-approval.json"
 
 [ "$1" = api ] && shift
-method=GET endpoint='' input='' slurp=false
+method=GET endpoint='' input='' slurp=false headers=''
 while [ $# -gt 0 ]; do
   case "$1" in
     -X | --method) method=$2; shift 2 ;;
+    -H | --header) headers="$headers$2;"; shift 2 ;;
     --input) input=$2; shift 2 ;;
     --slurp) slurp=true; shift ;;
     --paginate | --silent) shift ;;
@@ -51,6 +52,15 @@ if [ "$input" = - ]; then
   input="$STUB_DIR/stdin.json"
   cat > "$input"
 fi
+
+# GitHub の GET の応答はキャッシュされうるため、Cache-Control: no-cache がなければ、.stale.json があればその古い応答を返す
+fresh_or_stale() {
+  if [[ $headers != *"Cache-Control: no-cache;"* ]] && [ -f "${1%.json}.stale.json" ]; then
+    echo "${1%.json}.stale.json"
+  else
+    echo "$1"
+  fi
+}
 
 # STUB_FAIL は「メソッド エンドポイント」に一致させるパターン
 if [ -n "${STUB_FAIL-}" ] && [[ "$method $endpoint" == $STUB_FAIL ]]; then
@@ -65,7 +75,7 @@ case "$method $endpoint" in
       filter='map(select(.source_type == "Repository"))'
     fi
     if $slurp; then filter="[$filter]"; fi
-    jq -c "$filter" "$state"
+    jq -c "$filter" "$(fresh_or_stale "$state")"
     ;;
   "POST repos/{owner}/{repo}/rulesets")
     # 作成と削除の順序で ID が変わらないよう、削除した ID を使い回さず連番で振る
@@ -92,7 +102,7 @@ case "$method $endpoint" in
     mv "$state.new" "$state"
     ;;
   "GET repos/{owner}/{repo}/labels?"*)
-    if $slurp; then jq -c '[.]' "$labels"; else jq -c . "$labels"; fi
+    if $slurp; then jq -c '[.]' "$(fresh_or_stale "$labels")"; else jq -c . "$(fresh_or_stale "$labels")"; fi
     ;;
   "POST repos/{owner}/{repo}/labels")
     if jq -e --slurpfile body "$input" 'any(.name == $body[0].name)' "$labels" >/dev/null; then
@@ -147,7 +157,7 @@ case "$method $endpoint" in
     mv "$security.new" "$security"
     ;;
   "GET repos/{owner}/{repo}/code-scanning/default-setup")
-    jq -c 'del(.runs)' "$code_scanning"
+    jq -c 'del(.runs)' "$(fresh_or_stale "$code_scanning")"
     ;;
   "PATCH repos/{owner}/{repo}/code-scanning/default-setup")
     # 設定の更新を受け付けると解析を始めたとみなし、その回数を runs に数える
@@ -701,6 +711,35 @@ path_without() {
 
   assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
   [[ $output == *"maintenance"* ]]
+}
+
+@test "ルールセットの一覧のキャッシュが古くても、今の一覧をもとに更新し、重複して作成しない" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
+  echo '[]' > "$STUB_DIR/rulesets.stale.json"
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
+}
+
+@test "ラベルの一覧のキャッシュが古くても、今の一覧をもとに、もうないラベルを削除しようとしない" {
+  given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}]'
+  echo '[{"name": "bug", "color": "d73a4a", "description": "不具合"}, {"name": "wontfix", "color": "ffffff", "description": "Will not be worked on"}]' > "$STUB_DIR/labels.stale.json"
+  define_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}]'
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}]'
+}
+
+@test "CodeQL のデフォルトセットアップのキャッシュが古くても、今の設定と比べて更新する" {
+  echo '{"state": "configured", "query_suite": "default", "languages": ["actions"]}' > "$STUB_DIR/code-scanning.stale.json"
+  define_security '{"code_scanning_default_setup": {"state": "configured", "query_suite": "default"}}'
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"], "runs": 1}'
 }
 
 @test "ルールセットの一覧を取得できなければ、作成せずに失敗する" {
