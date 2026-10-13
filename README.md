@@ -1,5 +1,22 @@
 # playground
 
+## リポジトリの設定
+
+ルールセットは [`.github/rulesets`](.github/rulesets) に JSON で定義します。マージの方法や Wiki の有無などのリポジトリの設定は [`.github/repository.json`](.github/repository.json) に定義します。Dependabot や CodeQL などのセキュリティの設定は [`.github/security.json`](.github/security.json) に定義します。実行できるアクションなどの GitHub Actions の設定は [`.github/actions.json`](.github/actions.json) に定義します。issue と PR のラベルは [`.github/labels.json`](.github/labels.json) に定義します。どれも次のコマンドで GitHub に反映します。何度実行しても同じ状態になります。
+
+- ルールセット: 定義の `name` と同じ名前のルールセットがあれば定義の内容で更新し、なければ作成する。定義にないルールセットは削除し、リポジトリのルールセットを定義と一致させる
+- リポジトリの設定: 定義に書いた項目だけを更新する。シークレットスキャンとプッシュ保護は、リポジトリの設定と同じ API で変えるため、ここの `security_and_analysis` に書く
+- セキュリティの設定: 定義に書いた項目だけを、`true` なら有効に、`false` なら無効にする。CodeQL のデフォルトセットアップは、今の設定と違うときだけ更新する
+- GitHub Actions の設定: 実行できるのは、GitHub 公式と検証済み作成者のアクション、`patterns_allowed` に書いたアクションだけ。どれも完全なコミット SHA で固定する必要がある。ほかの作成者のアクションを使うときは、`patterns_allowed` に足す。外部の貢献者がフォークから出した PR のワークフローは、毎回承認してから動く
+- ラベル: 同じ名前のラベルがあれば色と説明を更新し、なければ作成する。定義にないラベルは削除する。GitHub の画面で作ったラベルも消え、issue や PR からも外れる
+
+```bash
+.github/scripts/sync-github-settings.sh
+```
+
+- `gh` と `jq` が必要
+- GitHub の画面で作ったルールセットも、定義になければ削除される。Organization のルールセットは対象外
+
 ## Renovate
 
 依存関係の更新は Renovate で自動化しています。[`.github/workflows/renovate.yml`](.github/workflows/renovate.yml) が毎時 23 分に Renovate を実行します。設定は [`.github/renovate.json5`](.github/renovate.json5) にあります。
@@ -25,7 +42,7 @@ Repository permissions は次の表のとおりに設定し、ほかは No acces
 | Issues | Read and write | Dependency Dashboard の issue の作成・更新 |
 | Commit statuses | Read and write | `renovate/stability-days` など、Renovate 自身のステータスの書き込み |
 | Workflows | Read and write | `.github/workflows` 配下のファイルの更新 |
-| Dependabot alerts | Read-only | 脆弱性アラートの読み取り。このリポジトリでは Dependabot alerts が無効なので、いまは使われない |
+| Dependabot alerts | Read-only | 脆弱性アラートの読み取り。アラートがあると、Renovate が脆弱性を直す PR を作る |
 | Metadata | Read-only | 自動で付く（必須） |
 
 権限の一覧は [Renovate のドキュメント](https://docs.renovatebot.com/modules/platform/github/) に従っています。作成したトークンは、次のコマンドで secret に登録します。

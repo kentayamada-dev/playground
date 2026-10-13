@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "enabled": true,
+    "allowed_actions": "selected",
+    "sha_pinning_required": true
+  },
+  "selected_actions": {
+    "github_owned_allowed": true,
+    "verified_allowed": true,
+    "patterns_allowed": [
+      "dorny/paths-filter@*",
+      "pnpm/action-setup@*",
+      "bats-core/bats-action@*"
+    ]
+  },
+  "fork_pr_contributor_approval": {
+    "approval_policy": "all_external_contributors"
+  }
+}

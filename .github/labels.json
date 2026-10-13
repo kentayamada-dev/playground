@@ -1,0 +1,12 @@
+[
+  {
+    "name": "bug",
+    "color": "d73a4a",
+    "description": "期待どおりに動かない不具合"
+  },
+  {
+    "name": "dependencies",
+    "color": "0366d6",
+    "description": "依存関係の更新"
+  }
+]

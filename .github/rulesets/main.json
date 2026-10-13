@@ -43,6 +43,22 @@
           {
             "context": "textlint",
             "integration_id": 15368
+          },
+          {
+            "context": "test",
+            "integration_id": 15368
+          }
+        ]
+      }
+    },
+    {
+      "type": "code_scanning",
+      "parameters": {
+        "code_scanning_tools": [
+          {
+            "tool": "CodeQL",
+            "alerts_threshold": "errors",
+            "security_alerts_threshold": "high_or_higher"
           }
         ]
       }
