@@ -18,14 +18,7 @@ jobs:
       # 必須チェックなので、textlint.yml と同じく on.pull_request.paths で絞らずにステップを if で飛ばす
       - id: changes
         if: github.event_name == 'pull_request'
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
-        with:
-          # リポジトリにあるルールセットの定義もテストで読む
-          filters: |
-            test:
-              - 'scripts/**'
-              - '.github/rulesets/**'
-              - '.github/workflows/test.yml'
+        run: exit 1
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
