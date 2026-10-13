@@ -39,7 +39,7 @@ jobs:
         env:
           # renovate.json5 の customManagers が、版と sha256 を一緒に更新する
           SHELLCHECK_VERSION: v0.11.0
-          SHELLCHECK_SHA256: 12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588
+          SHELLCHECK_SHA256: 12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14589
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         run: git ls-files -z '*.sh' '*.bats' | xargs -0 shellcheck
         # 未指定時の bash -e {0} は pipefail がなく、git ls-files の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
