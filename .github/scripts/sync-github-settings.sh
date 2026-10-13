@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# GET の応答は Cache-Control: private, max-age=60 で、変更の直後に古い値が返ることがあったため、キャッシュを使わせない
+# https://github.com/kentayamada-dev/playground/pull/53
+gh_get() {
+  gh api -H 'Cache-Control: no-cache' "$@"
+}
+
 sync_rulesets() {
   local files=(.github/rulesets/*.json) has_definitions=false
   # 一致するファイルがないとパターンが文字列のまま残る。macOS の bash 3.2 は空配列の展開を set -u でエラーにするため、配列は空にせず存在で判定する
@@ -28,7 +34,7 @@ sync_rulesets() {
   # includes_parents のデフォルトは true で、Organization のルールセットも返り、名前が同じだと誤って照合するため外す
   # https://docs.github.com/en/rest/repos/rules?apiVersion=2022-11-28#get-all-repository-rulesets
   local existing
-  existing=$(gh api --paginate --slurp 'repos/{owner}/{repo}/rulesets?includes_parents=false&per_page=100')
+  existing=$(gh_get --paginate --slurp 'repos/{owner}/{repo}/rulesets?includes_parents=false&per_page=100')
   duplicates=$(jq -r --argjson names "$names" '[.[][] | .name | select(IN($names[]))] | group_by(.) | map(select(length > 1) | .[0]) | .[]' <<<"$existing")
   if [ -n "$duplicates" ]; then
     echo "エラー: GitHub に同じ名前のルールセットが複数あり、更新先を決められません: $duplicates" >&2
@@ -111,7 +117,7 @@ sync_security() {
   if [ -z "$desired" ]; then
     return 0
   fi
-  current=$(gh api 'repos/{owner}/{repo}/code-scanning/default-setup')
+  current=$(gh_get 'repos/{owner}/{repo}/code-scanning/default-setup')
   # 設定が同じでも送ると解析が走るかは未確認のため、違うときだけ送る
   if jq -e --argjson desired "$desired" '. as $current | $desired | to_entries | all(.value == $current[.key])' <<<"$current" >/dev/null; then
     echo "変更なし: CodeQL のデフォルトセットアップ"
@@ -187,7 +193,7 @@ uri_encode() {
 
 sync_labels() {
   local existing
-  existing=$(gh api --paginate --slurp 'repos/{owner}/{repo}/labels?per_page=100')
+  existing=$(gh_get --paginate --slurp 'repos/{owner}/{repo}/labels?per_page=100')
 
   local count i label name
   count=$(jq length "$labels_definition")
