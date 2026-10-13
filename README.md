@@ -1,5 +1,18 @@
 # playground
 
+## リポジトリの設定
+
+ルールセットは [`.github/rulesets`](.github/rulesets) に JSON で定義し、次のコマンドで GitHub に反映します。定義の `name` と同じ名前のルールセットがあれば定義の内容で更新し、なければ作成します。何度実行しても同じ状態になります。
+
+```bash
+scripts/sync-github-settings.sh
+```
+
+- `gh` と `jq` が必要です
+- 反映先は、`gh` がリポジトリの remote から決めます。ほかのリポジトリに反映するときは、環境変数 `GH_REPO` で指定します
+- ルールセットの作成と更新には、リポジトリの Administration の書き込み権限が必要です。権限の一覧は [GitHub のドキュメント](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens) にあります
+- 定義にないルールセットは削除しません
+
 ## Renovate
 
 依存関係の更新は Renovate で自動化しています。[`.github/workflows/renovate.yml`](.github/workflows/renovate.yml) が毎時 23 分に Renovate を実行します。設定は [`.github/renovate.json5`](.github/renovate.json5) にあります。
