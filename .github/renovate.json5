@@ -39,7 +39,7 @@
     {
       "matchPackageNames": ["*"],
       "commitMessageAction": "",
-      // 同じブランチに複数バージョンが入ると extra が消されるので、動詞を補う
+      // 同じブランチに複数バージョンが入ると extra が消されるので、動詞を補う https://github.com/renovatebot/renovate/blob/44.151.1/lib/workers/repository/updates/generate.ts#L332-L348
       "commitMessageTopic": "{{{depName}}}{{#unless commitMessageExtra}} を更新{{/unless}}",
       "commitMessageExtra": "を {{#if isMajor}}{{{prettyNewMajor}}}{{else}}{{#if isSingleVersion}}{{{prettyNewVersion}}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}} に更新"
     },
@@ -53,7 +53,7 @@
     },
     {
       "matchUpdateTypes": ["replacement"],
-      // replacement では newVersion が空になるため newValue を使う
+      // replacement では newVersion が空になるため newValue を使う https://github.com/renovatebot/renovate/blob/44.151.1/lib/workers/repository/process/lookup/utils.ts#L24-L28
       "commitMessageExtra": "を {{{newName}}} {{{newValue}}} に置き換え"
     },
     {
@@ -61,7 +61,7 @@
       "commitMessageExtra": "を {{{newValue}}} にロールバック"
     }
   ],
-  // グループの topic はブランチ生成時に packageRules より後で上書きされるため、別途日本語にする
+  // グループの topic はブランチ生成時に packageRules より後で上書きされるため、別途日本語にする https://github.com/renovatebot/renovate/blob/44.151.1/lib/workers/repository/updates/generate.ts#L316-L318
   "group": {
     "commitMessageTopic": "{{{groupName}}}{{#unless commitMessageExtra}} を更新{{/unless}}"
   },
