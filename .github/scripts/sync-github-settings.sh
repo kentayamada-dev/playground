@@ -68,6 +68,8 @@ for command in gh jq; do
   fi
 done
 
-# gh はカレントディレクトリの remote から対象のリポジトリを決めるため、定義と同じリポジトリのルートで実行する
+# gh は GH_REPO があればそれを対象にするため外し、定義と同じリポジトリのルートで remote から決めさせる
+# https://github.com/cli/cli/blob/v2.102.0/pkg/cmdutil/repo_override.go
+unset GH_REPO
 cd "$(dirname "$0")/../.."
 sync_rulesets

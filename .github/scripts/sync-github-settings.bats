@@ -17,6 +17,10 @@ setup() {
 set -euo pipefail
 pwd -P >> "$STUB_DIR/gh.pwd"
 state="$STUB_DIR/rulesets.json"
+# gh と同じく、GH_REPO があればカレントディレクトリのリポジトリではなく、そのリポジトリを操作する
+if [ -n "${GH_REPO-}" ]; then
+  state="$STUB_DIR/other-repo-rulesets.json"
+fi
 
 [ "$1" = api ] && shift
 method=GET endpoint='' input='' slurp=false
@@ -319,6 +323,18 @@ path_without() {
   run -1 env PATH="$(path_without gh)" "$repo/.github/scripts/sync-github-settings.sh"
 
   [[ $output == *"gh が見つかりません"* ]]
+}
+
+@test "GH_REPO が設定されていても、ほかのリポジトリには反映せず、このリポジトリに反映する" {
+  other='[{"id": 1, "source_type": "Repository", "name": "other", "enforcement": "active"}]'
+  echo "$other" > "$STUB_DIR/other-repo-rulesets.json"
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  export GH_REPO=someone/other
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_rulesets '[{"id": 100, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
+  jq -e --argjson expected "$other" '. == $expected' "$STUB_DIR/other-repo-rulesets.json"
 }
 
 @test "どのディレクトリから実行しても、リポジトリのルートで定義を読み gh を実行する" {

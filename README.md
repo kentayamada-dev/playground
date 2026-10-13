@@ -9,7 +9,7 @@
 ```
 
 - `gh` と `jq` が必要
-- 反映先は、`gh` がリポジトリの remote から決める。ほかのリポジトリに反映するときは、環境変数 `GH_REPO` で指定する
+- 反映先は、スクリプトを置いたリポジトリで、`gh` が remote から決める。環境変数 `GH_REPO` は無視する
 - ルールセットの作成・更新・削除には、リポジトリの Administration の書き込み権限が必要で、権限の一覧は [GitHub のドキュメント](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens) にある
 - GitHub の画面で作ったルールセットも、定義になければ削除される。Organization のルールセットは対象外
 
