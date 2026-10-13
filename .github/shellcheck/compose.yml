@@ -5,3 +5,4 @@ services:
     volumes:
       # 相対パスはこのファイルの場所が基準なので、../.. でリポジトリのルートを渡す https://docs.docker.com/reference/compose-file/services/#volumes
       - ../..:/mnt
+# 検証用: compose.yml だけの変更でも test が ShellCheck を動かすことを確かめる
