@@ -8,5 +8,13 @@
   "squash_merge_commit_title": "PR_TITLE",
   "squash_merge_commit_message": "BLANK",
   "allow_merge_commit": false,
-  "allow_rebase_merge": false
+  "allow_rebase_merge": false,
+  "security_and_analysis": {
+    "secret_scanning": {
+      "status": "enabled"
+    },
+    "secret_scanning_push_protection": {
+      "status": "enabled"
+    }
+  }
 }

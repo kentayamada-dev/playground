@@ -2,10 +2,11 @@
 
 ## リポジトリの設定
 
-ルールセットは [`.github/rulesets`](.github/rulesets) に JSON で定義します。マージの方法や Wiki の有無などのリポジトリの設定は [`.github/repository.json`](.github/repository.json) に定義します。どちらも次のコマンドで GitHub に反映します。何度実行しても同じ状態になります。
+ルールセットは [`.github/rulesets`](.github/rulesets) に JSON で定義します。マージの方法や Wiki の有無などのリポジトリの設定は [`.github/repository.json`](.github/repository.json) に定義します。Dependabot や CodeQL などのセキュリティの設定は [`.github/security.json`](.github/security.json) に定義します。どれも次のコマンドで GitHub に反映します。何度実行しても同じ状態になります。
 
 - ルールセット: 定義の `name` と同じ名前のルールセットがあれば定義の内容で更新し、なければ作成する。定義にないルールセットは削除し、リポジトリのルールセットを定義と一致させる
-- リポジトリの設定: 定義に書いた項目だけを更新する
+- リポジトリの設定: 定義に書いた項目だけを更新する。シークレットスキャンとプッシュ保護は、リポジトリの設定と同じ API で変えるため、ここの `security_and_analysis` に書く
+- セキュリティの設定: 定義に書いた項目だけを、`true` なら有効に、`false` なら無効にする。CodeQL のデフォルトセットアップは、今の設定と違うときだけ更新する
 
 ```bash
 .github/scripts/sync-github-settings.sh
@@ -39,7 +40,7 @@ Repository permissions は次の表のとおりに設定し、ほかは No acces
 | Issues | Read and write | Dependency Dashboard の issue の作成・更新 |
 | Commit statuses | Read and write | `renovate/stability-days` など、Renovate 自身のステータスの書き込み |
 | Workflows | Read and write | `.github/workflows` 配下のファイルの更新 |
-| Dependabot alerts | Read-only | 脆弱性アラートの読み取り。このリポジトリでは Dependabot alerts が無効なので、いまは使われない |
+| Dependabot alerts | Read-only | 脆弱性アラートの読み取り。アラートがあると、Renovate が脆弱性を直す PR を作る |
 | Metadata | Read-only | 自動で付く（必須） |
 
 権限の一覧は [Renovate のドキュメント](https://docs.renovatebot.com/modules/platform/github/) に従っています。作成したトークンは、次のコマンドで secret に登録します。

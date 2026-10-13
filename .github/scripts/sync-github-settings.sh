@@ -76,6 +76,51 @@ sync_repository() {
   echo "更新: リポジトリの設定 ($repository_definition)"
 }
 
+security_definition=.github/security.json
+# true なら PUT、false なら DELETE で切り替える項目。_ を - にすると API のパスになる
+security_features='vulnerability_alerts automated_security_fixes private_vulnerability_reporting immutable_releases'
+
+validate_security() {
+  if ! jq -e --arg features "$security_features" '
+    ($features | split(" ")) as $features
+    | type == "object"
+    and (keys - $features - ["code_scanning_default_setup"] | length == 0)
+    and ([.[$features[]] | select(. != null) | type == "boolean"] | all)
+    and ((has("code_scanning_default_setup") | not) or (.code_scanning_default_setup | type == "object"))
+  ' "$security_definition" >/dev/null; then
+    echo "エラー: $security_definition は、項目が $security_features code_scanning_default_setup のどれかで、有効・無効が true か false、code_scanning_default_setup が JSON オブジェクトの定義ではありません" >&2
+    return 1
+  fi
+}
+
+sync_security() {
+  local feature enabled
+  for feature in $security_features; do
+    enabled=$(jq -r --arg feature "$feature" 'if has($feature) then .[$feature] else empty end' "$security_definition")
+    if [ "$enabled" = true ]; then
+      gh api --method PUT "repos/{owner}/{repo}/${feature//_/-}" --silent
+      echo "有効化: $feature"
+    elif [ "$enabled" = false ]; then
+      gh api --method DELETE "repos/{owner}/{repo}/${feature//_/-}" --silent
+      echo "無効化: $feature"
+    fi
+  done
+
+  local desired current
+  desired=$(jq -c 'if has("code_scanning_default_setup") then .code_scanning_default_setup else empty end' "$security_definition")
+  if [ -z "$desired" ]; then
+    return 0
+  fi
+  current=$(gh api 'repos/{owner}/{repo}/code-scanning/default-setup')
+  # 設定が同じでも送ると解析が走るかは未確認のため、違うときだけ送る
+  if jq -e --argjson desired "$desired" '. as $current | $desired | to_entries | all(.value == $current[.key])' <<<"$current" >/dev/null; then
+    echo "変更なし: CodeQL のデフォルトセットアップ"
+  else
+    gh api --method PATCH 'repos/{owner}/{repo}/code-scanning/default-setup' --input - --silent <<<"$desired"
+    echo "更新: CodeQL のデフォルトセットアップ"
+  fi
+}
+
 # jq がないと定義の検査（if ! jq）が失敗し、定義の不備と誤って示すため、先に確かめる
 for command in gh jq; do
   if ! command -v "$command" >/dev/null; then
@@ -88,7 +133,9 @@ done
 # https://github.com/cli/cli/blob/v2.102.0/pkg/cmdutil/repo_override.go
 unset GH_REPO
 cd "$(dirname "$0")/../.."
-# ルールセットだけ反映して止まらないよう、リポジトリの設定の定義はルールセットより先に検査する
+# ルールセットだけ反映して止まらないよう、リポジトリとセキュリティの設定の定義はルールセットより先に検査する
 validate_repository
+validate_security
 sync_rulesets
 sync_repository
+sync_security

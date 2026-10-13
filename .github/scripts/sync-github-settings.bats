@@ -7,9 +7,10 @@ setup() {
   mkdir -p "$repo/.github/scripts" "$repo/.github/rulesets"
   cp "$BATS_TEST_DIRNAME/sync-github-settings.sh" "$repo/.github/scripts/"
   echo '{}' > "$repo/.github/repository.json"
+  echo '{}' > "$repo/.github/security.json"
   repo=$(cd "$repo" && pwd -P)
 
-  # gh api の偽物。$STUB_DIR/rulesets.json と $STUB_DIR/repository.json を、GitHub 上のルールセットとリポジトリの設定として読み書きする
+  # gh api の偽物。$STUB_DIR 配下の JSON を、GitHub 上のルールセット・リポジトリの設定・セキュリティの設定として読み書きする
   export STUB_DIR="$BATS_TEST_TMPDIR/stub"
   mkdir -p "$STUB_DIR/bin"
   PATH="$STUB_DIR/bin:$PATH"
@@ -24,6 +25,8 @@ if [ -n "${GH_REPO-}" ]; then
 fi
 state="${github}rulesets.json"
 repository="${github}repository.json"
+security="${github}security.json"
+code_scanning="${github}code-scanning.json"
 
 [ "$1" = api ] && shift
 method=GET endpoint='' input='' slurp=false
@@ -37,8 +40,14 @@ while [ $# -gt 0 ]; do
     *) endpoint=$1; shift ;;
   esac
 done
+# gh と同じく、--input - なら本文を標準入力から読む
+if [ "$input" = - ]; then
+  input="$STUB_DIR/stdin.json"
+  cat > "$input"
+fi
 
-if [ "$method" = "${STUB_FAIL_METHOD-}" ]; then
+# STUB_FAIL は「メソッド エンドポイント」に一致させるパターン
+if [ -n "${STUB_FAIL-}" ] && [[ "$method $endpoint" == $STUB_FAIL ]]; then
   echo "gh: Server Error (HTTP 500)" >&2
   exit 1
 fi
@@ -80,6 +89,24 @@ case "$method $endpoint" in
     jq -s '.[0] + .[1]' "$repository" "$input" > "$repository.new"
     mv "$repository.new" "$repository"
     ;;
+  "PUT repos/{owner}/{repo}/"* | "DELETE repos/{owner}/{repo}/"*)
+    feature=${endpoint#repos/\{owner\}/\{repo\}/}
+    case "$feature" in
+      vulnerability-alerts | automated-security-fixes | private-vulnerability-reporting | immutable-releases) ;;
+      *) echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+    esac
+    jq --arg key "${feature//-/_}" --argjson enabled "$([ "$method" = PUT ] && echo true || echo false)" \
+      '.[$key] = $enabled' "$security" > "$security.new"
+    mv "$security.new" "$security"
+    ;;
+  "GET repos/{owner}/{repo}/code-scanning/default-setup")
+    jq -c 'del(.runs)' "$code_scanning"
+    ;;
+  "PATCH repos/{owner}/{repo}/code-scanning/default-setup")
+    # 設定の更新を受け付けると解析を始めたとみなし、その回数を runs に数える
+    jq --slurpfile body "$input" '. + $body[0] | .runs += 1' "$code_scanning" > "$code_scanning.new"
+    mv "$code_scanning.new" "$code_scanning"
+    ;;
   *)
     echo "gh スタブ: 未対応のリクエスト $method $endpoint" >&2
     exit 1
@@ -89,6 +116,8 @@ EOF
   chmod +x "$STUB_DIR/bin/gh"
   echo '[]' > "$STUB_DIR/rulesets.json"
   echo '{}' > "$STUB_DIR/repository.json"
+  echo '{}' > "$STUB_DIR/security.json"
+  echo '{"state": "not-configured", "query_suite": "default", "languages": ["actions"], "runs": 0}' > "$STUB_DIR/code-scanning.json"
   echo 100 > "$STUB_DIR/next_id"
 }
 
@@ -107,6 +136,33 @@ define_repository() {
 assert_github_repository() {
   if ! jq -e --argjson expected "$1" '. == $expected' "$STUB_DIR/repository.json" >/dev/null; then
     echo "GitHub 上のリポジトリの設定: $(jq -c . "$STUB_DIR/repository.json")"
+    return 1
+  fi
+}
+
+given_github_security() {
+  echo "$1" > "$STUB_DIR/security.json"
+}
+
+given_github_code_scanning() {
+  echo "$1" > "$STUB_DIR/code-scanning.json"
+}
+
+define_security() {
+  echo "$1" > "$repo/.github/security.json"
+}
+
+assert_github_security() {
+  if ! jq -e --argjson expected "$1" '. == $expected' "$STUB_DIR/security.json" >/dev/null; then
+    echo "GitHub 上のセキュリティの設定: $(jq -c . "$STUB_DIR/security.json")"
+    return 1
+  fi
+}
+
+# runs は、CodeQL の解析を始めた回数
+assert_github_code_scanning() {
+  if ! jq -e --argjson expected "$1" '. == $expected' "$STUB_DIR/code-scanning.json" >/dev/null; then
+    echo "GitHub 上の CodeQL のデフォルトセットアップ: $(jq -c . "$STUB_DIR/code-scanning.json")"
     return 1
   fi
 }
@@ -359,8 +415,73 @@ path_without() {
   assert_github_repository '{"has_wiki": true}'
 }
 
+@test "セキュリティの設定を、定義に書いた値で有効・無効にし、書いていないものは変えない" {
+  given_github_security '{"vulnerability_alerts": false, "automated_security_fixes": false, "private_vulnerability_reporting": true, "immutable_releases": false}'
+  define_security '{"vulnerability_alerts": true, "automated_security_fixes": true, "private_vulnerability_reporting": false}'
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_security '{"vulnerability_alerts": true, "automated_security_fixes": true, "private_vulnerability_reporting": false, "immutable_releases": false}'
+}
+
+@test "CodeQL のデフォルトセットアップが定義と違えば、定義の値で更新する" {
+  define_security '{"code_scanning_default_setup": {"state": "configured", "query_suite": "extended"}}'
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_code_scanning '{"state": "configured", "query_suite": "extended", "languages": ["actions"], "runs": 1}'
+}
+
+@test "CodeQL のデフォルトセットアップが定義と同じなら、更新せず解析も始めない" {
+  given_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
+  define_security '{"code_scanning_default_setup": {"state": "configured", "query_suite": "default"}}'
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
+}
+
+@test "セキュリティの設定の定義がなければ、ルールセットも含めて何も変更せずに失敗する" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  rm "$repo/.github/security.json"
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  [[ $output == *".github/security.json"* ]]
+}
+
+@test "セキュリティの設定の定義に知らない項目があれば、書き間違いとみなして何も変更せずに失敗する" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  define_security '{"vulnerability_alert": true}'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  assert_github_security '{}'
+  [[ $output == *".github/security.json"* ]]
+}
+
+@test "セキュリティの設定の有効・無効が true か false でなければ、何も変更せずに失敗する" {
+  define_security '{"vulnerability_alerts": "enabled"}'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_security '{}'
+  [[ $output == *".github/security.json"* ]]
+}
+
+@test "CodeQL のデフォルトセットアップの定義が JSON オブジェクトでなければ、何も変更せずに失敗する" {
+  define_security '{"code_scanning_default_setup": "configured"}'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_code_scanning '{"state": "not-configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
+  [[ $output == *".github/security.json"* ]]
+}
+
 @test "ルールセットの一覧を取得できなければ、作成せずに失敗する" {
-  export STUB_FAIL_METHOD=GET
+  export STUB_FAIL="GET *"
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
@@ -369,7 +490,7 @@ path_without() {
 }
 
 @test "ルールセットの更新に失敗したら失敗する" {
-  export STUB_FAIL_METHOD=PUT
+  export STUB_FAIL="PUT repos/{owner}/{repo}/rulesets/*"
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
@@ -379,7 +500,7 @@ path_without() {
 }
 
 @test "ルールセットの削除に失敗したら失敗する" {
-  export STUB_FAIL_METHOD=DELETE
+  export STUB_FAIL="DELETE repos/{owner}/{repo}/rulesets/*"
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
@@ -388,8 +509,26 @@ path_without() {
   [[ $output != *"削除: legacy"* ]]
 }
 
+@test "セキュリティの設定の切り替えに失敗したら失敗する" {
+  export STUB_FAIL="PUT repos/{owner}/{repo}/vulnerability-alerts"
+  define_security '{"vulnerability_alerts": true}'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_security '{}'
+}
+
+@test "CodeQL のデフォルトセットアップの更新に失敗したら失敗する" {
+  export STUB_FAIL="PATCH repos/{owner}/{repo}/code-scanning/default-setup"
+  define_security '{"code_scanning_default_setup": {"state": "configured"}}'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  [[ $output != *"更新: CodeQL"* ]]
+}
+
 @test "リポジトリの設定の更新に失敗したら失敗する" {
-  export STUB_FAIL_METHOD=PATCH
+  export STUB_FAIL="PATCH repos/{owner}/{repo}"
   define_repository '{"has_wiki": false}'
 
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
@@ -455,4 +594,15 @@ path_without() {
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_repository "$(cat "$repo/.github/repository.json")"
+}
+
+@test "リポジトリにあるセキュリティの設定の定義を、GitHub に反映できる" {
+  cp "$BATS_TEST_DIRNAME/../security.json" "$repo/.github/security.json"
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_security "$(jq -c 'del(.code_scanning_default_setup)' "$repo/.github/security.json")"
+  jq -e --slurpfile security "$repo/.github/security.json" \
+    '. as $current | $security[0].code_scanning_default_setup | to_entries | all(.value == $current[.key])' \
+    "$STUB_DIR/code-scanning.json"
 }
