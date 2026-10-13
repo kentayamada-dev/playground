@@ -1,7 +1,7 @@
 # 行動規範
 
 このプロジェクトは [Contributor Covenant 3.0](https://www.contributor-covenant.org/version/3/0/code_of_conduct/) を行動規範として採用します。
-issue・Pull Request・コメントなど、このリポジトリに関わるすべての人は、全文を読んでそれに従ってください。
+issue・PR・コメントなど、このリポジトリに関わるすべての人は、全文を読んでそれに従ってください。
 
 ## 要点
 

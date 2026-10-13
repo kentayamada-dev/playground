@@ -21,7 +21,7 @@ Repository permissions は次の表のとおりに設定し、ほかは No acces
 | Permission | Access | 用途 |
 | --- | --- | --- |
 | Contents | Read and write | リポジトリの取得と、更新用ブランチの push |
-| Pull requests | Read and write | 更新 PR の作成・更新と、auto-merge の有効化 |
+| Pull requests | Read and write | 更新 PR の作成・更新と、自動マージの有効化 |
 | Issues | Read and write | Dependency Dashboard の issue の作成・更新 |
 | Commit statuses | Read and write | `renovate/stability-days` など、Renovate 自身のステータスの書き込み |
 | Workflows | Read and write | `.github/workflows` 配下のファイルの更新 |

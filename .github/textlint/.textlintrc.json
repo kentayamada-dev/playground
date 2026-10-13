@@ -1,6 +1,9 @@
 {
   "filters": {
-    "comments": true
+    "comments": true,
+    "allowlist": {
+      "allow": []
+    }
   },
   "rules": {
     "preset-ja-technical-writing": true,
@@ -19,6 +22,12 @@
       "after": true
     },
     "@textlint-ja/no-synonyms": true,
-    "no-mixed-zenkaku-and-hankaku-alphabet": true
+    "no-mixed-zenkaku-and-hankaku-alphabet": true,
+    "prh": {
+      "rulePaths": ["./prh.yml"]
+    },
+    "ja-hiraku": true,
+    "ja-no-orthographic-variants": true,
+    "period-in-list-item": true
   }
 }

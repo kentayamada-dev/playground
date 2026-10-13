@@ -2,7 +2,7 @@ name: renovate
 
 on:
   schedule:
-    # main の必須チェックは最新への追従を求めるので、同じ実行で作った PR の2件目以降は次の実行まで自動マージされない。待ちを短くするため毎時動かす。
+    # main の必須チェックは最新への追従を求めるので、同じ実行で作った PR の 2 件目以降は次の実行まで自動マージされない。待ちを短くするため毎時動かす。
     # 毎時 0 分は混雑で遅れやすいので避ける https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule
     - cron: '23 * * * *'
   workflow_dispatch:
@@ -21,12 +21,12 @@ jobs:
       - uses: renovatebot/github-action@f0f41e5f2e706165f6814b1d0f0d0e319de7d1d9 # v46.3.8
         with:
           token: ${{ secrets.RENOVATE_TOKEN }}
-          # 既定の GHCR からは公開時刻が取れず、renovate.json5 の minimumReleaseAge が効かないため、Docker Hub の公式イメージを使う
+          # デフォルトの GHCR からは公開時刻が取れず、renovate.json5 の minimumReleaseAge が効かないため、Docker Hub の公式イメージを使う
           # https://docs.renovatebot.com/key-concepts/minimum-release-age/#which-registries-support-release-timestamps
           renovate-image: renovate/renovate
           renovate-version: 44.151.1
         env:
           RENOVATE_REPOSITORIES: ${{ github.repository }}
-          # Docker Hub は未ログインだと1000件目より先を返さない。超えて失敗すると公開時刻の無いタグ一覧に切り替わり、minimumReleaseAge の待ちが明けなくなる
+          # Docker Hub は未ログインだと 1000 件目より先を返さない。超えて失敗すると公開時刻のないタグ一覧に切り替わり、minimumReleaseAge の待ちが明けなくなる
           # https://github.com/renovatebot/renovate/blob/44.151.1/lib/modules/datasource/docker/index.ts#L1157-L1175
           RENOVATE_DOCKER_MAX_PAGES: 10

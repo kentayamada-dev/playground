@@ -5,9 +5,9 @@
   "timezone": "Asia/Tokyo",
   // CONTRIBUTING.md でタイトルを Conventional Commits 形式と定めているため、履歴からの自動判定に任せない
   "semanticCommits": "enabled",
-  // ruleset で squash マージだけを許可している
+  // ルールセットで squash マージだけを許可している
   "automergeStrategy": "squash",
-  // ロックファイル更新と Renovate 関連の PR は 0〜3 時に集中し、時間あたりの上限（既定 2）だと並び順が最後のロックファイル更新が後回しになる。同時に開く数は prConcurrentLimit（既定 10）で抑える
+  // ロックファイル更新と Renovate 関連の PR は 0〜3 時に集中し、時間あたりの上限（デフォルト 2）だと並び順が最後のロックファイル更新が後回しになる。同時に開く数は prConcurrentLimit（デフォルト 10）で抑える
   "prHourlyLimit": 0,
   // CONTRIBUTING.md の issue タイトルの規約に合わせる
   "dependencyDashboardTitle": "chore(deps): 依存関係の更新状況",
@@ -16,26 +16,26 @@
       "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
       "automerge": true
     },
-    // 自動マージの前に、悪意のある版がレジストリから取り下げられる時間を取る https://docs.renovatebot.com/upgrade-best-practices/#wait-two-weeks-before-automerging-third-party-dependencies
+    // 自動マージの前に、悪意のあるバージョンがレジストリから取り下げられる時間を取る https://docs.renovatebot.com/upgrade-best-practices/#wait-two-weeks-before-automerging-third-party-dependencies
     // pin は待ち日数に対応しておらず、付けると更新が出なくなるため外す https://github.com/renovatebot/renovate/issues/40288
     {
       "matchUpdateTypes": ["minor", "patch", "digest"],
       "minimumReleaseAge": "14 days"
     },
-    // renovate-version には置き換えテンプレートが無く、ダイジェストを書き込めずに固定のグループごと失敗するため
+    // renovate-version には置き換えテンプレートがなく、ダイジェストを書き込めずに固定のグループごと失敗するため
     // https://github.com/renovatebot/renovate/blob/44.149.3/lib/modules/manager/github-actions/known-actions/docker-dynamic.ts
     {
       "matchDepTypes": ["uses-with"],
       "matchPackageNames": ["renovate/renovate"],
       "pinDigests": false
     },
-    // Renovate は1日に何度もリリースされ、毎時の実行だとそのたびに PR とマージが走るため、PR を作る時間帯を絞る
+    // Renovate は 1 日に何度もリリースされ、毎時の実行だとそのたびに PR とマージが走るため、PR を作る時間帯を絞る
     {
       "matchPackageNames": ["renovate/renovate", "renovatebot/github-action"],
       "schedule": ["* 0-3 * * *"]
     },
     // ここから下はタイトルの日本語化。語順が「action topic extra」で固定なので、action を空にして動詞を extra に入れる。
-    // datasource（Docker など）の既定のメッセージより後に適用させるため packageRules に置く
+    // datasource（Docker など）のデフォルトのメッセージより後に適用させるため packageRules に置く
     {
       "matchPackageNames": ["*"],
       "commitMessageAction": "",

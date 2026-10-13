@@ -14,6 +14,8 @@ permissions:
 jobs:
   textlint:
     runs-on: ubuntu-26.04-arm
+    # npm.flatt.tech に接続できないと pnpm install が止まり続け、デフォルトの 360 分までジョブが続くため https://github.com/kentayamada-dev/playground/pull/45
+    timeout-minutes: 5
     steps:
       # on.pull_request.paths で絞ると、実行されなかった PR で必須チェックが Pending のまま残りマージできないため、ステップを if で飛ばす
       # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks
@@ -31,8 +33,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        # action は pnpm 本体を ~/setup-pnpm での npm ci と pnpm self-update で取得し pnpm-workspace.yaml を読まないため、取得元を環境変数で渡す（pnpm は v11 から npm_config_* を読まない）
+        # https://github.com/pnpm/action-setup/blob/0977fd99725f1db4007ccb2928dbb4e90d06cc86/src/install-pnpm/run.ts https://pnpm.io/blog/releases/11.0
+        env:
+          npm_config_registry: https://npm.flatt.tech/
+          pnpm_config_registry: https://npm.flatt.tech/
         with:
-          # pnpm の版は package.json の packageManager だけで管理する。Renovate もロックファイルの更新にこの版を使う
+          # pnpm のバージョンは package.json の devEngines.packageManager だけで管理する。Renovate もロックファイルの更新にこのバージョンを使う
           package_json_file: .github/textlint/package.json
           cache: true
           cache_dependency_path: .github/textlint/pnpm-lock.yaml
