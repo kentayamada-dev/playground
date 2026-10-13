@@ -28,7 +28,18 @@ jobs:
               - '.github/workflows/test.yml'
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      # shellcheck はランナーイメージに入っているものを使う https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2604-Arm64-Readme.md
+      # 新しい版で警告が増えて CI が突然落ちないよう、ランナーイメージの shellcheck を使わずに版を固定して入れる https://github.com/koalaman/shellcheck/blob/v0.11.0/README.md#in-your-build-or-test-suites
+      - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/shellcheck.tar.xz" "https://github.com/koalaman/shellcheck/releases/download/$SHELLCHECK_VERSION/shellcheck-$SHELLCHECK_VERSION.linux.aarch64.tar.xz"
+          echo "$SHELLCHECK_SHA256  $RUNNER_TEMP/shellcheck.tar.xz" | sha256sum -c -
+          tar -xJf "$RUNNER_TEMP/shellcheck.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/shellcheck-$SHELLCHECK_VERSION" >> "$GITHUB_PATH"
+        shell: bash
+        env:
+          # renovate.json5 の customManagers が、版と sha256 を一緒に更新する
+          SHELLCHECK_VERSION: v0.11.0
+          SHELLCHECK_SHA256: 12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         run: git ls-files -z '*.sh' '*.bats' | xargs -0 shellcheck
         # 未指定時の bash -e {0} は pipefail がなく、git ls-files の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
