@@ -32,6 +32,7 @@ code_scanning="${github}code-scanning.json"
 actions_permissions="${github}actions-permissions.json"
 selected_actions="${github}selected-actions.json"
 labels="${github}labels.json"
+fork_pr_approval="${github}fork-pr-approval.json"
 
 [ "$1" = api ] && shift
 method=GET endpoint='' input='' slurp=false
@@ -116,6 +117,9 @@ case "$method $endpoint" in
     fi
     mv "$labels.new" "$labels"
     ;;
+  "PUT repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval")
+    cp "$input" "$fork_pr_approval"
+    ;;
   "PUT repos/{owner}/{repo}/actions/permissions")
     jq -s '.[0] + .[1]' "$actions_permissions" "$input" > "$actions_permissions.new"
     mv "$actions_permissions.new" "$actions_permissions"
@@ -164,6 +168,7 @@ EOF
   echo '{"enabled": true, "allowed_actions": "all", "sha_pinning_required": false}' > "$STUB_DIR/actions-permissions.json"
   echo '{}' > "$STUB_DIR/selected-actions.json"
   echo '[]' > "$STUB_DIR/labels.json"
+  echo '{"approval_policy": "first_time_contributors"}' > "$STUB_DIR/fork-pr-approval.json"
   echo 100 > "$STUB_DIR/next_id"
 }
 
@@ -201,6 +206,13 @@ define_labels() {
 assert_github_labels() {
   if ! jq -e --argjson expected "$1" 'sort_by(.name) == ($expected | sort_by(.name))' "$STUB_DIR/labels.json" >/dev/null; then
     echo "GitHub 上のラベル: $(jq -c . "$STUB_DIR/labels.json")"
+    return 1
+  fi
+}
+
+assert_github_fork_pr_approval() {
+  if ! jq -e --argjson expected "$1" '. == $expected' "$STUB_DIR/fork-pr-approval.json" >/dev/null; then
+    echo "GitHub 上のフォークからの PR の承認の方針: $(jq -c . "$STUB_DIR/fork-pr-approval.json")"
     return 1
   fi
 }
@@ -559,6 +571,23 @@ path_without() {
   [[ $output == *".github/security.json"* ]]
 }
 
+@test "フォークからの PR のワークフローの承認の方針を、定義の値で更新する" {
+  define_actions '{"fork_pr_contributor_approval": {"approval_policy": "all_external_contributors"}}'
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_fork_pr_approval '{"approval_policy": "all_external_contributors"}'
+}
+
+@test "フォークからの PR の承認の方針が JSON オブジェクトでなければ、何も変更せずに失敗する" {
+  define_actions '{"fork_pr_contributor_approval": "all_external_contributors"}'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_fork_pr_approval '{"approval_policy": "first_time_contributors"}'
+  [[ $output == *".github/actions.json"* ]]
+}
+
 @test "Actions の権限と実行できるアクションを、定義の値で更新する" {
   define_actions '{"permissions": {"enabled": true, "allowed_actions": "selected", "sha_pinning_required": true}, "selected_actions": {"github_owned_allowed": true, "verified_allowed": true, "patterns_allowed": ["dorny/paths-filter@*"]}}'
 
@@ -721,6 +750,15 @@ path_without() {
   [[ $output != *"更新: CodeQL"* ]]
 }
 
+@test "フォークからの PR の承認の方針の更新に失敗したら失敗する" {
+  export STUB_FAIL="PUT repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval"
+  define_actions '{"fork_pr_contributor_approval": {"approval_policy": "all_external_contributors"}}'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  [[ $output != *"更新: フォークからの PR の承認"* ]]
+}
+
 @test "実行できるアクションの更新に失敗したら失敗する" {
   export STUB_FAIL="PUT repos/{owner}/{repo}/actions/permissions/selected-actions"
   define_actions '{"permissions": {"enabled": true, "allowed_actions": "selected"}, "selected_actions": {"github_owned_allowed": true}}'
@@ -826,6 +864,7 @@ path_without() {
 
   jq -e --slurpfile actions "$repo/.github/actions.json" '. == $actions[0].selected_actions' "$STUB_DIR/selected-actions.json"
   jq -e --slurpfile actions "$repo/.github/actions.json" '. as $current | $actions[0].permissions | to_entries | all(.value == $current[.key])' "$STUB_DIR/actions-permissions.json"
+  jq -e --slurpfile actions "$repo/.github/actions.json" '. == $actions[0].fork_pr_contributor_approval' "$STUB_DIR/fork-pr-approval.json"
 }
 
 @test "リポジトリにあるラベルの定義を、そのまま GitHub に反映できる" {
