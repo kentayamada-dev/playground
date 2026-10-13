@@ -28,6 +28,9 @@ jobs:
               - '.github/workflows/test.yml'
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # shellcheck はランナーイメージに入っているものを使う https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2604-Arm64-Readme.md
+      - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
+        run: git ls-files -z '*.sh' '*.bats' | xargs -0 shellcheck
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         uses: bats-core/bats-action@77d6fb60505b4d0d1d73e48bd035b55074bbfb43 # 4.0.0
         with:
