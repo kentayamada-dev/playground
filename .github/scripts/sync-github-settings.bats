@@ -6,9 +6,10 @@ setup() {
   repo="$BATS_TEST_TMPDIR/repo"
   mkdir -p "$repo/.github/scripts" "$repo/.github/rulesets"
   cp "$BATS_TEST_DIRNAME/sync-github-settings.sh" "$repo/.github/scripts/"
+  echo '{}' > "$repo/.github/repository.json"
   repo=$(cd "$repo" && pwd -P)
 
-  # gh api の偽物。$STUB_DIR/rulesets.json を GitHub 上のルールセットとして読み書きする
+  # gh api の偽物。$STUB_DIR/rulesets.json と $STUB_DIR/repository.json を、GitHub 上のルールセットとリポジトリの設定として読み書きする
   export STUB_DIR="$BATS_TEST_TMPDIR/stub"
   mkdir -p "$STUB_DIR/bin"
   PATH="$STUB_DIR/bin:$PATH"
@@ -16,11 +17,13 @@ setup() {
 #!/usr/bin/env bash
 set -euo pipefail
 pwd -P >> "$STUB_DIR/gh.pwd"
-state="$STUB_DIR/rulesets.json"
+github="$STUB_DIR/"
 # gh と同じく、GH_REPO があればカレントディレクトリのリポジトリではなく、そのリポジトリを操作する
 if [ -n "${GH_REPO-}" ]; then
-  state="$STUB_DIR/other-repo-rulesets.json"
+  github="$STUB_DIR/other-repo-"
 fi
+state="${github}rulesets.json"
+repository="${github}repository.json"
 
 [ "$1" = api ] && shift
 method=GET endpoint='' input='' slurp=false
@@ -73,6 +76,10 @@ case "$method $endpoint" in
     fi
     mv "$state.new" "$state"
     ;;
+  "PATCH repos/{owner}/{repo}")
+    jq -s '.[0] + .[1]' "$repository" "$input" > "$repository.new"
+    mv "$repository.new" "$repository"
+    ;;
   *)
     echo "gh スタブ: 未対応のリクエスト $method $endpoint" >&2
     exit 1
@@ -81,11 +88,27 @@ esac
 EOF
   chmod +x "$STUB_DIR/bin/gh"
   echo '[]' > "$STUB_DIR/rulesets.json"
+  echo '{}' > "$STUB_DIR/repository.json"
   echo 100 > "$STUB_DIR/next_id"
 }
 
 given_github_rulesets() {
   echo "$1" > "$STUB_DIR/rulesets.json"
+}
+
+given_github_repository() {
+  echo "$1" > "$STUB_DIR/repository.json"
+}
+
+define_repository() {
+  echo "$1" > "$repo/.github/repository.json"
+}
+
+assert_github_repository() {
+  if ! jq -e --argjson expected "$1" '. == $expected' "$STUB_DIR/repository.json" >/dev/null; then
+    echo "GitHub 上のリポジトリの設定: $(jq -c . "$STUB_DIR/repository.json")"
+    return 1
+  fi
 }
 
 define_ruleset() {
@@ -135,8 +158,10 @@ path_without() {
     {"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"},
     {"id": 2, "source_type": "Repository", "name": "legacy", "enforcement": "active"}
   ]'
+  given_github_repository '{"has_wiki": true, "allow_merge_commit": true}'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
   define_ruleset release.json '{"name": "release", "enforcement": "evaluate"}'
+  define_repository '{"has_wiki": false, "allow_merge_commit": false}'
   expected='[
     {"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"},
     {"id": 100, "source_type": "Repository", "name": "release", "enforcement": "evaluate"}
@@ -144,9 +169,11 @@ path_without() {
 
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
   assert_github_rulesets "$expected"
+  assert_github_repository '{"has_wiki": false, "allow_merge_commit": false}'
 
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
   assert_github_rulesets "$expected"
+  assert_github_repository '{"has_wiki": false, "allow_merge_commit": false}'
 }
 
 @test "Organization のルールセットと名前が同じでも、それを更新せずリポジトリに作成する" {
@@ -278,6 +305,60 @@ path_without() {
   assert_github_rulesets '[{"id": 100, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
 }
 
+@test "リポジトリの設定を、定義に書いた値で更新する" {
+  given_github_repository '{"has_wiki": true, "delete_branch_on_merge": false}'
+  define_repository '{"has_wiki": false, "delete_branch_on_merge": true}'
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_repository '{"has_wiki": false, "delete_branch_on_merge": true}'
+  [[ $output == *"更新: リポジトリの設定"* ]]
+}
+
+@test "リポジトリの設定の定義が JSON として読めなければ、ルールセットも含めて何も変更せずに失敗する" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  given_github_repository '{"has_wiki": true}'
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_repository '{"has_wiki": false,'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  assert_github_repository '{"has_wiki": true}'
+  [[ $output == *".github/repository.json"* ]]
+}
+
+@test "リポジトリの設定の定義が JSON オブジェクトでなければ、何も変更せずに失敗する" {
+  given_github_repository '{"has_wiki": true}'
+  define_repository '[{"has_wiki": false}]'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_repository '{"has_wiki": true}'
+  [[ $output == *".github/repository.json"* ]]
+}
+
+@test "リポジトリの設定の定義がなければ、ルールセットも含めて何も変更せずに失敗する" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  rm "$repo/.github/repository.json"
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  [[ $output == *".github/repository.json"* ]]
+}
+
+@test "ルールセットの定義に不備があれば、リポジトリの設定も変更せずに失敗する" {
+  given_github_repository '{"has_wiki": true}'
+  define_ruleset main.json '{"enforcement": "active"}'
+  define_repository '{"has_wiki": false}'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_repository '{"has_wiki": true}'
+}
+
 @test "ルールセットの一覧を取得できなければ、作成せずに失敗する" {
   export STUB_FAIL_METHOD=GET
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
@@ -307,6 +388,15 @@ path_without() {
   [[ $output != *"削除: legacy"* ]]
 }
 
+@test "リポジトリの設定の更新に失敗したら失敗する" {
+  export STUB_FAIL_METHOD=PATCH
+  define_repository '{"has_wiki": false}'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  [[ $output != *"更新: リポジトリの設定"* ]]
+}
+
 @test "jq がなければ、定義の不備とは示さず、jq が見つからないと示して失敗する" {
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
@@ -328,13 +418,17 @@ path_without() {
 @test "GH_REPO が設定されていても、ほかのリポジトリには反映せず、このリポジトリに反映する" {
   other='[{"id": 1, "source_type": "Repository", "name": "other", "enforcement": "active"}]'
   echo "$other" > "$STUB_DIR/other-repo-rulesets.json"
+  echo '{"has_wiki": true}' > "$STUB_DIR/other-repo-repository.json"
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_repository '{"has_wiki": false}'
   export GH_REPO=someone/other
 
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[{"id": 100, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
+  assert_github_repository '{"has_wiki": false}'
   jq -e --argjson expected "$other" '. == $expected' "$STUB_DIR/other-repo-rulesets.json"
+  jq -e '. == {"has_wiki": true}' "$STUB_DIR/other-repo-repository.json"
 }
 
 @test "どのディレクトリから実行しても、リポジトリのルートで定義を読み gh を実行する" {
@@ -353,4 +447,12 @@ path_without() {
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   [ "$(jq -c 'map(.name) | sort' "$STUB_DIR/rulesets.json")" = "$(jq -cs 'map(.name) | sort' "$repo"/.github/rulesets/*.json)" ]
+}
+
+@test "リポジトリにあるリポジトリの設定の定義を、そのまま GitHub に反映できる" {
+  cp "$BATS_TEST_DIRNAME/../repository.json" "$repo/.github/repository.json"
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_repository "$(cat "$repo/.github/repository.json")"
 }

@@ -60,6 +60,22 @@ sync_rulesets() {
   done
 }
 
+repository_definition=.github/repository.json
+
+validate_repository() {
+  if ! jq -e 'type == "object"' "$repository_definition" >/dev/null; then
+    echo "エラー: $repository_definition を JSON オブジェクトとして読めません" >&2
+    return 1
+  fi
+}
+
+sync_repository() {
+  # has_discussions は API のドキュメントの項目にないが、gh repo edit も同じ API に送っている
+  # https://github.com/cli/cli/blob/v2.102.0/pkg/cmd/repo/edit/edit.go
+  gh api --method PATCH 'repos/{owner}/{repo}' --input "$repository_definition" --silent
+  echo "更新: リポジトリの設定 ($repository_definition)"
+}
+
 # jq がないと定義の検査（if ! jq）が失敗し、定義の不備と誤って示すため、先に確かめる
 for command in gh jq; do
   if ! command -v "$command" >/dev/null; then
@@ -72,4 +88,7 @@ done
 # https://github.com/cli/cli/blob/v2.102.0/pkg/cmdutil/repo_override.go
 unset GH_REPO
 cd "$(dirname "$0")/../.."
+# ルールセットだけ反映して止まらないよう、リポジトリの設定の定義はルールセットより先に検査する
+validate_repository
 sync_rulesets
+sync_repository

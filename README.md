@@ -2,7 +2,10 @@
 
 ## リポジトリの設定
 
-ルールセットは [`.github/rulesets`](.github/rulesets) に JSON で定義し、次のコマンドで GitHub に反映します。定義の `name` と同じ名前のルールセットがあれば定義の内容で更新し、なければ作成します。定義にないルールセットは削除し、リポジトリのルールセットを定義と一致させます。何度実行しても同じ状態になります。
+ルールセットは [`.github/rulesets`](.github/rulesets) に JSON で定義します。マージの方法や Wiki の有無などのリポジトリの設定は [`.github/repository.json`](.github/repository.json) に定義します。どちらも次のコマンドで GitHub に反映します。何度実行しても同じ状態になります。
+
+- ルールセット: 定義の `name` と同じ名前のルールセットがあれば定義の内容で更新し、なければ作成する。定義にないルールセットは削除し、リポジトリのルールセットを定義と一致させる
+- リポジトリの設定: 定義に書いた項目だけを更新する
 
 ```bash
 .github/scripts/sync-github-settings.sh
