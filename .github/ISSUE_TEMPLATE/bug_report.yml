@@ -19,7 +19,7 @@ body:
     id: steps
     attributes:
       label: 再現手順
-      description: 実際に再現を確認した手順だけを書いてください。未検証の場合はその旨を明記してください。
+      description: 実際に再現を確認した手順だけを書いてください。
       placeholder: |
         1.
         2.
