@@ -121,6 +121,37 @@ sync_security() {
   fi
 }
 
+actions_definition=.github/actions.json
+
+validate_actions() {
+  if ! jq -e '
+    type == "object"
+    and (keys - ["permissions", "selected_actions"] | length == 0)
+    and ([.[]] | all(type == "object"))
+    and ((has("permissions") | not) or (.permissions.enabled | type == "boolean"))
+    and ((has("selected_actions") | not) or .permissions.allowed_actions == "selected")
+  ' "$actions_definition" >/dev/null; then
+    echo "エラー: $actions_definition は、項目が permissions と selected_actions のどれかで、どちらも JSON オブジェクト、permissions の enabled が true か false、selected_actions を書くなら permissions の allowed_actions が selected の定義ではありません" >&2
+    return 1
+  fi
+}
+
+sync_actions() {
+  local body
+  body=$(jq -c 'if has("permissions") then .permissions else empty end' "$actions_definition")
+  if [ -n "$body" ]; then
+    gh api --method PUT 'repos/{owner}/{repo}/actions/permissions' --input - --silent <<<"$body"
+    echo "更新: Actions の権限"
+  fi
+  body=$(jq -c 'if has("selected_actions") then .selected_actions else empty end' "$actions_definition")
+  if [ -n "$body" ]; then
+    # allowed_actions が selected でないと受け付けないため、権限のあとで送る
+    # https://docs.github.com/en/rest/actions/permissions?apiVersion=2022-11-28#set-allowed-actions-and-reusable-workflows-for-a-repository
+    gh api --method PUT 'repos/{owner}/{repo}/actions/permissions/selected-actions' --input - --silent <<<"$body"
+    echo "更新: 実行できるアクション"
+  fi
+}
+
 # jq がないと定義の検査（if ! jq）が失敗し、定義の不備と誤って示すため、先に確かめる
 for command in gh jq; do
   if ! command -v "$command" >/dev/null; then
@@ -133,9 +164,11 @@ done
 # https://github.com/cli/cli/blob/v2.102.0/pkg/cmdutil/repo_override.go
 unset GH_REPO
 cd "$(dirname "$0")/../.."
-# ルールセットだけ反映して止まらないよう、リポジトリとセキュリティの設定の定義はルールセットより先に検査する
+# ルールセットだけ反映して止まらないよう、ほかの定義はルールセットより先に検査する
 validate_repository
 validate_security
+validate_actions
 sync_rulesets
 sync_repository
 sync_security
+sync_actions

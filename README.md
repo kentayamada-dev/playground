@@ -2,11 +2,12 @@
 
 ## リポジトリの設定
 
-ルールセットは [`.github/rulesets`](.github/rulesets) に JSON で定義します。マージの方法や Wiki の有無などのリポジトリの設定は [`.github/repository.json`](.github/repository.json) に定義します。Dependabot や CodeQL などのセキュリティの設定は [`.github/security.json`](.github/security.json) に定義します。どれも次のコマンドで GitHub に反映します。何度実行しても同じ状態になります。
+ルールセットは [`.github/rulesets`](.github/rulesets) に JSON で定義します。マージの方法や Wiki の有無などのリポジトリの設定は [`.github/repository.json`](.github/repository.json) に定義します。Dependabot や CodeQL などのセキュリティの設定は [`.github/security.json`](.github/security.json) に定義します。実行できるアクションなどの GitHub Actions の設定は [`.github/actions.json`](.github/actions.json) に定義します。どれも次のコマンドで GitHub に反映します。何度実行しても同じ状態になります。
 
 - ルールセット: 定義の `name` と同じ名前のルールセットがあれば定義の内容で更新し、なければ作成する。定義にないルールセットは削除し、リポジトリのルールセットを定義と一致させる
 - リポジトリの設定: 定義に書いた項目だけを更新する。シークレットスキャンとプッシュ保護は、リポジトリの設定と同じ API で変えるため、ここの `security_and_analysis` に書く
 - セキュリティの設定: 定義に書いた項目だけを、`true` なら有効に、`false` なら無効にする。CodeQL のデフォルトセットアップは、今の設定と違うときだけ更新する
+- GitHub Actions の設定: 実行できるのは、GitHub 公式と検証済み作成者のアクション、`patterns_allowed` に書いたアクションだけ。どれも完全なコミット SHA で固定する必要がある。ほかの作成者のアクションを使うときは、`patterns_allowed` に足す
 
 ```bash
 .github/scripts/sync-github-settings.sh

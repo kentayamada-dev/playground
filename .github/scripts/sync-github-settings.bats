@@ -8,6 +8,7 @@ setup() {
   cp "$BATS_TEST_DIRNAME/sync-github-settings.sh" "$repo/.github/scripts/"
   echo '{}' > "$repo/.github/repository.json"
   echo '{}' > "$repo/.github/security.json"
+  echo '{}' > "$repo/.github/actions.json"
   repo=$(cd "$repo" && pwd -P)
 
   # gh api の偽物。$STUB_DIR 配下の JSON を、GitHub 上のルールセット・リポジトリの設定・セキュリティの設定として読み書きする
@@ -27,6 +28,8 @@ state="${github}rulesets.json"
 repository="${github}repository.json"
 security="${github}security.json"
 code_scanning="${github}code-scanning.json"
+actions_permissions="${github}actions-permissions.json"
+selected_actions="${github}selected-actions.json"
 
 [ "$1" = api ] && shift
 method=GET endpoint='' input='' slurp=false
@@ -85,6 +88,18 @@ case "$method $endpoint" in
     fi
     mv "$state.new" "$state"
     ;;
+  "PUT repos/{owner}/{repo}/actions/permissions")
+    jq -s '.[0] + .[1]' "$actions_permissions" "$input" > "$actions_permissions.new"
+    mv "$actions_permissions.new" "$actions_permissions"
+    ;;
+  "PUT repos/{owner}/{repo}/actions/permissions/selected-actions")
+    # GitHub と同じく、allowed_actions が selected でなければ受け付けない
+    if ! jq -e '.allowed_actions == "selected"' "$actions_permissions" >/dev/null; then
+      echo "gh: allowed_actions must be selected (HTTP 409)" >&2
+      exit 1
+    fi
+    cp "$input" "$selected_actions"
+    ;;
   "PATCH repos/{owner}/{repo}")
     jq -s '.[0] + .[1]' "$repository" "$input" > "$repository.new"
     mv "$repository.new" "$repository"
@@ -118,6 +133,8 @@ EOF
   echo '{}' > "$STUB_DIR/repository.json"
   echo '{}' > "$STUB_DIR/security.json"
   echo '{"state": "not-configured", "query_suite": "default", "languages": ["actions"], "runs": 0}' > "$STUB_DIR/code-scanning.json"
+  echo '{"enabled": true, "allowed_actions": "all", "sha_pinning_required": false}' > "$STUB_DIR/actions-permissions.json"
+  echo '{}' > "$STUB_DIR/selected-actions.json"
   echo 100 > "$STUB_DIR/next_id"
 }
 
@@ -142,6 +159,19 @@ assert_github_repository() {
 
 given_github_security() {
   echo "$1" > "$STUB_DIR/security.json"
+}
+
+define_actions() {
+  echo "$1" > "$repo/.github/actions.json"
+}
+
+assert_github_actions() {
+  local actual
+  actual=$(jq -cs '{permissions: .[0], selected_actions: .[1]}' "$STUB_DIR/actions-permissions.json" "$STUB_DIR/selected-actions.json")
+  if ! jq -e --argjson expected "$1" '. == $expected' <<<"$actual" >/dev/null; then
+    echo "GitHub 上の Actions の設定: $actual"
+    return 1
+  fi
 }
 
 given_github_code_scanning() {
@@ -480,6 +510,51 @@ path_without() {
   [[ $output == *".github/security.json"* ]]
 }
 
+@test "Actions の権限と実行できるアクションを、定義の値で更新する" {
+  define_actions '{"permissions": {"enabled": true, "allowed_actions": "selected", "sha_pinning_required": true}, "selected_actions": {"github_owned_allowed": true, "verified_allowed": true, "patterns_allowed": ["dorny/paths-filter@*"]}}'
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_actions '{"permissions": {"enabled": true, "allowed_actions": "selected", "sha_pinning_required": true}, "selected_actions": {"github_owned_allowed": true, "verified_allowed": true, "patterns_allowed": ["dorny/paths-filter@*"]}}'
+}
+
+@test "Actions の設定の定義がなければ、ルールセットも含めて何も変更せずに失敗する" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  rm "$repo/.github/actions.json"
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  [[ $output == *".github/actions.json"* ]]
+}
+
+@test "Actions の設定の定義に知らない項目があれば、何も変更せずに失敗する" {
+  define_actions '{"permission": {"enabled": true}}'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_actions '{"permissions": {"enabled": true, "allowed_actions": "all", "sha_pinning_required": false}, "selected_actions": {}}'
+  [[ $output == *".github/actions.json"* ]]
+}
+
+@test "Actions の権限に enabled がなければ、何も変更せずに失敗する" {
+  define_actions '{"permissions": {"allowed_actions": "selected"}}'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_actions '{"permissions": {"enabled": true, "allowed_actions": "all", "sha_pinning_required": false}, "selected_actions": {}}'
+  [[ $output == *".github/actions.json"* ]]
+}
+
+@test "実行できるアクションを書くのに allowed_actions が selected でなければ、何も変更せずに失敗する" {
+  define_actions '{"permissions": {"enabled": true, "allowed_actions": "local_only"}, "selected_actions": {"github_owned_allowed": true}}'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_actions '{"permissions": {"enabled": true, "allowed_actions": "all", "sha_pinning_required": false}, "selected_actions": {}}'
+  [[ $output == *".github/actions.json"* ]]
+}
+
 @test "ルールセットの一覧を取得できなければ、作成せずに失敗する" {
   export STUB_FAIL="GET *"
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
@@ -525,6 +600,15 @@ path_without() {
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
   [[ $output != *"更新: CodeQL"* ]]
+}
+
+@test "実行できるアクションの更新に失敗したら失敗する" {
+  export STUB_FAIL="PUT repos/{owner}/{repo}/actions/permissions/selected-actions"
+  define_actions '{"permissions": {"enabled": true, "allowed_actions": "selected"}, "selected_actions": {"github_owned_allowed": true}}'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  [[ $output != *"更新: 実行できるアクション"* ]]
 }
 
 @test "リポジトリの設定の更新に失敗したら失敗する" {
@@ -605,4 +689,13 @@ path_without() {
   jq -e --slurpfile security "$repo/.github/security.json" \
     '. as $current | $security[0].code_scanning_default_setup | to_entries | all(.value == $current[.key])' \
     "$STUB_DIR/code-scanning.json"
+}
+
+@test "リポジトリにある Actions の設定の定義を、そのまま GitHub に反映できる" {
+  cp "$BATS_TEST_DIRNAME/../actions.json" "$repo/.github/actions.json"
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  jq -e --slurpfile actions "$repo/.github/actions.json" '. == $actions[0].selected_actions' "$STUB_DIR/selected-actions.json"
+  jq -e --slurpfile actions "$repo/.github/actions.json" '. as $current | $actions[0].permissions | to_entries | all(.value == $current[.key])' "$STUB_DIR/actions-permissions.json"
 }
