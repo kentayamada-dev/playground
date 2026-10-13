@@ -5,7 +5,7 @@
 ルールセットは [`.github/rulesets`](.github/rulesets) に JSON で定義し、次のコマンドで GitHub に反映します。定義の `name` と同じ名前のルールセットがあれば定義の内容で更新し、なければ作成します。何度実行しても同じ状態になります。
 
 ```bash
-scripts/sync-github-settings.sh
+.github/scripts/sync-github-settings.sh
 ```
 
 - `gh` と `jq` が必要

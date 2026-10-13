@@ -4,8 +4,8 @@ setup() {
   bats_require_minimum_version 1.5.0
 
   repo="$BATS_TEST_TMPDIR/repo"
-  mkdir -p "$repo/scripts" "$repo/.github/rulesets"
-  cp "$BATS_TEST_DIRNAME/sync-github-settings.sh" "$repo/scripts/"
+  mkdir -p "$repo/.github/scripts" "$repo/.github/rulesets"
+  cp "$BATS_TEST_DIRNAME/sync-github-settings.sh" "$repo/.github/scripts/"
   repo=$(cd "$repo" && pwd -P)
 
   # gh api の偽物。$STUB_DIR/rulesets.json を GitHub 上のルールセットとして読み書きする
@@ -90,7 +90,7 @@ assert_github_rulesets() {
 @test "同じ名前のルールセットが GitHub になければ作成する" {
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -0 "$repo/scripts/sync-github-settings.sh"
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
   [[ $output == *"作成: main"* ]]
@@ -100,7 +100,7 @@ assert_github_rulesets() {
   given_github_rulesets '[{"id": 42, "source_type": "Repository", "name": "main", "enforcement": "disabled", "bypass_actors": [{"actor_id": 5}]}]'
   define_ruleset default-branch.json '{"name": "main", "enforcement": "active", "bypass_actors": []}'
 
-  run -0 "$repo/scripts/sync-github-settings.sh"
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[{"id": 42, "source_type": "Repository", "name": "main", "enforcement": "active", "bypass_actors": []}]'
   [[ $output == *"更新: main"* ]]
@@ -115,10 +115,10 @@ assert_github_rulesets() {
     {"id": 2, "source_type": "Repository", "name": "release", "enforcement": "evaluate"}
   ]'
 
-  run -0 "$repo/scripts/sync-github-settings.sh"
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
   assert_github_rulesets "$expected"
 
-  run -0 "$repo/scripts/sync-github-settings.sh"
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
   assert_github_rulesets "$expected"
 }
 
@@ -126,7 +126,7 @@ assert_github_rulesets() {
   given_github_rulesets '[{"id": 7, "source_type": "Organization", "name": "main", "enforcement": "evaluate"}]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -0 "$repo/scripts/sync-github-settings.sh"
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[
     {"id": 7, "source_type": "Organization", "name": "main", "enforcement": "evaluate"},
@@ -137,7 +137,7 @@ assert_github_rulesets() {
 @test "ルールセットの定義がなければ、何もせずに成功する" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
 
-  run -0 "$repo/scripts/sync-github-settings.sh"
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
 }
@@ -146,7 +146,7 @@ assert_github_rulesets() {
   define_ruleset a.json '{"name": "a", "enforcement": "active"}'
   define_ruleset b.json '{"name": "b",'
 
-  run -1 "$repo/scripts/sync-github-settings.sh"
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[]'
   [[ $output == *".github/rulesets/b.json"* ]]
@@ -156,7 +156,7 @@ assert_github_rulesets() {
   define_ruleset a.json '{"name": "a", "enforcement": "active"}'
   define_ruleset b.json '{"enforcement": "active"}'
 
-  run -1 "$repo/scripts/sync-github-settings.sh"
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[]'
   [[ $output == *".github/rulesets/b.json"* ]]
@@ -166,7 +166,7 @@ assert_github_rulesets() {
   define_ruleset a.json '{"name": "a", "enforcement": "active"}'
   define_ruleset b.json '{"name": "", "enforcement": "active"}'
 
-  run -1 "$repo/scripts/sync-github-settings.sh"
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[]'
   [[ $output == *".github/rulesets/b.json"* ]]
@@ -176,7 +176,7 @@ assert_github_rulesets() {
   define_ruleset a.json '{"name": "main", "enforcement": "active"}'
   define_ruleset b.json '{"name": "main", "enforcement": "disabled"}'
 
-  run -1 "$repo/scripts/sync-github-settings.sh"
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[]'
   [[ $output == *"main"* ]]
@@ -191,7 +191,7 @@ assert_github_rulesets() {
   define_ruleset a.json '{"name": "a", "enforcement": "active"}'
   define_ruleset main.json '{"name": "main", "enforcement": "disabled"}'
 
-  run -1 "$repo/scripts/sync-github-settings.sh"
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets "$rulesets"
   [[ $output == *"main"* ]]
@@ -204,7 +204,7 @@ assert_github_rulesets() {
   ]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -0 "$repo/scripts/sync-github-settings.sh"
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[
     {"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"},
@@ -217,7 +217,7 @@ assert_github_rulesets() {
   export STUB_FAIL_METHOD=GET
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -1 "$repo/scripts/sync-github-settings.sh"
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[]'
 }
@@ -227,7 +227,7 @@ assert_github_rulesets() {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -1 "$repo/scripts/sync-github-settings.sh"
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
   [[ $output != *"更新: main"* ]]
 }
@@ -236,16 +236,16 @@ assert_github_rulesets() {
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
   cd "$repo/.github"
 
-  run -0 ../scripts/sync-github-settings.sh
+  run -0 scripts/sync-github-settings.sh
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
   [ "$(sort -u "$STUB_DIR/gh.pwd")" = "$repo" ]
 }
 
 @test "リポジトリにあるルールセットの定義を、すべて GitHub に作成できる" {
-  cp "$BATS_TEST_DIRNAME"/../.github/rulesets/*.json "$repo/.github/rulesets/"
+  cp "$BATS_TEST_DIRNAME"/../rulesets/*.json "$repo/.github/rulesets/"
 
-  run -0 "$repo/scripts/sync-github-settings.sh"
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   [ "$(jq -c 'map(.name) | sort' "$STUB_DIR/rulesets.json")" = "$(jq -cs 'map(.name) | sort' "$repo"/.github/rulesets/*.json)" ]
 }

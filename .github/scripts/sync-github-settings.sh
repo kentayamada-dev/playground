@@ -49,5 +49,5 @@ sync_rulesets() {
 }
 
 # gh はカレントディレクトリの remote から対象のリポジトリを決めるため、定義と同じリポジトリのルートで実行する
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 sync_rulesets
