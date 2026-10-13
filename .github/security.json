@@ -5,6 +5,8 @@
   "immutable_releases": true,
   "code_scanning_default_setup": {
     "state": "configured",
-    "query_suite": "default"
+    "query_suite": "default",
+    "threat_model": "remote",
+    "runner_type": "standard"
   }
 }

@@ -132,12 +132,12 @@ actions_definition=.github/actions.json
 validate_actions() {
   if ! jq -e '
     type == "object"
-    and (keys - ["permissions", "selected_actions", "fork_pr_contributor_approval"] | length == 0)
+    and (keys - ["permissions", "selected_actions", "fork_pr_contributor_approval", "workflow_permissions"] | length == 0)
     and ([.[]] | all(type == "object"))
     and ((has("permissions") | not) or (.permissions.enabled | type == "boolean"))
     and ((has("selected_actions") | not) or .permissions.allowed_actions == "selected")
   ' "$actions_definition" >/dev/null; then
-    echo "エラー: $actions_definition は、項目が permissions・selected_actions・fork_pr_contributor_approval のどれかで、どれも JSON オブジェクト、permissions の enabled が true か false、selected_actions を書くなら permissions の allowed_actions が selected の定義ではありません" >&2
+    echo "エラー: $actions_definition は、項目が permissions・selected_actions・fork_pr_contributor_approval・workflow_permissions のどれかで、どれも JSON オブジェクト、permissions の enabled が true か false、selected_actions を書くなら permissions の allowed_actions が selected の定義ではありません" >&2
     return 1
   fi
 }
@@ -160,6 +160,11 @@ sync_actions() {
   if [ -n "$body" ]; then
     gh api --method PUT 'repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval' --input - --silent <<<"$body"
     echo "更新: フォークからの PR の承認の方針"
+  fi
+  body=$(jq -c 'if has("workflow_permissions") then .workflow_permissions else empty end' "$actions_definition")
+  if [ -n "$body" ]; then
+    gh api --method PUT 'repos/{owner}/{repo}/actions/permissions/workflow' --input - --silent <<<"$body"
+    echo "更新: GITHUB_TOKEN の既定の権限"
   fi
 }
 
