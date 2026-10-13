@@ -46,20 +46,27 @@ case "$method $endpoint" in
     jq -c "$filter" "$state"
     ;;
   "POST repos/{owner}/{repo}/rulesets")
-    jq --slurpfile body "$input" \
-      '. + [$body[0] + {id: ((map(.id) | max // 0) + 1), source_type: "Repository"}]' \
+    # 作成と削除の順序で ID が変わらないよう、削除した ID を使い回さず連番で振る
+    id=$(cat "$STUB_DIR/next_id")
+    echo $((id + 1)) > "$STUB_DIR/next_id"
+    jq --slurpfile body "$input" --argjson id "$id" \
+      '. + [$body[0] + {id: $id, source_type: "Repository"}]' \
       "$state" > "$state.new"
     mv "$state.new" "$state"
     ;;
-  "PUT repos/{owner}/{repo}/rulesets/"*)
+  "PUT repos/{owner}/{repo}/rulesets/"* | "DELETE repos/{owner}/{repo}/rulesets/"*)
     id=${endpoint##*/}
     if ! jq -e --argjson id "$id" 'any(.id == $id and .source_type == "Repository")' "$state" >/dev/null; then
       echo "gh: Not Found (HTTP 404)" >&2
       exit 1
     fi
-    jq --slurpfile body "$input" --argjson id "$id" \
-      'map(if .id == $id then $body[0] + {id, source_type} else . end)' \
-      "$state" > "$state.new"
+    if [ "$method" = PUT ]; then
+      jq --slurpfile body "$input" --argjson id "$id" \
+        'map(if .id == $id then $body[0] + {id, source_type} else . end)' \
+        "$state" > "$state.new"
+    else
+      jq --argjson id "$id" 'map(select(.id != $id))' "$state" > "$state.new"
+    fi
     mv "$state.new" "$state"
     ;;
   *)
@@ -70,6 +77,7 @@ esac
 EOF
   chmod +x "$STUB_DIR/bin/gh"
   echo '[]' > "$STUB_DIR/rulesets.json"
+  echo 100 > "$STUB_DIR/next_id"
 }
 
 given_github_rulesets() {
@@ -104,7 +112,7 @@ path_without() {
 
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
-  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
+  assert_github_rulesets '[{"id": 100, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
   [[ $output == *"作成: main"* ]]
 }
 
@@ -119,12 +127,15 @@ path_without() {
 }
 
 @test "2 回実行しても、1 回目と同じ状態になる" {
-  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
+  given_github_rulesets '[
+    {"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"},
+    {"id": 2, "source_type": "Repository", "name": "legacy", "enforcement": "active"}
+  ]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
   define_ruleset release.json '{"name": "release", "enforcement": "evaluate"}'
   expected='[
     {"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"},
-    {"id": 2, "source_type": "Repository", "name": "release", "enforcement": "evaluate"}
+    {"id": 100, "source_type": "Repository", "name": "release", "enforcement": "evaluate"}
   ]'
 
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
@@ -142,62 +153,104 @@ path_without() {
 
   assert_github_rulesets '[
     {"id": 7, "source_type": "Organization", "name": "main", "enforcement": "evaluate"},
-    {"id": 8, "source_type": "Repository", "name": "main", "enforcement": "active"}
+    {"id": 100, "source_type": "Repository", "name": "main", "enforcement": "active"}
   ]'
 }
 
-@test "ルールセットの定義がなければ、何もせずに成功する" {
-  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
+@test "定義にないルールセットは削除する" {
+  given_github_rulesets '[
+    {"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"},
+    {"id": 2, "source_type": "Repository", "name": "legacy", "enforcement": "active"}
+  ]'
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
+  [[ $output == *"削除: legacy"* ]]
 }
 
-@test "JSON として読めない定義があれば、ほかの定義も適用せずに失敗する" {
+@test "定義の name を変えると、古い名前のルールセットを残さず新しい名前で作成する" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
+  define_ruleset main.json '{"name": "default-branch", "enforcement": "active"}'
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_rulesets '[{"id": 100, "source_type": "Repository", "name": "default-branch", "enforcement": "active"}]'
+}
+
+@test "Organization のルールセットは、定義になくても削除しない" {
+  given_github_rulesets '[{"id": 7, "source_type": "Organization", "name": "org-wide", "enforcement": "active"}]'
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_rulesets '[
+    {"id": 7, "source_type": "Organization", "name": "org-wide", "enforcement": "active"},
+    {"id": 100, "source_type": "Repository", "name": "main", "enforcement": "active"}
+  ]'
+}
+
+@test "ルールセットの定義がなければ、リポジトリのルールセットをすべて削除する" {
+  given_github_rulesets '[
+    {"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"},
+    {"id": 7, "source_type": "Organization", "name": "org-wide", "enforcement": "active"}
+  ]'
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_rulesets '[{"id": 7, "source_type": "Organization", "name": "org-wide", "enforcement": "active"}]'
+}
+
+@test "JSON として読めない定義があれば、ほかの定義も適用せず、何も削除せずに失敗する" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   define_ruleset a.json '{"name": "a", "enforcement": "active"}'
   define_ruleset b.json '{"name": "b",'
 
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
-  assert_github_rulesets '[]'
+  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   [[ $output == *".github/rulesets/b.json"* ]]
 }
 
-@test "name のない定義があれば、ほかの定義も適用せずに失敗する" {
+@test "name のない定義があれば、ほかの定義も適用せず、何も削除せずに失敗する" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   define_ruleset a.json '{"name": "a", "enforcement": "active"}'
   define_ruleset b.json '{"enforcement": "active"}'
 
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
-  assert_github_rulesets '[]'
+  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   [[ $output == *".github/rulesets/b.json"* ]]
 }
 
-@test "name が空の定義があれば、ほかの定義も適用せずに失敗する" {
+@test "name が空の定義があれば、ほかの定義も適用せず、何も削除せずに失敗する" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   define_ruleset a.json '{"name": "a", "enforcement": "active"}'
   define_ruleset b.json '{"name": "", "enforcement": "active"}'
 
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
-  assert_github_rulesets '[]'
+  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   [[ $output == *".github/rulesets/b.json"* ]]
 }
 
-@test "name が同じ定義が複数あれば、どれも適用せずに失敗する" {
+@test "name が同じ定義が複数あれば、どれも適用せず、何も削除せずに失敗する" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   define_ruleset a.json '{"name": "main", "enforcement": "active"}'
   define_ruleset b.json '{"name": "main", "enforcement": "disabled"}'
 
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
-  assert_github_rulesets '[]'
+  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   [[ $output == *"main"* ]]
 }
 
-@test "定義と同じ名前のルールセットが GitHub に複数あれば、ほかの定義も適用せずに失敗する" {
+@test "定義と同じ名前のルールセットが GitHub に複数あれば、ほかの定義も適用せず、何も削除せずに失敗する" {
   rulesets='[
     {"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"},
-    {"id": 2, "source_type": "Repository", "name": "main", "enforcement": "active"}
+    {"id": 2, "source_type": "Repository", "name": "main", "enforcement": "active"},
+    {"id": 3, "source_type": "Repository", "name": "legacy", "enforcement": "active"}
   ]'
   given_github_rulesets "$rulesets"
   define_ruleset a.json '{"name": "a", "enforcement": "active"}'
@@ -209,7 +262,7 @@ path_without() {
   [[ $output == *"main"* ]]
 }
 
-@test "GitHub で名前が重複していても、定義にない名前なら無視して適用する" {
+@test "定義にない名前なら、GitHub で重複していても失敗せず、すべて削除する" {
   given_github_rulesets '[
     {"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"},
     {"id": 2, "source_type": "Repository", "name": "legacy", "enforcement": "active"}
@@ -218,11 +271,7 @@ path_without() {
 
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
-  assert_github_rulesets '[
-    {"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"},
-    {"id": 2, "source_type": "Repository", "name": "legacy", "enforcement": "active"},
-    {"id": 3, "source_type": "Repository", "name": "main", "enforcement": "active"}
-  ]'
+  assert_github_rulesets '[{"id": 100, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
 }
 
 @test "ルールセットの一覧を取得できなければ、作成せずに失敗する" {
@@ -242,6 +291,16 @@ path_without() {
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
   [[ $output != *"更新: main"* ]]
+}
+
+@test "ルールセットの削除に失敗したら失敗する" {
+  export STUB_FAIL_METHOD=DELETE
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  [[ $output != *"削除: legacy"* ]]
 }
 
 @test "jq がなければ、定義の不備とは示さず、jq が見つからないと示して失敗する" {
@@ -268,7 +327,7 @@ path_without() {
 
   run -0 scripts/sync-github-settings.sh
 
-  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
+  assert_github_rulesets '[{"id": 100, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
   [ "$(sort -u "$STUB_DIR/gh.pwd")" = "$repo" ]
 }
 

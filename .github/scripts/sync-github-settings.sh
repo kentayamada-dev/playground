@@ -2,22 +2,23 @@
 set -euo pipefail
 
 sync_rulesets() {
-  local files=(.github/rulesets/*.json)
-  # 一致するファイルがないとパターンが文字列のまま残る。macOS の bash 3.2 は nullglob の空配列を set -u でエラーにするため、存在で判定する
-  if [ ! -e "${files[0]}" ]; then
-    return 0
+  local files=(.github/rulesets/*.json) has_definitions=false
+  # 一致するファイルがないとパターンが文字列のまま残る。macOS の bash 3.2 は空配列の展開を set -u でエラーにするため、配列は空にせず存在で判定する
+  if [ -e "${files[0]}" ]; then
+    has_definitions=true
   fi
 
-  # 途中まで適用した状態で止まらないよう、作成・更新の前にすべての定義と照合先を検査する
-  local file
-  for file in "${files[@]}"; do
-    if ! jq -e '.name | type == "string" and length > 0' "$file" >/dev/null; then
-      echo "エラー: $file は name（空でない文字列）を持つ JSON オブジェクトではありません" >&2
-      return 1
-    fi
-  done
-  local names duplicates
-  names=$(jq -cs 'map(.name)' "${files[@]}")
+  # 途中まで適用した状態で止まらないよう、作成・更新・削除の前にすべての定義と照合先を検査する
+  local file names='[]' duplicates
+  if $has_definitions; then
+    for file in "${files[@]}"; do
+      if ! jq -e '.name | type == "string" and length > 0' "$file" >/dev/null; then
+        echo "エラー: $file は name（空でない文字列）を持つ JSON オブジェクトではありません" >&2
+        return 1
+      fi
+    done
+    names=$(jq -cs 'map(.name)' "${files[@]}")
+  fi
   duplicates=$(jq -r 'group_by(.) | map(select(length > 1) | .[0]) | .[]' <<<"$names")
   if [ -n "$duplicates" ]; then
     echo "エラー: 同じ name のルールセットが複数のファイルにあります: $duplicates" >&2
@@ -35,16 +36,27 @@ sync_rulesets() {
   fi
 
   local name id
-  for file in "${files[@]}"; do
-    name=$(jq -r '.name' "$file")
-    id=$(jq -r --arg name "$name" '.[][] | select(.name == $name) | .id' <<<"$existing")
-    if [ -z "$id" ]; then
-      gh api --method POST 'repos/{owner}/{repo}/rulesets' --input "$file" --silent
-      echo "作成: $name ($file)"
-    else
-      gh api --method PUT "repos/{owner}/{repo}/rulesets/$id" --input "$file" --silent
-      echo "更新: $name ($file)"
-    fi
+  if $has_definitions; then
+    for file in "${files[@]}"; do
+      name=$(jq -r '.name' "$file")
+      id=$(jq -r --arg name "$name" '.[][] | select(.name == $name) | .id' <<<"$existing")
+      if [ -z "$id" ]; then
+        gh api --method POST 'repos/{owner}/{repo}/rulesets' --input "$file" --silent
+        echo "作成: $name ($file)"
+      else
+        gh api --method PUT "repos/{owner}/{repo}/rulesets/$id" --input "$file" --silent
+        echo "更新: $name ($file)"
+      fi
+    done
+  fi
+
+  # 定義の name を変えたときに、古いルールセットを先に消して保護が途切れないよう、作成・更新のあとで削除する
+  local stale
+  stale=$(jq -r --argjson names "$names" '.[][] | select(.name | IN($names[]) | not) | .id' <<<"$existing")
+  for id in $stale; do
+    name=$(jq -r --argjson id "$id" '.[][] | select(.id == $id) | .name' <<<"$existing")
+    gh api --method DELETE "repos/{owner}/{repo}/rulesets/$id" --silent
+    echo "削除: $name"
   done
 }
 
