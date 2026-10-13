@@ -80,16 +80,5 @@
   "lockFileMaintenance": {
     "commitMessageAction": "ロックファイルを更新",
     "automerge": true
-  },
-  "customManagers": [
-    {
-      "customType": "regex",
-      "managerFilePatterns": ["/^\\.github/workflows/test\\.yml$/"],
-      "matchStrings": ["SHELLCHECK_VERSION: (?<currentValue>\\S+)\\s+SHELLCHECK_SHA256: (?<currentDigest>[0-9a-f]{64})"],
-      "depNameTemplate": "koalaman/shellcheck",
-      // github-releases のダイジェストはタグのコミット SHA になるため、添付ファイルの sha256 を計算し直すこちらを使う
-      // https://github.com/renovatebot/renovate/blob/44.151.1/lib/modules/datasource/github-release-attachments/index.ts
-      "datasourceTemplate": "github-release-attachments"
-    }
-  ]
+  }
 }

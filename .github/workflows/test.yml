@@ -28,22 +28,19 @@ jobs:
               - '.github/workflows/test.yml'
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      # 新しい版で警告が増えて CI が突然落ちないよう、ランナーイメージの shellcheck を使わずに版を固定して入れる https://github.com/koalaman/shellcheck/blob/v0.11.0/README.md#in-your-build-or-test-suites
-      - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
+      # shellcheck のイメージにはシェルがないので、検査するファイルをここで列挙して引数で渡す。./ を付けてオプションと取り違えさせない
+      - id: shellcheck-files
+        if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         run: |
-          curl -fsSL -o "$RUNNER_TEMP/shellcheck.tar.xz" "https://github.com/koalaman/shellcheck/releases/download/$SHELLCHECK_VERSION/shellcheck-$SHELLCHECK_VERSION.linux.aarch64.tar.xz"
-          echo "$SHELLCHECK_SHA256  $RUNNER_TEMP/shellcheck.tar.xz" | sha256sum -c -
-          tar -xJf "$RUNNER_TEMP/shellcheck.tar.xz" -C "$RUNNER_TEMP"
-          echo "$RUNNER_TEMP/shellcheck-$SHELLCHECK_VERSION" >> "$GITHUB_PATH"
-        shell: bash
-        env:
-          # renovate.json5 の customManagers が、版と sha256 を一緒に更新する
-          SHELLCHECK_VERSION: v0.11.0
-          SHELLCHECK_SHA256: 12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588
-      - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
-        run: git ls-files -z '*.sh' '*.bats' | xargs -0 shellcheck
+          files=$(git ls-files '*.sh' '*.bats' | sed 's|^|./|' | tr '\n' ' ')
+          echo "files=$files" >> "$GITHUB_OUTPUT"
         # 未指定時の bash -e {0} は pipefail がなく、git ls-files の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
         shell: bash
+      # 新しい版で警告が増えて CI が突然落ちないよう、stable や latest を使わずにタグとダイジェストで固定する https://github.com/koalaman/shellcheck/blob/v0.11.0/README.md#in-your-build-or-test-suites
+      - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
+        uses: docker://koalaman/shellcheck:v0.11.0@sha256:61862eba1fcf09a484ebcc6feea46f1782532571a34ed51fedf90dd25f925a8d
+        with:
+          args: ${{ steps.shellcheck-files.outputs.files }}
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         uses: bats-core/bats-action@77d6fb60505b4d0d1d73e48bd035b55074bbfb43 # 4.0.0
         with:
