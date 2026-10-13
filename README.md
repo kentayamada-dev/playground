@@ -8,10 +8,10 @@
 scripts/sync-github-settings.sh
 ```
 
-- `gh` と `jq` が必要です
-- 反映先は、`gh` がリポジトリの remote から決めます。ほかのリポジトリに反映するときは、環境変数 `GH_REPO` で指定します
-- ルールセットの作成と更新には、リポジトリの Administration の書き込み権限が必要です。権限の一覧は [GitHub のドキュメント](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens) にあります
-- 定義にないルールセットは削除しません
+- `gh` と `jq` が必要
+- 反映先は、`gh` がリポジトリの remote から決める。ほかのリポジトリに反映するときは、環境変数 `GH_REPO` で指定する
+- ルールセットの作成と更新には、リポジトリの Administration の書き込み権限が必要で、権限の一覧は [GitHub のドキュメント](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens) にある
+- 定義にないルールセットは削除しない
 
 ## Renovate
 
