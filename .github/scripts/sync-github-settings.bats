@@ -9,6 +9,7 @@ setup() {
   echo '{}' > "$repo/.github/repository.json"
   echo '{}' > "$repo/.github/security.json"
   echo '{}' > "$repo/.github/actions.json"
+  echo '[]' > "$repo/.github/labels.json"
   repo=$(cd "$repo" && pwd -P)
 
   # gh api の偽物。$STUB_DIR 配下の JSON を、GitHub 上のルールセット・リポジトリの設定・セキュリティの設定として読み書きする
@@ -30,6 +31,7 @@ security="${github}security.json"
 code_scanning="${github}code-scanning.json"
 actions_permissions="${github}actions-permissions.json"
 selected_actions="${github}selected-actions.json"
+labels="${github}labels.json"
 
 [ "$1" = api ] && shift
 method=GET endpoint='' input='' slurp=false
@@ -88,6 +90,32 @@ case "$method $endpoint" in
     fi
     mv "$state.new" "$state"
     ;;
+  "GET repos/{owner}/{repo}/labels?"*)
+    if $slurp; then jq -c '[.]' "$labels"; else jq -c . "$labels"; fi
+    ;;
+  "POST repos/{owner}/{repo}/labels")
+    if jq -e --slurpfile body "$input" 'any(.name == $body[0].name)' "$labels" >/dev/null; then
+      echo "gh: Validation Failed (HTTP 422)" >&2
+      exit 1
+    fi
+    jq --slurpfile body "$input" '. + [$body[0]]' "$labels" > "$labels.new"
+    mv "$labels.new" "$labels"
+    ;;
+  "PATCH repos/{owner}/{repo}/labels/"* | "DELETE repos/{owner}/{repo}/labels/"*)
+    # パスのラベル名は URL エンコードされている
+    encoded=${endpoint##*/}
+    if ! jq -e --arg encoded "$encoded" 'any((.name | @uri) == $encoded)' "$labels" >/dev/null; then
+      echo "gh: Not Found (HTTP 404)" >&2
+      exit 1
+    fi
+    if [ "$method" = PATCH ]; then
+      jq --slurpfile body "$input" --arg encoded "$encoded" \
+        'map(if (.name | @uri) == $encoded then . + $body[0] else . end)' "$labels" > "$labels.new"
+    else
+      jq --arg encoded "$encoded" 'map(select((.name | @uri) != $encoded))' "$labels" > "$labels.new"
+    fi
+    mv "$labels.new" "$labels"
+    ;;
   "PUT repos/{owner}/{repo}/actions/permissions")
     jq -s '.[0] + .[1]' "$actions_permissions" "$input" > "$actions_permissions.new"
     mv "$actions_permissions.new" "$actions_permissions"
@@ -135,6 +163,7 @@ EOF
   echo '{"state": "not-configured", "query_suite": "default", "languages": ["actions"], "runs": 0}' > "$STUB_DIR/code-scanning.json"
   echo '{"enabled": true, "allowed_actions": "all", "sha_pinning_required": false}' > "$STUB_DIR/actions-permissions.json"
   echo '{}' > "$STUB_DIR/selected-actions.json"
+  echo '[]' > "$STUB_DIR/labels.json"
   echo 100 > "$STUB_DIR/next_id"
 }
 
@@ -159,6 +188,21 @@ assert_github_repository() {
 
 given_github_security() {
   echo "$1" > "$STUB_DIR/security.json"
+}
+
+given_github_labels() {
+  echo "$1" > "$STUB_DIR/labels.json"
+}
+
+define_labels() {
+  echo "$1" > "$repo/.github/labels.json"
+}
+
+assert_github_labels() {
+  if ! jq -e --argjson expected "$1" 'sort_by(.name) == ($expected | sort_by(.name))' "$STUB_DIR/labels.json" >/dev/null; then
+    echo "GitHub 上のラベル: $(jq -c . "$STUB_DIR/labels.json")"
+    return 1
+  fi
 }
 
 define_actions() {
@@ -245,9 +289,12 @@ path_without() {
     {"id": 2, "source_type": "Repository", "name": "legacy", "enforcement": "active"}
   ]'
   given_github_repository '{"has_wiki": true, "allow_merge_commit": true}'
+  given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}, {"name": "wontfix", "color": "ffffff", "description": "Will not be worked on"}]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
   define_ruleset release.json '{"name": "release", "enforcement": "evaluate"}'
   define_repository '{"has_wiki": false, "allow_merge_commit": false}'
+  define_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}, {"name": "maintenance", "color": "fbca04", "description": "保守作業"}]'
+  expected_labels='[{"name": "bug", "color": "d73a4a", "description": "不具合"}, {"name": "maintenance", "color": "fbca04", "description": "保守作業"}]'
   expected='[
     {"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"},
     {"id": 100, "source_type": "Repository", "name": "release", "enforcement": "evaluate"}
@@ -256,10 +303,12 @@ path_without() {
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
   assert_github_rulesets "$expected"
   assert_github_repository '{"has_wiki": false, "allow_merge_commit": false}'
+  assert_github_labels "$expected_labels"
 
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
   assert_github_rulesets "$expected"
   assert_github_repository '{"has_wiki": false, "allow_merge_commit": false}'
+  assert_github_labels "$expected_labels"
 }
 
 @test "Organization のルールセットと名前が同じでも、それを更新せずリポジトリに作成する" {
@@ -555,6 +604,76 @@ path_without() {
   [[ $output == *".github/actions.json"* ]]
 }
 
+@test "定義のラベルを作成・更新し、名前に空白があっても、定義にないラベルは削除する" {
+  given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}, {"name": "good first issue", "color": "7057ff", "description": "Good for newcomers"}]'
+  define_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}, {"name": "maintenance", "color": "fbca04", "description": "保守作業"}]'
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}, {"name": "maintenance", "color": "fbca04", "description": "保守作業"}]'
+  [[ $output == *"削除: ラベル good first issue"* ]]
+}
+
+@test "ラベルの定義がなければ、ルールセットも含めて何も変更せずに失敗する" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  rm "$repo/.github/labels.json"
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  [[ $output == *".github/labels.json"* ]]
+}
+
+@test "ラベルの定義が配列でなければ、何も変更せずに失敗する" {
+  given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
+  define_labels '{"maintenance": {"name": "maintenance", "color": "fbca04", "description": "保守作業"}}'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
+  [[ $output == *".github/labels.json"* ]]
+}
+
+@test "名前のないラベルの定義があれば、何も変更せずに失敗する" {
+  given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
+  define_labels '[{"name": "maintenance", "color": "fbca04", "description": "保守作業"}, {"color": "0366d6"}]'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
+  [[ $output == *".github/labels.json"* ]]
+}
+
+@test "ラベルの色が 6 桁の 16 進数でなければ、何も変更せずに失敗する" {
+  given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
+  define_labels '[{"name": "maintenance", "color": "#fbca04", "description": "保守作業"}]'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
+  [[ $output == *".github/labels.json"* ]]
+}
+
+@test "ラベルの定義に知らない項目があれば、書き間違いとみなして何も変更せずに失敗する" {
+  given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
+  define_labels '[{"name": "maintenance", "color": "fbca04", "colour": "fbca04"}]'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
+  [[ $output == *".github/labels.json"* ]]
+}
+
+@test "同じ名前のラベルが複数定義されていれば、何も変更せずに失敗する" {
+  given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
+  define_labels '[{"name": "maintenance", "color": "fbca04"}, {"name": "maintenance", "color": "0366d6"}]'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
+  [[ $output == *"maintenance"* ]]
+}
+
 @test "ルールセットの一覧を取得できなければ、作成せずに失敗する" {
   export STUB_FAIL="GET *"
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
@@ -609,6 +728,15 @@ path_without() {
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
   [[ $output != *"更新: 実行できるアクション"* ]]
+}
+
+@test "ラベルの削除に失敗したら失敗する" {
+  export STUB_FAIL="DELETE repos/{owner}/{repo}/labels/*"
+  given_github_labels '[{"name": "wontfix", "color": "ffffff", "description": "Will not be worked on"}]'
+
+  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+
+  [[ $output != *"削除: ラベル wontfix"* ]]
 }
 
 @test "リポジトリの設定の更新に失敗したら失敗する" {
@@ -698,4 +826,13 @@ path_without() {
 
   jq -e --slurpfile actions "$repo/.github/actions.json" '. == $actions[0].selected_actions' "$STUB_DIR/selected-actions.json"
   jq -e --slurpfile actions "$repo/.github/actions.json" '. as $current | $actions[0].permissions | to_entries | all(.value == $current[.key])' "$STUB_DIR/actions-permissions.json"
+}
+
+@test "リポジトリにあるラベルの定義を、そのまま GitHub に反映できる" {
+  cp "$BATS_TEST_DIRNAME/../labels.json" "$repo/.github/labels.json"
+  given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}, {"name": "wontfix", "color": "ffffff", "description": "Will not be worked on"}]'
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  assert_github_labels "$(jq -c . "$repo/.github/labels.json")"
 }

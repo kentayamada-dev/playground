@@ -152,6 +152,62 @@ sync_actions() {
   fi
 }
 
+labels_definition=.github/labels.json
+
+validate_labels() {
+  if ! jq -e '
+    type == "array"
+    and all(.[];
+      type == "object"
+      and (keys - ["name", "color", "description"] | length == 0)
+      and (.name | type == "string" and length > 0)
+      and (.color | type == "string" and test("^[0-9a-fA-F]{6}$"))
+      and ((has("description") | not) or (.description | type == "string")))
+  ' "$labels_definition" >/dev/null; then
+    echo "エラー: $labels_definition は、name（空でない文字列）・color（6 桁の 16 進数）・description（文字列。省略可）だけを持つオブジェクトの配列ではありません" >&2
+    return 1
+  fi
+  local duplicates
+  duplicates=$(jq -r 'map(.name) | group_by(.) | map(select(length > 1) | .[0]) | .[]' "$labels_definition")
+  if [ -n "$duplicates" ]; then
+    echo "エラー: 同じ名前のラベルが $labels_definition に複数あります: $duplicates" >&2
+    return 1
+  fi
+}
+
+# ラベル名は空白などを含むため、API のパスに入れる前にエンコードする
+uri_encode() {
+  jq -rn --arg value "$1" '$value | @uri'
+}
+
+sync_labels() {
+  local existing
+  existing=$(gh api --paginate --slurp 'repos/{owner}/{repo}/labels?per_page=100')
+
+  local count i label name
+  count=$(jq length "$labels_definition")
+  for ((i = 0; i < count; i++)); do
+    label=$(jq -c ".[$i]" "$labels_definition")
+    name=$(jq -r '.name' <<<"$label")
+    if jq -e --arg name "$name" 'any(.[][]; .name == $name)' <<<"$existing" >/dev/null; then
+      gh api --method PATCH "repos/{owner}/{repo}/labels/$(uri_encode "$name")" --input - --silent <<<"$(jq -c 'del(.name)' <<<"$label")"
+      echo "更新: ラベル $name"
+    else
+      gh api --method POST 'repos/{owner}/{repo}/labels' --input - --silent <<<"$label"
+      echo "作成: ラベル $name"
+    fi
+  done
+
+  local stale
+  stale=$(jq -r --slurpfile defined "$labels_definition" '.[][] | .name | select(IN($defined[0][].name) | not)' <<<"$existing")
+  while IFS= read -r name; do
+    if [ -n "$name" ]; then
+      gh api --method DELETE "repos/{owner}/{repo}/labels/$(uri_encode "$name")" --silent
+      echo "削除: ラベル $name"
+    fi
+  done <<<"$stale"
+}
+
 # jq がないと定義の検査（if ! jq）が失敗し、定義の不備と誤って示すため、先に確かめる
 for command in gh jq; do
   if ! command -v "$command" >/dev/null; then
@@ -168,7 +224,9 @@ cd "$(dirname "$0")/../.."
 validate_repository
 validate_security
 validate_actions
+validate_labels
 sync_rulesets
 sync_repository
 sync_security
 sync_actions
+sync_labels

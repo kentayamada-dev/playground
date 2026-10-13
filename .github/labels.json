@@ -1,0 +1,22 @@
+[
+  {
+    "name": "bug",
+    "color": "d73a4a",
+    "description": "期待どおりに動かない不具合"
+  },
+  {
+    "name": "enhancement",
+    "color": "a2eeef",
+    "description": "新しい機能の追加や改善の要望"
+  },
+  {
+    "name": "maintenance",
+    "color": "fbca04",
+    "description": "リファクタリングや設定変更などの保守作業"
+  },
+  {
+    "name": "dependencies",
+    "color": "0366d6",
+    "description": "依存関係の更新"
+  }
+]
