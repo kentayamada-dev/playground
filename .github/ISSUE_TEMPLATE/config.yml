@@ -3,3 +3,4 @@ contact_links:
   - name: 脆弱性の報告
     url: https://github.com/kentayamada-dev/playground/security
     about: 脆弱性は公開の issue にせず、「Report a vulnerability」から非公開に報告してください。
+# 検証用の変更
