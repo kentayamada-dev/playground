@@ -1,0 +1,45 @@
+name: test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  # dorny/paths-filter が PR の変更ファイルを API で取得するため
+  pull-requests: read
+
+jobs:
+  test:
+    runs-on: ubuntu-26.04-arm
+    steps:
+      # 必須チェックなので、textlint.yml と同じく on.pull_request.paths で絞らずにステップを if で飛ばす
+      - id: changes
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
+        with:
+          # リポジトリにあるルールセットの定義もテストで読む
+          filters: |
+            test:
+              - 'scripts/**'
+              - '.github/rulesets/**'
+              - '.github/workflows/test.yml'
+      - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
+        uses: bats-core/bats-action@77d6fb60505b4d0d1d73e48bd035b55074bbfb43 # 4.0.0
+        with:
+          bats-version: 1.14.0
+          support-install: false
+          assert-install: false
+          detik-install: false
+          file-install: false
+          # bats の取得は GitHub API 経由で、未認証だとレート制限に当たりやすい https://github.com/bats-core/bats-action/blob/4.0.0/README.md#authenticated-requests
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
+        run: git ls-files -z '*.bats' | xargs -0 bats
+        env:
+          # v1.14.0 は UTF-8 ロケールだと日本語のテスト名の一部を実行しない https://github.com/bats-core/bats-core/issues/1233
+          LC_ALL: C
