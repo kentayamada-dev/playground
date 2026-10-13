@@ -4,7 +4,19 @@ set -euo pipefail
 # GET の応答は Cache-Control: private, max-age=60 で、変更の直後に古い値が返ることがあったため、キャッシュを使わせない
 # https://github.com/kentayamada-dev/playground/pull/53
 gh_get() {
-  gh api -H 'Cache-Control: no-cache' "$@"
+  local operation=$1
+  shift
+  gh_api "$operation" -H 'Cache-Control: no-cache' "$@"
+}
+
+# gh のエラーには失敗したエンドポイントが含まれず、途中で止まるとどこまで反映したかわからないため、何の操作で失敗したかを示す
+gh_api() {
+  local operation=$1
+  shift
+  if ! gh api "$@"; then
+    echo "エラー: ${operation}で失敗しました。それより前の設定は反映済みです" >&2
+    return 1
+  fi
 }
 
 sync_rulesets() {
@@ -34,7 +46,7 @@ sync_rulesets() {
   # includes_parents のデフォルトは true で、Organization のルールセットも返り、名前が同じだと誤って照合するため外す
   # https://docs.github.com/en/rest/repos/rules?apiVersion=2022-11-28#get-all-repository-rulesets
   local existing
-  existing=$(gh_get --paginate --slurp 'repos/{owner}/{repo}/rulesets?includes_parents=false&per_page=100')
+  existing=$(gh_get 'ルールセットの一覧の取得' --paginate --slurp 'repos/{owner}/{repo}/rulesets?includes_parents=false&per_page=100')
   duplicates=$(jq -r --argjson names "$names" '[.[][] | .name | select(IN($names[]))] | group_by(.) | map(select(length > 1) | .[0]) | .[]' <<<"$existing")
   if [ -n "$duplicates" ]; then
     echo "エラー: GitHub に同じ名前のルールセットが複数あり、更新先を決められません: $duplicates" >&2
@@ -47,11 +59,10 @@ sync_rulesets() {
       name=$(jq -r '.name' "$file")
       id=$(jq -r --arg name "$name" '.[][] | select(.name == $name) | .id' <<<"$existing")
       if [ -z "$id" ]; then
-        gh api --method POST 'repos/{owner}/{repo}/rulesets' --input "$file" --silent
-        echo "作成: $name ($file)"
+        gh_api "ルールセット $name の作成" --method POST 'repos/{owner}/{repo}/rulesets' --input "$file" --silent
+        echo "作成: ルールセット $name ($file)"
       else
-        gh api --method PUT "repos/{owner}/{repo}/rulesets/$id" --input "$file" --silent
-        echo "更新: $name ($file)"
+        gh_api "ルールセット $name の反映" --method PUT "repos/{owner}/{repo}/rulesets/$id" --input "$file" --silent
       fi
     done
   fi
@@ -61,8 +72,8 @@ sync_rulesets() {
   stale=$(jq -r --argjson names "$names" '.[][] | select(.name | IN($names[]) | not) | .id' <<<"$existing")
   for id in $stale; do
     name=$(jq -r --argjson id "$id" '.[][] | select(.id == $id) | .name' <<<"$existing")
-    gh api --method DELETE "repos/{owner}/{repo}/rulesets/$id" --silent
-    echo "削除: $name"
+    gh_api "ルールセット $name の削除" --method DELETE "repos/{owner}/{repo}/rulesets/$id" --silent
+    echo "削除: ルールセット $name"
   done
 }
 
@@ -78,8 +89,7 @@ validate_repository() {
 sync_repository() {
   # has_discussions は API のドキュメントの項目にないが、gh repo edit も同じ API に送っている
   # https://github.com/cli/cli/blob/v2.102.0/pkg/cmd/repo/edit/edit.go
-  gh api --method PATCH 'repos/{owner}/{repo}' --input "$repository_definition" --silent
-  echo "更新: リポジトリの設定 ($repository_definition)"
+  gh_api 'リポジトリの設定の反映' --method PATCH 'repos/{owner}/{repo}' --input "$repository_definition" --silent
 }
 
 security_definition=.github/security.json
@@ -104,11 +114,9 @@ sync_security() {
   for feature in $security_features; do
     enabled=$(jq -r --arg feature "$feature" 'if has($feature) then .[$feature] else empty end' "$security_definition")
     if [ "$enabled" = true ]; then
-      gh api --method PUT "repos/{owner}/{repo}/${feature//_/-}" --silent
-      echo "有効化: $feature"
+      gh_api "$feature の反映" --method PUT "repos/{owner}/{repo}/${feature//_/-}" --silent
     elif [ "$enabled" = false ]; then
-      gh api --method DELETE "repos/{owner}/{repo}/${feature//_/-}" --silent
-      echo "無効化: $feature"
+      gh_api "$feature の反映" --method DELETE "repos/{owner}/{repo}/${feature//_/-}" --silent
     fi
   done
 
@@ -117,12 +125,10 @@ sync_security() {
   if [ -z "$desired" ]; then
     return 0
   fi
-  current=$(gh_get 'repos/{owner}/{repo}/code-scanning/default-setup')
+  current=$(gh_get 'CodeQL のデフォルトセットアップの取得' 'repos/{owner}/{repo}/code-scanning/default-setup')
   # 設定が同じでも送ると解析が走るかは未確認のため、違うときだけ送る
-  if jq -e --argjson desired "$desired" '. as $current | $desired | to_entries | all(.value == $current[.key])' <<<"$current" >/dev/null; then
-    echo "変更なし: CodeQL のデフォルトセットアップ"
-  else
-    gh api --method PATCH 'repos/{owner}/{repo}/code-scanning/default-setup' --input - --silent <<<"$desired"
+  if ! jq -e --argjson desired "$desired" '. as $current | $desired | to_entries | all(.value == $current[.key])' <<<"$current" >/dev/null; then
+    gh_api 'CodeQL のデフォルトセットアップの反映' --method PATCH 'repos/{owner}/{repo}/code-scanning/default-setup' --input - --silent <<<"$desired"
     echo "更新: CodeQL のデフォルトセットアップ"
   fi
 }
@@ -146,25 +152,21 @@ sync_actions() {
   local body
   body=$(jq -c 'if has("permissions") then .permissions else empty end' "$actions_definition")
   if [ -n "$body" ]; then
-    gh api --method PUT 'repos/{owner}/{repo}/actions/permissions' --input - --silent <<<"$body"
-    echo "更新: Actions の権限"
+    gh_api 'Actions の権限の反映' --method PUT 'repos/{owner}/{repo}/actions/permissions' --input - --silent <<<"$body"
   fi
   body=$(jq -c 'if has("selected_actions") then .selected_actions else empty end' "$actions_definition")
   if [ -n "$body" ]; then
     # allowed_actions が selected でないと受け付けないため、権限のあとで送る
     # https://docs.github.com/en/rest/actions/permissions?apiVersion=2022-11-28#set-allowed-actions-and-reusable-workflows-for-a-repository
-    gh api --method PUT 'repos/{owner}/{repo}/actions/permissions/selected-actions' --input - --silent <<<"$body"
-    echo "更新: 実行できるアクション"
+    gh_api '実行できるアクションの反映' --method PUT 'repos/{owner}/{repo}/actions/permissions/selected-actions' --input - --silent <<<"$body"
   fi
   body=$(jq -c 'if has("fork_pr_contributor_approval") then .fork_pr_contributor_approval else empty end' "$actions_definition")
   if [ -n "$body" ]; then
-    gh api --method PUT 'repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval' --input - --silent <<<"$body"
-    echo "更新: フォークからの PR の承認の方針"
+    gh_api 'フォークからの PR の承認の方針の反映' --method PUT 'repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval' --input - --silent <<<"$body"
   fi
   body=$(jq -c 'if has("workflow_permissions") then .workflow_permissions else empty end' "$actions_definition")
   if [ -n "$body" ]; then
-    gh api --method PUT 'repos/{owner}/{repo}/actions/permissions/workflow' --input - --silent <<<"$body"
-    echo "更新: GITHUB_TOKEN の既定の権限"
+    gh_api 'GITHUB_TOKEN の既定の権限の反映' --method PUT 'repos/{owner}/{repo}/actions/permissions/workflow' --input - --silent <<<"$body"
   fi
 }
 
@@ -198,7 +200,7 @@ uri_encode() {
 
 sync_labels() {
   local existing
-  existing=$(gh_get --paginate --slurp 'repos/{owner}/{repo}/labels?per_page=100')
+  existing=$(gh_get 'ラベルの一覧の取得' --paginate --slurp 'repos/{owner}/{repo}/labels?per_page=100')
 
   local count i label name
   count=$(jq length "$labels_definition")
@@ -206,10 +208,9 @@ sync_labels() {
     label=$(jq -c ".[$i]" "$labels_definition")
     name=$(jq -r '.name' <<<"$label")
     if jq -e --arg name "$name" 'any(.[][]; .name == $name)' <<<"$existing" >/dev/null; then
-      gh api --method PATCH "repos/{owner}/{repo}/labels/$(uri_encode "$name")" --input - --silent <<<"$(jq -c 'del(.name)' <<<"$label")"
-      echo "更新: ラベル $name"
+      gh_api "ラベル $name の反映" --method PATCH "repos/{owner}/{repo}/labels/$(uri_encode "$name")" --input - --silent <<<"$(jq -c 'del(.name)' <<<"$label")"
     else
-      gh api --method POST 'repos/{owner}/{repo}/labels' --input - --silent <<<"$label"
+      gh_api "ラベル $name の作成" --method POST 'repos/{owner}/{repo}/labels' --input - --silent <<<"$label"
       echo "作成: ラベル $name"
     fi
   done
@@ -218,7 +219,7 @@ sync_labels() {
   stale=$(jq -r --slurpfile defined "$labels_definition" '.[][] | .name | select(IN($defined[0][].name) | not)' <<<"$existing")
   while IFS= read -r name; do
     if [ -n "$name" ]; then
-      gh api --method DELETE "repos/{owner}/{repo}/labels/$(uri_encode "$name")" --silent
+      gh_api "ラベル $name の削除" --method DELETE "repos/{owner}/{repo}/labels/$(uri_encode "$name")" --silent
       echo "削除: ラベル $name"
     fi
   done <<<"$stale"
@@ -241,8 +242,10 @@ validate_repository
 validate_security
 validate_actions
 validate_labels
+echo "GitHub に定義を適用しています..."
 sync_rulesets
 sync_repository
 sync_security
 sync_actions
 sync_labels
+echo "GitHub に定義を適用しました"

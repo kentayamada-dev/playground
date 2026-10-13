@@ -305,7 +305,7 @@ path_without() {
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[{"id": 100, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
-  [[ $output == *"作成: main"* ]]
+  [[ $output == *"作成: ルールセット main (.github/rulesets/main.json)"* ]]
 }
 
 @test "ファイル名ではなく name が同じルールセットを、ID を変えずに定義の内容で置き換える" {
@@ -315,7 +315,6 @@ path_without() {
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[{"id": 42, "source_type": "Repository", "name": "main", "enforcement": "active", "bypass_actors": []}]'
-  [[ $output == *"更新: main"* ]]
 }
 
 @test "2 回実行しても、1 回目と同じ状態になる" {
@@ -368,7 +367,7 @@ path_without() {
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
-  [[ $output == *"削除: legacy"* ]]
+  [[ $output == *"削除: ルールセット legacy"* ]]
 }
 
 @test "定義の name を変えると、古い名前のルールセットを残さず新しい名前で作成する" {
@@ -461,6 +460,7 @@ path_without() {
 
   assert_github_rulesets "$rulesets"
   [[ $output == *"main"* ]]
+  [[ $output != *"で失敗しました"* ]]
 }
 
 @test "定義にない名前なら、GitHub で重複していても失敗せず、すべて削除する" {
@@ -482,7 +482,6 @@ path_without() {
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_repository '{"has_wiki": false, "delete_branch_on_merge": true}'
-  [[ $output == *"更新: リポジトリの設定"* ]]
 }
 
 @test "リポジトリの設定の定義が JSON として読めなければ、ルールセットも含めて何も変更せずに失敗する" {
@@ -496,6 +495,7 @@ path_without() {
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   assert_github_repository '{"has_wiki": true}'
   [[ $output == *".github/repository.json"* ]]
+  [[ $output != *"適用しています"* ]]
 }
 
 @test "リポジトリの設定の定義が JSON オブジェクトでなければ、何も変更せずに失敗する" {
@@ -544,6 +544,7 @@ path_without() {
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_code_scanning '{"state": "configured", "query_suite": "extended", "languages": ["actions"], "runs": 1}'
+  [[ $output == *"更新: CodeQL のデフォルトセットアップ"* ]]
 }
 
 @test "CodeQL のデフォルトセットアップが定義と同じなら、更新せず解析も始めない" {
@@ -671,6 +672,7 @@ path_without() {
   run -0 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}, {"name": "maintenance", "color": "fbca04", "description": "保守作業"}]'
+  [[ $output == *"作成: ラベル maintenance"* ]]
   [[ $output == *"削除: ラベル good first issue"* ]]
 }
 
@@ -770,6 +772,7 @@ path_without() {
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_rulesets '[]'
+  [[ $output == *"エラー: ルールセットの一覧の取得で失敗しました"* ]]
 }
 
 @test "ルールセットの更新に失敗したら失敗する" {
@@ -779,7 +782,8 @@ path_without() {
 
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
-  [[ $output != *"更新: main"* ]]
+  [[ $output != *"GitHub に定義を適用しました"* ]]
+  [[ $output == *"エラー: ルールセット main の反映で失敗しました。それより前の設定は反映済みです"* ]]
 }
 
 @test "ルールセットの削除に失敗したら失敗する" {
@@ -789,7 +793,8 @@ path_without() {
 
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
-  [[ $output != *"削除: legacy"* ]]
+  [[ $output != *"削除: ルールセット legacy"* ]]
+  [[ $output == *"エラー: ルールセット legacy の削除で失敗しました"* ]]
 }
 
 @test "セキュリティの設定の切り替えに失敗したら失敗する" {
@@ -799,6 +804,7 @@ path_without() {
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
   assert_github_security '{}'
+  [[ $output == *"エラー: vulnerability_alerts の反映で失敗しました"* ]]
 }
 
 @test "CodeQL のデフォルトセットアップの更新に失敗したら失敗する" {
@@ -808,6 +814,7 @@ path_without() {
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
   [[ $output != *"更新: CodeQL"* ]]
+  [[ $output == *"エラー: CodeQL のデフォルトセットアップの反映で失敗しました"* ]]
 }
 
 @test "フォークからの PR の承認の方針の更新に失敗したら失敗する" {
@@ -816,7 +823,8 @@ path_without() {
 
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
-  [[ $output != *"更新: フォークからの PR の承認"* ]]
+  [[ $output != *"GitHub に定義を適用しました"* ]]
+  [[ $output == *"エラー: フォークからの PR の承認の方針の反映で失敗しました"* ]]
 }
 
 @test "GITHUB_TOKEN の既定の権限の更新に失敗したら失敗する" {
@@ -825,7 +833,8 @@ path_without() {
 
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
-  [[ $output != *"更新: GITHUB_TOKEN"* ]]
+  [[ $output != *"GitHub に定義を適用しました"* ]]
+  [[ $output == *"エラー: GITHUB_TOKEN の既定の権限の反映で失敗しました"* ]]
 }
 
 @test "実行できるアクションの更新に失敗したら失敗する" {
@@ -834,7 +843,8 @@ path_without() {
 
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
-  [[ $output != *"更新: 実行できるアクション"* ]]
+  [[ $output != *"GitHub に定義を適用しました"* ]]
+  [[ $output == *"エラー: 実行できるアクションの反映で失敗しました"* ]]
 }
 
 @test "ラベルの削除に失敗したら失敗する" {
@@ -844,6 +854,7 @@ path_without() {
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
   [[ $output != *"削除: ラベル wontfix"* ]]
+  [[ $output == *"エラー: ラベル wontfix の削除で失敗しました"* ]]
 }
 
 @test "リポジトリの設定の更新に失敗したら失敗する" {
@@ -852,7 +863,8 @@ path_without() {
 
   run -1 "$repo/.github/scripts/sync-github-settings.sh"
 
-  [[ $output != *"更新: リポジトリの設定"* ]]
+  [[ $output != *"GitHub に定義を適用しました"* ]]
+  [[ $output == *"エラー: リポジトリの設定の反映で失敗しました"* ]]
 }
 
 @test "jq がなければ、定義の不備とは示さず、jq が見つからないと示して失敗する" {
@@ -897,6 +909,22 @@ path_without() {
 
   assert_github_rulesets '[{"id": 100, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
   [ "$(sort -u "$STUB_DIR/gh.pwd")" = "$repo" ]
+}
+
+@test "作成・削除がなければ、適用の開始と完了だけを示す" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
+  given_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
+  given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_repository '{"has_wiki": false}'
+  define_security '{"vulnerability_alerts": true, "automated_security_fixes": false, "code_scanning_default_setup": {"state": "configured"}}'
+  define_actions '{"workflow_permissions": {"default_workflow_permissions": "read"}}'
+  define_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}]'
+
+  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+
+  [ "$output" = 'GitHub に定義を適用しています...
+GitHub に定義を適用しました' ]
 }
 
 @test "リポジトリにあるルールセットの定義を、すべて GitHub に作成できる" {
