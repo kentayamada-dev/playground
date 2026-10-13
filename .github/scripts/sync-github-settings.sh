@@ -27,7 +27,7 @@ sync_rulesets() {
   # includes_parents のデフォルトは true で、Organization のルールセットも返り、名前が同じだと誤って照合するため外す
   # https://docs.github.com/en/rest/repos/rules?apiVersion=2022-11-28#get-all-repository-rulesets
   local existing
-  existing=$(gh api --paginate --slurp 'repos/{owner}/{repo}/rulesets?includes_parents=false&per_page=100')
+  existing=$(gh api --paginate --slurp 'repos/{owner}/{repo}/rulesets?per_page=100')
   duplicates=$(jq -r --argjson names "$names" '[.[][] | .name | select(IN($names[]))] | group_by(.) | map(select(length > 1) | .[0]) | .[]' <<<"$existing")
   if [ -n "$duplicates" ]; then
     echo "エラー: GitHub に同じ名前のルールセットが複数あり、更新先を決められません: $duplicates" >&2
