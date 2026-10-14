@@ -10,7 +10,9 @@
     "patterns_allowed": [
       "dorny/paths-filter@*",
       "pnpm/action-setup@*",
-      "bats-core/bats-action@*"
+      "bats-core/bats-action@*",
+      "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@*",
+      "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@*"
     ]
   },
   "fork_pr_contributor_approval": {

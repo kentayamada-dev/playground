@@ -19,15 +19,26 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 - 定義にないルールセットとラベルは、GitHub の画面で作ったものも削除される。消したラベルは issue や PR からも外れる。Organization のルールセットは対象外
 - シークレットスキャンとプッシュ保護は、リポジトリの設定と同じ API で変えるため、`repository.json` の `security_and_analysis` に書く
 - CodeQL のデフォルトセットアップは、今の設定と違うときだけ更新する
+- Dependabot のマルウェアアラートは API で切り替えられず定義に書けないため、画面（Settings → Advanced Security → Dependabot malware alerts）で有効にしている。同期スクリプトでは反映も確認もされない
 
 ### GitHub Actions の設定
 
 | 項目 | 設定 |
 | --- | --- |
-| 実行できるアクション | GitHub 公式と検証済み作成者のアクション、`patterns_allowed` に書いたアクションだけ。ほかの作成者のアクションを使うときは `patterns_allowed` に足す |
+| 実行できるアクション | GitHub 公式と検証済み作成者のアクション、`patterns_allowed` に書いたアクションと再利用ワークフローだけ。ほかの作成者のアクションと、再利用ワークフローを使うときは `patterns_allowed` に足す |
 | アクションのバージョン | 完全なコミット SHA で固定する |
 | フォークからの PR | 外部の貢献者の PR のワークフローは、毎回承認してから動く |
 | `GITHUB_TOKEN` の権限 | `permissions` を書かないワークフローでは読み取りだけ。ワークフローから PR を承認できない |
+
+## 脆弱性とマルウェアの検査
+
+依存関係に既知の脆弱性やマルウェアがないかを、[OSV-Scanner](https://google.github.io/osv-scanner/) と Dependabot で検査しています。結果はどれも Security タブに出ます。
+
+| 仕組み | 実行のタイミング | 結果 |
+| --- | --- | --- |
+| [`osv-scanner-pr.yml`](.github/workflows/osv-scanner-pr.yml) | PR ごと | PR のベースと比べて新しく入ったものがあると失敗する。必須チェックなので、失敗するとマージできない |
+| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | `main` への push と毎日 | 見つかったものを Code scanning に出し、1 件でもあれば失敗する |
+| Dependabot アラート | アドバイザリの公開時と、依存関係を変える push の時 | 脆弱性とマルウェアを Dependabot のアラートに出す |
 
 ## Renovate
 

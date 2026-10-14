@@ -1,0 +1,18 @@
+name: osv-scanner-pr
+
+on:
+  pull_request:
+
+# 再利用ワークフローのジョブが要求する権限。呼び出し側より広げられないため、ここで与えないと起動できない
+# https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  # 必須チェックの名前は「このジョブ名 / 再利用ワークフローのジョブ名」になるため、変えるときは rulesets/main.json も合わせる
+  osv-scanner:
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
+    with:
+      runs-on: ubuntu-26.04-arm
