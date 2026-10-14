@@ -172,7 +172,7 @@ sync_actions() {
   fi
 }
 
-labels_definition="$settings_dir/labels.json"
+labels_definition=.github/labels.json
 
 validate_labels() {
   if ! jq -e '
