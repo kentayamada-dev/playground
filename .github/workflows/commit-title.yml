@@ -13,16 +13,10 @@ jobs:
   commit-title:
     runs-on: ubuntu-26.04-arm
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # マージの画面や gh pr merge --subject で PR タイトルと違うタイトルにでき、コミットメッセージを制限するルールは Enterprise 向けで使えないため、マージ後に照合する
       # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/merging-a-pull-request https://docs.github.com/en/enterprise-cloud@latest/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#metadata-restrictions
-      - env:
+      - run: .github/scripts/check-commit-title.sh "$GITHUB_SHA"
+        env:
+          GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
-        run: |
-          subject=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA" --jq '.commit.message | split("\n")[0]')
-          expected=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" --jq '.[] | select(.merged_at != null) | "\(.title) (#\(.number))"')
-          if [ "$subject" != "$expected" ]; then
-            echo "::error::コミットのタイトルが、pr-title で検査した PR タイトルと違います。マージ時に書き換えられた可能性があります"
-            echo "コミット: $subject"
-            echo "PR: $expected"
-            exit 1
-          fi
