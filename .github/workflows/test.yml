@@ -26,16 +26,23 @@ jobs:
               - '.github/scripts/**'
               - '.github/settings/**'
               # Renovate が ShellCheck の版だけを上げた PR でも検査する
-              - '.github/shellcheck/**'
+              - 'mise.toml'
+              - 'mise.lock'
               - '.github/workflows/test.yml'
               # ShellCheck と bats は .github/scripts の外にある .sh・.bats も対象にする
               - '**/*.sh'
               - '**/*.bats'
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      # Actions の許可ポリシーは uses: の docker:// を通さないため、イメージは compose.yml に書いて docker compose で動かす https://github.com/kentayamada-dev/playground/pull/71
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
-        run: git ls-files -z '*.sh' '*.bats' | xargs -0 docker compose -f .github/shellcheck/compose.yml run --rm shellcheck
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
+          # https://github.com/jdx/mise-action/blob/v5.0.0/src/index.ts#L724-L745
+          version: 2026.9.17
+          install_args: shellcheck
+      - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
+        run: git ls-files -z '*.sh' '*.bats' | xargs -0 shellcheck
         # 未指定時の bash -e {0} は pipefail がなく、git ls-files の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
         shell: bash
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
