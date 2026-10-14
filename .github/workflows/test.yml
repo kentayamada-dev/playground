@@ -8,7 +8,7 @@ on:
 
 permissions:
   contents: read
-  # dorny/paths-filter が PR の変更ファイルを API で取得するため
+  # dorny/paths-filter が PR の変更ファイルを API で取得するため https://github.com/dorny/paths-filter/blob/ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d/README.md?plain=1#L18-L23
   pull-requests: read
 
 jobs:

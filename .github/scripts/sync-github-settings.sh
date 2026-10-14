@@ -10,6 +10,7 @@ gh_get() {
 }
 
 # gh のエラーには失敗したエンドポイントが含まれず、途中で止まるとどこまで反映したかわからないため、何の操作で失敗したかを示す
+# https://github.com/cli/cli/blob/v2.102.0/pkg/cmd/api/api.go#L553-L558
 gh_api() {
   local operation=$1
   shift

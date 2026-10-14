@@ -3,15 +3,16 @@
   "extends": ["config:best-practices"],
   // schedule（ロックファイル更新の月曜 0〜3 時、Renovate 関連の毎日 0〜3 時）を日本時間で解釈させる
   "timezone": "Asia/Tokyo",
-  // CONTRIBUTING.md でタイトルを Conventional Commits 形式と定めているため、履歴からの自動判定に任せない
+  // CONTRIBUTING.md でタイトルを Conventional Commits 形式と定めているため、履歴からの自動判定に任せない https://docs.renovatebot.com/configuration-options/#semanticcommits
   "semanticCommits": "enabled",
   // ルールセットで squash マージだけを許可している
   "automergeStrategy": "squash",
   // ロックファイル更新と Renovate 関連の PR は 0〜3 時に集中し、時間あたりの上限（デフォルト 2）だと並び順が最後のロックファイル更新が後回しになる。同時に開く数は prConcurrentLimit（デフォルト 10）で抑える
+  // https://docs.renovatebot.com/configuration-options/#prhourlylimit https://docs.renovatebot.com/configuration-options/#prconcurrentlimit
   "prHourlyLimit": 0,
   // CONTRIBUTING.md の issue タイトルの規約に合わせる
   "dependencyDashboardTitle": "chore(deps): 依存関係の更新状況",
-  // デフォルトでは PR にラベルを付けないため、.github/settings/labels.json の dependencies を付ける
+  // デフォルトでは PR にラベルを付けないため、.github/settings/labels.json の dependencies を付ける https://docs.renovatebot.com/configuration-options/#labels
   "labels": ["dependencies"],
   "packageRules": [
     {
@@ -36,8 +37,8 @@
       "matchPackageNames": ["renovate/renovate", "renovatebot/github-action"],
       "schedule": ["* 0-3 * * *"]
     },
-    // ここから下はタイトルの日本語化。語順が「action topic extra」で固定なので、action を空にして動詞を extra に入れる。
-    // datasource（Docker など）のデフォルトのメッセージより後に適用させるため packageRules に置く
+    // ここから下はタイトルの日本語化。語順が「action topic extra」で固定なので、action を空にして動詞を extra に入れる。 https://github.com/renovatebot/renovate/blob/44.151.1/lib/config/options/index.ts#L2502-L2506
+    // datasource（Docker など）のデフォルトのメッセージより後に適用させるため packageRules に置く https://github.com/renovatebot/renovate/blob/44.151.1/lib/workers/repository/updates/flatten.ts#L143-L147
     {
       "matchPackageNames": ["*"],
       "commitMessageAction": "",
