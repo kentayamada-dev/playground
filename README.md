@@ -54,7 +54,8 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 - プロバイダーの API に問い合わせて、見つかったシークレットが有効かどうかは確認しない（`--validation` を付けていない）
 - 誤検知は、その行のコメントに `betterleaks:allow` と書いて除外する
 - 行にコメントを書けないときは、ルートの `.betterleaksignore` に fingerprint を 1 行ずつ書いて除外する。fingerprint の形式は `<コミット>:<パス>:<ルール ID>:<行番号>` で、`--report-format json` のレポートでは `Fingerprint` に出る
-- 版と sha256 は、Renovate が [`renovate.json5`](.github/renovate.json5) の `customManagers` で更新する
+- Betterleaks は [mise](https://mise.jdx.dev/) で入れる。版はルートの [`mise.toml`](mise.toml) で固定し、Renovate が更新する。手元では `mise install` で同じ版を入れられる
+- ダウンロードしたファイルは、mise がリリースの `checksums.txt` と、その cosign 署名で検証する（[aqua レジストリの定義](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/betterleaks/betterleaks/registry.yaml)）
 
 ## Renovate
 
