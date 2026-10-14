@@ -24,14 +24,17 @@ jobs:
           filters: |
             test:
               - '.github/scripts/**'
-              - '.github/rulesets/**'
-              - '.github/repository.json'
-              - '.github/security.json'
-              - '.github/actions.json'
-              - '.github/labels.json'
+              - '.github/settings/**'
+              # Renovate が ShellCheck の版だけを上げた PR でも検査する
+              - '.github/shellcheck/**'
               - '.github/workflows/test.yml'
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # Actions の許可ポリシーは uses: の docker:// を通さないため、イメージは compose.yml に書いて docker compose で動かす
+      - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
+        run: git ls-files -z '*.sh' '*.bats' | xargs -0 docker compose -f .github/shellcheck/compose.yml run --rm shellcheck
+        # 未指定時の bash -e {0} は pipefail がなく、git ls-files の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
+        shell: bash
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         uses: bats-core/bats-action@77d6fb60505b4d0d1d73e48bd035b55074bbfb43 # 4.0.0
         with:
@@ -44,6 +47,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         run: git ls-files -z '*.bats' | xargs -0 bats
+        shell: bash
         env:
           # v1.14.0 は UTF-8 ロケールだと日本語のテスト名の一部を実行しない https://github.com/bats-core/bats-core/issues/1233
           LC_ALL: C

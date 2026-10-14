@@ -1,0 +1,7 @@
+services:
+  shellcheck:
+    # 新しい版で警告が増えて CI が突然落ちないよう、stable や latest を使わずにタグとダイジェストで固定する https://github.com/koalaman/shellcheck/blob/v0.11.0/README.md#in-your-build-or-test-suites
+    image: koalaman/shellcheck:v0.11.0@sha256:61862eba1fcf09a484ebcc6feea46f1782532571a34ed51fedf90dd25f925a8d
+    volumes:
+      # 相対パスはこのファイルの場所が基準なので、../.. でリポジトリのルートを渡す https://docs.docker.com/reference/compose-file/services/#volumes
+      - ../..:/mnt
