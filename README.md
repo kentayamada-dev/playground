@@ -40,6 +40,9 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | `main` への push と毎日 | 見つかったものを Code scanning に出し、1 件でもあれば失敗する |
 | Dependabot アラート | アドバイザリの公開時と、依存関係を変える push の時 | 脆弱性とマルウェアを Dependabot のアラートに出す |
 
+- GitHub の依存関係グラフに textlint の npm パッケージが載っておらず（原因は未確認）、Dependabot のアラートはそれらを対象にしていない。npm パッケージを検査しているのは OSV-Scanner だけ
+- 修正版がなく影響もない脆弱性は、ロックファイルと同じディレクトリの `osv-scanner.toml` に、理由と期限（`ignoreUntil`）を付けて除外する。設定はそのディレクトリのロックファイルにだけ効く（[Configuration](https://google.github.io/osv-scanner/configuration/)）
+
 ## Renovate
 
 依存関係の更新は Renovate で自動化しています。[`.github/workflows/renovate.yml`](.github/workflows/renovate.yml) が毎時 23 分に Renovate を実行します。設定は [`.github/renovate.json5`](.github/renovate.json5) にあります。
