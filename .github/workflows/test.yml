@@ -8,7 +8,7 @@ on:
 
 permissions:
   contents: read
-  # dorny/paths-filter が PR の変更ファイルを API で取得するため
+  # dorny/paths-filter が PR の変更ファイルを API で取得するため https://github.com/dorny/paths-filter/blob/ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d/README.md?plain=1#L18-L23
   pull-requests: read
 
 jobs:
@@ -30,7 +30,7 @@ jobs:
               - '.github/workflows/test.yml'
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      # Actions の許可ポリシーは uses: の docker:// を通さないため、イメージは compose.yml に書いて docker compose で動かす
+      # Actions の許可ポリシーは uses: の docker:// を通さないため、イメージは compose.yml に書いて docker compose で動かす https://github.com/kentayamada-dev/playground/pull/71
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         run: git ls-files -z '*.sh' '*.bats' | xargs -0 docker compose -f .github/shellcheck/compose.yml run --rm shellcheck
         # 未指定時の bash -e {0} は pipefail がなく、git ls-files の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell

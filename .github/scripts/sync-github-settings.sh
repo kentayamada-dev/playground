@@ -10,6 +10,7 @@ gh_get() {
 }
 
 # gh のエラーには失敗したエンドポイントが含まれず、途中で止まるとどこまで反映したかわからないため、何の操作で失敗したかを示す
+# https://github.com/cli/cli/blob/v2.102.0/pkg/cmd/api/api.go#L553-L558
 gh_api() {
   local operation=$1
   shift
@@ -24,6 +25,7 @@ settings_dir=.github/settings
 sync_rulesets() {
   local files=("$settings_dir"/rulesets/*.json) has_definitions=false
   # 一致するファイルがないとパターンが文字列のまま残る。macOS の bash 3.2 は空配列の展開を set -u でエラーにするため、配列は空にせず存在で判定する
+  # https://www.gnu.org/software/bash/manual/html_node/Filename-Expansion.html https://tiswww.case.edu/php/chet/bash/CHANGES の bash-4.4-rc2 3.a
   if [ -e "${files[0]}" ]; then
     has_definitions=true
   fi
