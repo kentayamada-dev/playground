@@ -24,6 +24,7 @@ settings_dir=.github/settings
 sync_rulesets() {
   local files=("$settings_dir"/rulesets/*.json) has_definitions=false
   # 一致するファイルがないとパターンが文字列のまま残る。macOS の bash 3.2 は空配列の展開を set -u でエラーにするため、配列は空にせず存在で判定する
+  # https://www.gnu.org/software/bash/manual/html_node/Filename-Expansion.html https://tiswww.case.edu/php/chet/bash/CHANGES の bash-4.4-rc2 3.a
   if [ -e "${files[0]}" ]; then
     has_definitions=true
   fi
