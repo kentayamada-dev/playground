@@ -6,13 +6,16 @@ setup() {
   bats_require_minimum_version 1.5.0
 
   repo="$BATS_TEST_TMPDIR/repo"
-  mkdir -p "$repo/.github/scripts" "$repo/.github/settings/rulesets"
-  cp "$BATS_TEST_DIRNAME/sync-github-settings.sh" "$repo/.github/scripts/"
-  echo '{}' > "$repo/.github/settings/repository.json"
-  echo '{}' > "$repo/.github/settings/security.json"
-  echo '{}' > "$repo/.github/settings/actions.json"
-  echo '[]' > "$repo/.github/settings/labels.json"
+  mkdir -p "$repo"
   repo=$(cd "$repo" && pwd -P)
+  script="$repo/.github/scripts/sync-github-settings.sh"
+  settings="$repo/.github/settings"
+  mkdir -p "$repo/.github/scripts" "$settings/rulesets"
+  cp "$BATS_TEST_DIRNAME/sync-github-settings.sh" "$script"
+  echo '{}' > "$settings/repository.json"
+  echo '{}' > "$settings/security.json"
+  echo '{}' > "$settings/actions.json"
+  echo '[]' > "$settings/labels.json"
 
   # gh api の偽物。$STUB_DIR 配下の JSON を、GitHub 上のルールセット・リポジトリの設定・セキュリティの設定として読み書きする
   export STUB_DIR="$BATS_TEST_TMPDIR/stub"
@@ -199,7 +202,7 @@ given_github_repository() {
 }
 
 define_repository() {
-  echo "$1" > "$repo/.github/settings/repository.json"
+  echo "$1" > "$settings/repository.json"
 }
 
 assert_github_repository() {
@@ -218,7 +221,7 @@ given_github_labels() {
 }
 
 define_labels() {
-  echo "$1" > "$repo/.github/settings/labels.json"
+  echo "$1" > "$settings/labels.json"
 }
 
 assert_github_labels() {
@@ -243,7 +246,7 @@ assert_github_workflow_permissions() {
 }
 
 define_actions() {
-  echo "$1" > "$repo/.github/settings/actions.json"
+  echo "$1" > "$settings/actions.json"
 }
 
 assert_github_actions() {
@@ -260,7 +263,7 @@ given_github_code_scanning() {
 }
 
 define_security() {
-  echo "$1" > "$repo/.github/settings/security.json"
+  echo "$1" > "$settings/security.json"
 }
 
 assert_github_security() {
@@ -279,7 +282,7 @@ assert_github_code_scanning() {
 }
 
 define_ruleset() {
-  echo "$2" > "$repo/.github/settings/rulesets/$1"
+  echo "$2" > "$settings/rulesets/$1"
 }
 
 assert_github_rulesets() {
@@ -304,7 +307,7 @@ path_without() {
 @test "同じ名前のルールセットが GitHub になければ作成する" {
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_rulesets '[{"id": 100, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
   [[ $output == *"作成: ルールセット main (.github/settings/rulesets/main.json)"* ]]
@@ -314,7 +317,7 @@ path_without() {
   given_github_rulesets '[{"id": 42, "source_type": "Repository", "name": "main", "enforcement": "disabled", "bypass_actors": [{"actor_id": 5}]}]'
   define_ruleset default-branch.json '{"name": "main", "enforcement": "active", "bypass_actors": []}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_rulesets '[{"id": 42, "source_type": "Repository", "name": "main", "enforcement": "active", "bypass_actors": []}]'
 }
@@ -336,12 +339,12 @@ path_without() {
     {"id": 100, "source_type": "Repository", "name": "release", "enforcement": "evaluate"}
   ]'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
   assert_github_rulesets "$expected"
   assert_github_repository '{"has_wiki": false, "allow_merge_commit": false}'
   assert_github_labels "$expected_labels"
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
   assert_github_rulesets "$expected"
   assert_github_repository '{"has_wiki": false, "allow_merge_commit": false}'
   assert_github_labels "$expected_labels"
@@ -351,7 +354,7 @@ path_without() {
   given_github_rulesets '[{"id": 7, "source_type": "Organization", "name": "main", "enforcement": "evaluate"}]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_rulesets '[
     {"id": 7, "source_type": "Organization", "name": "main", "enforcement": "evaluate"},
@@ -366,7 +369,7 @@ path_without() {
   ]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
   [[ $output == *"削除: ルールセット legacy"* ]]
@@ -376,7 +379,7 @@ path_without() {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
   define_ruleset main.json '{"name": "default-branch", "enforcement": "active"}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_rulesets '[{"id": 100, "source_type": "Repository", "name": "default-branch", "enforcement": "active"}]'
 }
@@ -385,7 +388,7 @@ path_without() {
   given_github_rulesets '[{"id": 7, "source_type": "Organization", "name": "org-wide", "enforcement": "active"}]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_rulesets '[
     {"id": 7, "source_type": "Organization", "name": "org-wide", "enforcement": "active"},
@@ -399,7 +402,7 @@ path_without() {
     {"id": 7, "source_type": "Organization", "name": "org-wide", "enforcement": "active"}
   ]'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_rulesets '[{"id": 7, "source_type": "Organization", "name": "org-wide", "enforcement": "active"}]'
 }
@@ -409,7 +412,7 @@ path_without() {
   define_ruleset a.json '{"name": "a", "enforcement": "active"}'
   define_ruleset b.json '{"name": "b",'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   [[ $output == *".github/settings/rulesets/b.json"* ]]
@@ -420,7 +423,7 @@ path_without() {
   define_ruleset a.json '{"name": "a", "enforcement": "active"}'
   define_ruleset b.json '{"enforcement": "active"}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   [[ $output == *".github/settings/rulesets/b.json"* ]]
@@ -431,7 +434,7 @@ path_without() {
   define_ruleset a.json '{"name": "a", "enforcement": "active"}'
   define_ruleset b.json '{"name": "", "enforcement": "active"}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   [[ $output == *".github/settings/rulesets/b.json"* ]]
@@ -442,7 +445,7 @@ path_without() {
   define_ruleset a.json '{"name": "main", "enforcement": "active"}'
   define_ruleset b.json '{"name": "main", "enforcement": "disabled"}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   [[ $output == *"main"* ]]
@@ -458,7 +461,7 @@ path_without() {
   define_ruleset a.json '{"name": "a", "enforcement": "active"}'
   define_ruleset main.json '{"name": "main", "enforcement": "disabled"}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_rulesets "$rulesets"
   [[ $output == *"main"* ]]
@@ -472,7 +475,7 @@ path_without() {
   ]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_rulesets '[{"id": 100, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
 }
@@ -481,7 +484,7 @@ path_without() {
   given_github_repository '{"has_wiki": true, "delete_branch_on_merge": false}'
   define_repository '{"has_wiki": false, "delete_branch_on_merge": true}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_repository '{"has_wiki": false, "delete_branch_on_merge": true}'
 }
@@ -492,7 +495,7 @@ path_without() {
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
   define_repository '{"has_wiki": false,'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   assert_github_repository '{"has_wiki": true}'
@@ -504,7 +507,7 @@ path_without() {
   given_github_repository '{"has_wiki": true}'
   define_repository '[{"has_wiki": false}]'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_repository '{"has_wiki": true}'
   [[ $output == *".github/settings/repository.json"* ]]
@@ -513,9 +516,9 @@ path_without() {
 @test "リポジトリの設定の定義がなければ、ルールセットも含めて何も変更せずに失敗する" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
-  rm "$repo/.github/settings/repository.json"
+  rm "$settings/repository.json"
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   [[ $output == *".github/settings/repository.json"* ]]
@@ -526,7 +529,7 @@ path_without() {
   define_ruleset main.json '{"enforcement": "active"}'
   define_repository '{"has_wiki": false}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_repository '{"has_wiki": true}'
 }
@@ -535,7 +538,7 @@ path_without() {
   given_github_security '{"vulnerability_alerts": false, "automated_security_fixes": false, "private_vulnerability_reporting": true, "immutable_releases": false}'
   define_security '{"vulnerability_alerts": true, "automated_security_fixes": true, "private_vulnerability_reporting": false}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_security '{"vulnerability_alerts": true, "automated_security_fixes": true, "private_vulnerability_reporting": false, "immutable_releases": false}'
 }
@@ -543,7 +546,7 @@ path_without() {
 @test "CodeQL のデフォルトセットアップが定義と違えば、定義の値で更新する" {
   define_security '{"code_scanning_default_setup": {"state": "configured", "query_suite": "extended"}}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_code_scanning '{"state": "configured", "query_suite": "extended", "languages": ["actions"], "runs": 1}'
   [[ $output == *"更新: CodeQL のデフォルトセットアップ"* ]]
@@ -553,16 +556,16 @@ path_without() {
   given_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
   define_security '{"code_scanning_default_setup": {"state": "configured", "query_suite": "default"}}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
 }
 
 @test "セキュリティの設定の定義がなければ、ルールセットも含めて何も変更せずに失敗する" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
-  rm "$repo/.github/settings/security.json"
+  rm "$settings/security.json"
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   [[ $output == *".github/settings/security.json"* ]]
@@ -572,7 +575,7 @@ path_without() {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   define_security '{"vulnerability_alert": true}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   assert_github_security '{}'
@@ -582,7 +585,7 @@ path_without() {
 @test "セキュリティの設定の有効・無効が true か false でなければ、何も変更せずに失敗する" {
   define_security '{"vulnerability_alerts": "enabled"}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_security '{}'
   [[ $output == *".github/settings/security.json"* ]]
@@ -591,7 +594,7 @@ path_without() {
 @test "CodeQL のデフォルトセットアップの定義が JSON オブジェクトでなければ、何も変更せずに失敗する" {
   define_security '{"code_scanning_default_setup": "configured"}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_code_scanning '{"state": "not-configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
   [[ $output == *".github/settings/security.json"* ]]
@@ -600,7 +603,7 @@ path_without() {
 @test "フォークからの PR のワークフローの承認の方針を、定義の値で更新する" {
   define_actions '{"fork_pr_contributor_approval": {"approval_policy": "all_external_contributors"}}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_fork_pr_approval '{"approval_policy": "all_external_contributors"}'
 }
@@ -608,7 +611,7 @@ path_without() {
 @test "フォークからの PR の承認の方針が JSON オブジェクトでなければ、何も変更せずに失敗する" {
   define_actions '{"fork_pr_contributor_approval": "all_external_contributors"}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_fork_pr_approval '{"approval_policy": "first_time_contributors"}'
   [[ $output == *".github/settings/actions.json"* ]]
@@ -617,7 +620,7 @@ path_without() {
 @test "GITHUB_TOKEN の既定の権限と PR を承認できるかを、定義の値で更新する" {
   define_actions '{"workflow_permissions": {"default_workflow_permissions": "read", "can_approve_pull_request_reviews": false}}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_workflow_permissions '{"default_workflow_permissions": "read", "can_approve_pull_request_reviews": false}'
 }
@@ -625,16 +628,16 @@ path_without() {
 @test "Actions の権限と実行できるアクションを、定義の値で更新する" {
   define_actions '{"permissions": {"enabled": true, "allowed_actions": "selected", "sha_pinning_required": true}, "selected_actions": {"github_owned_allowed": true, "verified_allowed": true, "patterns_allowed": ["dorny/paths-filter@*"]}}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_actions '{"permissions": {"enabled": true, "allowed_actions": "selected", "sha_pinning_required": true}, "selected_actions": {"github_owned_allowed": true, "verified_allowed": true, "patterns_allowed": ["dorny/paths-filter@*"]}}'
 }
 
 @test "Actions の設定の定義がなければ、ルールセットも含めて何も変更せずに失敗する" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
-  rm "$repo/.github/settings/actions.json"
+  rm "$settings/actions.json"
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   [[ $output == *".github/settings/actions.json"* ]]
@@ -643,7 +646,7 @@ path_without() {
 @test "Actions の設定の定義に知らない項目があれば、何も変更せずに失敗する" {
   define_actions '{"permission": {"enabled": true}}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_actions '{"permissions": {"enabled": true, "allowed_actions": "all", "sha_pinning_required": false}, "selected_actions": {}}'
   [[ $output == *".github/settings/actions.json"* ]]
@@ -652,7 +655,7 @@ path_without() {
 @test "Actions の権限に enabled がなければ、何も変更せずに失敗する" {
   define_actions '{"permissions": {"allowed_actions": "selected"}}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_actions '{"permissions": {"enabled": true, "allowed_actions": "all", "sha_pinning_required": false}, "selected_actions": {}}'
   [[ $output == *".github/settings/actions.json"* ]]
@@ -661,7 +664,7 @@ path_without() {
 @test "実行できるアクションを書くのに allowed_actions が selected でなければ、何も変更せずに失敗する" {
   define_actions '{"permissions": {"enabled": true, "allowed_actions": "local_only"}, "selected_actions": {"github_owned_allowed": true}}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_actions '{"permissions": {"enabled": true, "allowed_actions": "all", "sha_pinning_required": false}, "selected_actions": {}}'
   [[ $output == *".github/settings/actions.json"* ]]
@@ -671,7 +674,7 @@ path_without() {
   given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}, {"name": "good first issue", "color": "7057ff", "description": "Good for newcomers"}]'
   define_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}, {"name": "maintenance", "color": "fbca04", "description": "保守作業"}]'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}, {"name": "maintenance", "color": "fbca04", "description": "保守作業"}]'
   [[ $output == *"作成: ラベル maintenance"* ]]
@@ -680,9 +683,9 @@ path_without() {
 
 @test "ラベルの定義がなければ、ルールセットも含めて何も変更せずに失敗する" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
-  rm "$repo/.github/settings/labels.json"
+  rm "$settings/labels.json"
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   [[ $output == *".github/settings/labels.json"* ]]
@@ -692,7 +695,7 @@ path_without() {
   given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
   define_labels '{"maintenance": {"name": "maintenance", "color": "fbca04", "description": "保守作業"}}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
   [[ $output == *".github/settings/labels.json"* ]]
@@ -702,7 +705,7 @@ path_without() {
   given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
   define_labels '[{"name": "maintenance", "color": "fbca04", "description": "保守作業"}, {"color": "0366d6"}]'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
   [[ $output == *".github/settings/labels.json"* ]]
@@ -712,7 +715,7 @@ path_without() {
   given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
   define_labels '[{"name": "maintenance", "color": "#fbca04", "description": "保守作業"}]'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
   [[ $output == *".github/settings/labels.json"* ]]
@@ -722,7 +725,7 @@ path_without() {
   given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
   define_labels '[{"name": "maintenance", "color": "fbca04", "colour": "fbca04"}]'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
   [[ $output == *".github/settings/labels.json"* ]]
@@ -732,7 +735,7 @@ path_without() {
   given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
   define_labels '[{"name": "maintenance", "color": "fbca04"}, {"name": "maintenance", "color": "0366d6"}]'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
   [[ $output == *"maintenance"* ]]
@@ -743,7 +746,7 @@ path_without() {
   echo '[]' > "$STUB_DIR/rulesets.stale.json"
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
 }
@@ -753,7 +756,7 @@ path_without() {
   echo '[{"name": "bug", "color": "d73a4a", "description": "不具合"}, {"name": "wontfix", "color": "ffffff", "description": "Will not be worked on"}]' > "$STUB_DIR/labels.stale.json"
   define_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}]'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}]'
 }
@@ -762,7 +765,7 @@ path_without() {
   echo '{"state": "configured", "query_suite": "default", "languages": ["actions"]}' > "$STUB_DIR/code-scanning.stale.json"
   define_security '{"code_scanning_default_setup": {"state": "configured", "query_suite": "default"}}'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"], "runs": 1}'
 }
@@ -771,7 +774,7 @@ path_without() {
   export STUB_FAIL="GET *"
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_rulesets '[]'
   [[ $output == *"エラー: ルールセットの一覧の取得で失敗しました"* ]]
@@ -782,7 +785,7 @@ path_without() {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   [[ $output != *"GitHub に定義を適用しました"* ]]
   [[ $output == *"エラー: ルールセット main の反映で失敗しました。それより前の設定は反映済みです"* ]]
@@ -793,7 +796,7 @@ path_without() {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   [[ $output != *"削除: ルールセット legacy"* ]]
   [[ $output == *"エラー: ルールセット legacy の削除で失敗しました"* ]]
@@ -803,7 +806,7 @@ path_without() {
   export STUB_FAIL="PUT repos/{owner}/{repo}/vulnerability-alerts"
   define_security '{"vulnerability_alerts": true}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   assert_github_security '{}'
   [[ $output == *"エラー: vulnerability_alerts の反映で失敗しました"* ]]
@@ -813,7 +816,7 @@ path_without() {
   export STUB_FAIL="PATCH repos/{owner}/{repo}/code-scanning/default-setup"
   define_security '{"code_scanning_default_setup": {"state": "configured"}}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   [[ $output != *"更新: CodeQL"* ]]
   [[ $output == *"エラー: CodeQL のデフォルトセットアップの反映で失敗しました"* ]]
@@ -823,7 +826,7 @@ path_without() {
   export STUB_FAIL="PUT repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval"
   define_actions '{"fork_pr_contributor_approval": {"approval_policy": "all_external_contributors"}}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   [[ $output != *"GitHub に定義を適用しました"* ]]
   [[ $output == *"エラー: フォークからの PR の承認の方針の反映で失敗しました"* ]]
@@ -833,7 +836,7 @@ path_without() {
   export STUB_FAIL="PUT repos/{owner}/{repo}/actions/permissions/workflow"
   define_actions '{"workflow_permissions": {"default_workflow_permissions": "read"}}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   [[ $output != *"GitHub に定義を適用しました"* ]]
   [[ $output == *"エラー: GITHUB_TOKEN の既定の権限の反映で失敗しました"* ]]
@@ -843,7 +846,7 @@ path_without() {
   export STUB_FAIL="PUT repos/{owner}/{repo}/actions/permissions/selected-actions"
   define_actions '{"permissions": {"enabled": true, "allowed_actions": "selected"}, "selected_actions": {"github_owned_allowed": true}}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   [[ $output != *"GitHub に定義を適用しました"* ]]
   [[ $output == *"エラー: 実行できるアクションの反映で失敗しました"* ]]
@@ -853,7 +856,7 @@ path_without() {
   export STUB_FAIL="DELETE repos/{owner}/{repo}/labels/*"
   given_github_labels '[{"name": "wontfix", "color": "ffffff", "description": "Will not be worked on"}]'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   [[ $output != *"削除: ラベル wontfix"* ]]
   [[ $output == *"エラー: ラベル wontfix の削除で失敗しました"* ]]
@@ -863,7 +866,7 @@ path_without() {
   export STUB_FAIL="PATCH repos/{owner}/{repo}"
   define_repository '{"has_wiki": false}'
 
-  run -1 "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 "$script"
 
   [[ $output != *"GitHub に定義を適用しました"* ]]
   [[ $output == *"エラー: リポジトリの設定の反映で失敗しました"* ]]
@@ -872,7 +875,7 @@ path_without() {
 @test "jq がなければ、定義の不備とは示さず、jq が見つからないと示して失敗する" {
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -1 env PATH="$(path_without jq)" "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 env PATH="$(path_without jq)" "$script"
 
   [[ $output == *"jq が見つかりません"* ]]
   [[ $output != *"main.json"* ]]
@@ -882,7 +885,7 @@ path_without() {
 @test "gh がなければ、gh が見つからないと示して失敗する" {
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
-  run -1 env PATH="$(path_without gh)" "$repo/.github/scripts/sync-github-settings.sh"
+  run -1 env PATH="$(path_without gh)" "$script"
 
   [[ $output == *"gh が見つかりません"* ]]
 }
@@ -895,7 +898,7 @@ path_without() {
   define_repository '{"has_wiki": false}'
   export GH_REPO=someone/other
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   assert_github_rulesets '[{"id": 100, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
   assert_github_repository '{"has_wiki": false}'
@@ -923,55 +926,55 @@ path_without() {
   define_actions '{"workflow_permissions": {"default_workflow_permissions": "read"}}'
   define_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}]'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
   [ "$output" = 'GitHub に定義を適用しています...
 GitHub に定義を適用しました' ]
 }
 
 @test "リポジトリにあるルールセットの定義を、すべて GitHub に作成できる" {
-  cp "$BATS_TEST_DIRNAME"/../settings/rulesets/*.json "$repo/.github/settings/rulesets/"
+  cp "$BATS_TEST_DIRNAME"/../settings/rulesets/*.json "$settings/rulesets/"
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
-  [ "$(jq -c 'map(.name) | sort' "$STUB_DIR/rulesets.json")" = "$(jq -cs 'map(.name) | sort' "$repo"/.github/settings/rulesets/*.json)" ]
+  [ "$(jq -c 'map(.name) | sort' "$STUB_DIR/rulesets.json")" = "$(jq -cs 'map(.name) | sort' "$settings"/rulesets/*.json)" ]
 }
 
 @test "リポジトリにあるリポジトリの設定の定義を、そのまま GitHub に反映できる" {
-  cp "$BATS_TEST_DIRNAME/../settings/repository.json" "$repo/.github/settings/repository.json"
+  cp "$BATS_TEST_DIRNAME/../settings/repository.json" "$settings/repository.json"
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
-  assert_github_repository "$(cat "$repo/.github/settings/repository.json")"
+  assert_github_repository "$(cat "$settings/repository.json")"
 }
 
 @test "リポジトリにあるセキュリティの設定の定義を、GitHub に反映できる" {
-  cp "$BATS_TEST_DIRNAME/../settings/security.json" "$repo/.github/settings/security.json"
+  cp "$BATS_TEST_DIRNAME/../settings/security.json" "$settings/security.json"
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
-  assert_github_security "$(jq -c 'del(.code_scanning_default_setup)' "$repo/.github/settings/security.json")"
-  jq -e --slurpfile security "$repo/.github/settings/security.json" \
+  assert_github_security "$(jq -c 'del(.code_scanning_default_setup)' "$settings/security.json")"
+  jq -e --slurpfile security "$settings/security.json" \
     '. as $current | $security[0].code_scanning_default_setup | to_entries | all(.value == $current[.key])' \
     "$STUB_DIR/code-scanning.json"
 }
 
 @test "リポジトリにある Actions の設定の定義を、そのまま GitHub に反映できる" {
-  cp "$BATS_TEST_DIRNAME/../settings/actions.json" "$repo/.github/settings/actions.json"
+  cp "$BATS_TEST_DIRNAME/../settings/actions.json" "$settings/actions.json"
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
-  jq -e --slurpfile actions "$repo/.github/settings/actions.json" '. == $actions[0].selected_actions' "$STUB_DIR/selected-actions.json"
-  jq -e --slurpfile actions "$repo/.github/settings/actions.json" '. as $current | $actions[0].permissions | to_entries | all(.value == $current[.key])' "$STUB_DIR/actions-permissions.json"
-  jq -e --slurpfile actions "$repo/.github/settings/actions.json" '. == $actions[0].fork_pr_contributor_approval' "$STUB_DIR/fork-pr-approval.json"
-  jq -e --slurpfile actions "$repo/.github/settings/actions.json" '. == $actions[0].workflow_permissions' "$STUB_DIR/workflow-permissions.json"
+  jq -e --slurpfile actions "$settings/actions.json" '. == $actions[0].selected_actions' "$STUB_DIR/selected-actions.json"
+  jq -e --slurpfile actions "$settings/actions.json" '. as $current | $actions[0].permissions | to_entries | all(.value == $current[.key])' "$STUB_DIR/actions-permissions.json"
+  jq -e --slurpfile actions "$settings/actions.json" '. == $actions[0].fork_pr_contributor_approval' "$STUB_DIR/fork-pr-approval.json"
+  jq -e --slurpfile actions "$settings/actions.json" '. == $actions[0].workflow_permissions' "$STUB_DIR/workflow-permissions.json"
 }
 
 @test "リポジトリにあるラベルの定義を、そのまま GitHub に反映できる" {
-  cp "$BATS_TEST_DIRNAME/../settings/labels.json" "$repo/.github/settings/labels.json"
+  cp "$BATS_TEST_DIRNAME/../settings/labels.json" "$settings/labels.json"
   given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}, {"name": "wontfix", "color": "ffffff", "description": "Will not be worked on"}]'
 
-  run -0 "$repo/.github/scripts/sync-github-settings.sh"
+  run -0 "$script"
 
-  assert_github_labels "$(jq -c . "$repo/.github/settings/labels.json")"
+  assert_github_labels "$(jq -c . "$settings/labels.json")"
 }
