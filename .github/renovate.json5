@@ -31,7 +31,7 @@
       "matchPackageNames": ["renovate/renovate"],
       "pinDigests": false
     },
-    // Renovate は 1 日に何度もリリースされ、毎時の実行だとそのたびに PR とマージが走るため、PR を作る時間帯を絞る
+    // Renovate は 1 日に何度もリリースされ、実行のたびに PR とマージが走るため、PR を作る時間帯を絞る
     {
       "matchPackageNames": ["renovate/renovate", "renovatebot/github-action"],
       "schedule": ["* 0-3 * * *"]
