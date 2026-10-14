@@ -38,7 +38,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 | --- | --- | --- |
 | [`osv-scanner-pr.yml`](.github/workflows/osv-scanner-pr.yml) | PR ごと | PR のベースと比べて新しく入ったものがあると失敗する。必須チェックなので、失敗するとマージできない |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | `main` への push と毎日 | 見つかったものを Code scanning に出し、1 件でもあれば失敗する |
-| Dependabot アラート | アドバイザリの公開時と、依存関係を変える push の時 | 脆弱性とマルウェアを Dependabot のアラートに出す |
+| Dependabot アラート | アドバイザリの公開時と、依存関係を変える push のとき | 脆弱性とマルウェアを Dependabot のアラートに出す |
 
 - GitHub の依存関係グラフは、`.github/textlint/package.json` の直接の依存関係と、`pnpm-lock.yaml` の 1 つ目の文書（pnpm 本体）だけを読み、2 つ目の文書にある間接的な依存関係を読まない（理由は未確認）。間接的な依存関係を検査しているのは OSV-Scanner だけ
 - Actions のアクションは SHA で固定しているため、Dependabot のアラートは出ない（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner もデフォルトでは Actions を検査しない
