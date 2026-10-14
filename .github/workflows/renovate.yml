@@ -2,9 +2,12 @@ name: renovate
 
 on:
   schedule:
-    # main の必須チェックは最新への追従を求めるので、同じ実行で作った PR の 2 件目以降は次の実行まで自動マージされない。待ちを短くするため毎時動かす。
+    # main の必須チェックは最新への追従を求めるので、同じ実行で作った PR の 2 件目以降は次の実行まで自動マージされない。待ちを短くするため 1 日に何度も動かす。
+    # 毎時の cron でも実際の起動は 3〜10 時間おきだったため、3 時間ごとにする https://github.com/kentayamada-dev/playground/issues/50
     # 毎時 0 分は混雑で遅れやすいので避ける https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule
-    - cron: '23 * * * *'
+    - cron: '23 */3 * * *'
+      # renovate.json5 の schedule（日本時間 0〜3 時）に 0:23 と 3:23 の実行が入るようにする
+      timezone: Asia/Tokyo
   workflow_dispatch:
 
 # Renovate は secrets.RENOVATE_TOKEN で操作し、GITHUB_TOKEN は使わない
