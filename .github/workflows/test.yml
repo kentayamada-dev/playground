@@ -28,6 +28,9 @@ jobs:
               # Renovate が ShellCheck の版だけを上げた PR でも検査する
               - '.github/shellcheck/**'
               - '.github/workflows/test.yml'
+              # ShellCheck と bats は .github/scripts の外にある .sh・.bats も対象にする
+              - '**/*.sh'
+              - '**/*.bats'
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # Actions の許可ポリシーは uses: の docker:// を通さないため、イメージは compose.yml に書いて docker compose で動かす https://github.com/kentayamada-dev/playground/pull/71
