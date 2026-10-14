@@ -10,6 +10,7 @@ setup() {
   repo=$(cd "$repo" && pwd -P)
   script="$repo/.github/scripts/sync-github-settings.sh"
   settings="$repo/.github/settings"
+  real_settings="$BATS_TEST_DIRNAME/../settings"
   mkdir -p "$repo/.github/scripts" "$settings/rulesets"
   cp "$BATS_TEST_DIRNAME/sync-github-settings.sh" "$script"
   echo '{}' > "$settings/repository.json"
@@ -933,7 +934,7 @@ GitHub に定義を適用しました' ]
 }
 
 @test "リポジトリにあるルールセットの定義を、すべて GitHub に作成できる" {
-  cp "$BATS_TEST_DIRNAME"/../settings/rulesets/*.json "$settings/rulesets/"
+  cp "$real_settings"/rulesets/*.json "$settings/rulesets/"
 
   run -0 "$script"
 
@@ -941,7 +942,7 @@ GitHub に定義を適用しました' ]
 }
 
 @test "リポジトリにあるリポジトリの設定の定義を、そのまま GitHub に反映できる" {
-  cp "$BATS_TEST_DIRNAME/../settings/repository.json" "$settings/repository.json"
+  cp "$real_settings/repository.json" "$settings/repository.json"
 
   run -0 "$script"
 
@@ -949,7 +950,7 @@ GitHub に定義を適用しました' ]
 }
 
 @test "リポジトリにあるセキュリティの設定の定義を、GitHub に反映できる" {
-  cp "$BATS_TEST_DIRNAME/../settings/security.json" "$settings/security.json"
+  cp "$real_settings/security.json" "$settings/security.json"
 
   run -0 "$script"
 
@@ -960,7 +961,7 @@ GitHub に定義を適用しました' ]
 }
 
 @test "リポジトリにある Actions の設定の定義を、そのまま GitHub に反映できる" {
-  cp "$BATS_TEST_DIRNAME/../settings/actions.json" "$settings/actions.json"
+  cp "$real_settings/actions.json" "$settings/actions.json"
 
   run -0 "$script"
 
@@ -971,7 +972,7 @@ GitHub に定義を適用しました' ]
 }
 
 @test "リポジトリにあるラベルの定義を、そのまま GitHub に反映できる" {
-  cp "$BATS_TEST_DIRNAME/../settings/labels.json" "$settings/labels.json"
+  cp "$real_settings/labels.json" "$settings/labels.json"
   given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}, {"name": "wontfix", "color": "ffffff", "description": "Will not be worked on"}]'
 
   run -0 "$script"
