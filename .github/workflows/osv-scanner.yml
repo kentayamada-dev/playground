@@ -1,6 +1,7 @@
 name: osv-scanner
 
 on:
+  pull_request:
   push:
     branches:
       - main
@@ -16,8 +17,17 @@ permissions:
   contents: read
   security-events: write
 
+# Code scanning は PR と main の結果を category で突き合わせ、category は「呼び出し元のワークフローのパス:再利用ワークフローのジョブ名」になる。
+# ワークフローを分けると突き合わせられず、PR の Code scanning の結果が neutral になる https://github.com/github/codeql-action/issues/1179
 jobs:
+  # 必須チェックの名前は「このジョブ名 / 再利用ワークフローのジョブ名」になるため、変えるときは rulesets/main.json も合わせる
   osv-scanner:
+    if: github.event_name == 'pull_request'
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
+    with:
+      runs-on: ubuntu-26.04-arm
+  osv-scanner-full:
+    if: github.event_name != 'pull_request'
     uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
     with:
       runs-on: ubuntu-26.04-arm
