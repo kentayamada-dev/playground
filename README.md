@@ -24,10 +24,25 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 | 項目 | 設定 |
 | --- | --- |
-| 実行できるアクション | GitHub 公式と検証済み作成者のアクション、`patterns_allowed` に書いたアクションだけ。ほかの作成者のアクションを使うときは `patterns_allowed` に足す |
+| 実行できるアクション | GitHub 公式と検証済み作成者のアクション、`patterns_allowed` に書いたアクションと再利用ワークフローだけ。ほかの作成者のアクションと、再利用ワークフローを使うときは `patterns_allowed` に足す |
 | アクションのバージョン | 完全なコミット SHA で固定する |
 | フォークからの PR | 外部の貢献者の PR のワークフローは、毎回承認してから動く |
 | `GITHUB_TOKEN` の権限 | `permissions` を書かないワークフローでは読み取りだけ。ワークフローから PR を承認できない |
+
+## 脆弱性とマルウェアの検査
+
+依存関係に既知の脆弱性やマルウェアがないかを、[OSV-Scanner](https://google.github.io/osv-scanner/) と Dependabot で検査しています。結果はどれも Security タブに出ます。
+
+| 仕組み | 実行のタイミング | 結果 |
+| --- | --- | --- |
+| [`osv-scanner-pr.yml`](.github/workflows/osv-scanner-pr.yml) | PR ごと | PR のベースと比べて新しく入ったものがあると失敗する。必須チェックなので、失敗するとマージできない |
+| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | `main` への push と毎日 | 見つかったものを Code scanning に出し、1 件でもあれば失敗する |
+| Dependabot アラート | アドバイザリが公開されたときと、依存関係を変えて push したとき | 脆弱性を Dependabot のアラートに出す |
+
+- GitHub の依存関係グラフは、`pnpm-lock.yaml` の 1 つ目の文書しか読まない（文書の順番を入れ替えて確認した）。pnpm 12 は、1 つ目の文書に pnpm 本体の版を書く。依存関係があるのは 2 つ目の文書（[Reading pnpm-lock.yaml](https://pnpm.io/lockfile)）。そのため、グラフに載るのは textlint の `package.json` にある直接の依存関係と pnpm 本体だけ。間接的な依存関係を検査しているのは OSV-Scanner だけ
+- Dependabot のマルウェアアラートは有効にしていない。Dependabot が読むパッケージは、すべて OSV-Scanner でも検査しているため
+- Actions のアクションは SHA で固定しているため、Dependabot のアラートは出ない（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner もデフォルトでは Actions を検査しない
+- 修正版がなく影響もない脆弱性は、ロックファイルと同じディレクトリの `osv-scanner.toml` に、理由と期限（`ignoreUntil`）を付けて除外する。設定はそのディレクトリのロックファイルにだけ効く（[Configuration](https://google.github.io/osv-scanner/configuration/)）
 
 ## Renovate
 
