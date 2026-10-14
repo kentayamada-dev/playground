@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - test/betterleaks-clean
 
 permissions:
   contents: read
@@ -24,6 +25,7 @@ jobs:
           # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
           # https://github.com/jdx/mise-action/blob/v5.0.0/src/index.ts#L724-L745
           version: 2026.9.17
+          log_level: debug
       # 既定の git log は --all でほかのブランチも読み、別の PR の検出でこの PR まで落ちるため、HEAD からたどれる履歴に絞る（--all 以外は既定と同じ）
       # https://github.com/betterleaks/betterleaks/blob/v1.9.0/sources/git.go#L121-L122
       # 公開リポジトリの実行ログは GitHub にログインすれば誰でも読めるため、--redact で値を伏せる https://docs.github.com/en/actions/how-tos/monitor-workflows/use-workflow-run-logs
