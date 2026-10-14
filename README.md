@@ -62,7 +62,7 @@ CI で使う Betterleaks と ShellCheck は、[mise](https://mise.jdx.dev/) で�
 - mise-action は、`mise.lock` があると `mise install --locked` で入れる。`mise.lock` にない版やプラットフォームは入らないので、`mise.toml` を書き換えたら `mise lock` を実行して `mise.lock` も更新する
 - `mise.lock` には、CI の linux-arm64 と、macOS（Apple シリコン）の macos-arm64 を記録している。ほかの環境で使うときは、`mise lock --platform` で足す
 - Betterleaks は、`mise lock` で `mise.lock` を更新するときに、リリースの `checksums.txt` を cosign の署名で検証する（[aqua レジストリの定義](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/betterleaks/betterleaks/registry.yaml)）。CI のインストールでは検証し直さず、`mise.lock` の sha256 と照合する（[`locked_verify_provenance`](https://mise.jdx.dev/configuration/settings.html#locked_verify_provenance)）
-- ShellCheck のリリースには署名もチェックサムのファイルもないので、`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest になる
+- ShellCheck のリリースには署名もチェックサムのファイルもないので、`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest を使う
 
 ## Renovate
 
