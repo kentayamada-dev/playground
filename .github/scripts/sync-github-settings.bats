@@ -18,7 +18,7 @@ setup() {
   echo '{}' > "$settings/actions.json"
   echo '[]' > "$settings/labels.json"
 
-  # gh api の偽物。$STUB_DIR 配下の JSON を、GitHub 上のルールセット・リポジトリの設定・セキュリティの設定として読み書きする
+  # gh api の偽物。GitHub 上の状態を $STUB_DIR 配下の JSON として読み書きする
   export STUB_DIR="$BATS_TEST_TMPDIR/stub"
   mkdir -p "$STUB_DIR/bin"
   PATH="$STUB_DIR/bin:$PATH"
@@ -54,7 +54,6 @@ while [ $# -gt 0 ]; do
     *) endpoint=$1; shift ;;
   esac
 done
-# gh と同じく、--input - なら本文を標準入力から読む
 if [ "$input" = - ]; then
   input="$STUB_DIR/stdin.json"
   cat > "$input"
