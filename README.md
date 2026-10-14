@@ -39,7 +39,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | `main` への push と毎日 | 見つかったものを Code scanning に出し、1 件でもあれば失敗する |
 | Dependabot アラート | アドバイザリが公開されたときと、依存関係を変えて push したとき | 脆弱性を Dependabot のアラートに出す |
 
-- GitHub の依存関係グラフは、`pnpm-lock.yaml` の 2 つ目の文書にある間接的な依存関係を読まない（理由は未確認）。読むのは textlint の `package.json` にある直接の依存関係と、`pnpm-lock.yaml` の 1 つ目の文書（pnpm 本体）だけ。間接的な依存関係を検査しているのは OSV-Scanner だけ
+- GitHub の依存関係グラフは、`pnpm-lock.yaml` の 1 つ目の文書しか読まない（文書の順番を入れ替えて確認した）。pnpm 12 は、1 つ目の文書に pnpm 本体の版を書く。依存関係があるのは 2 つ目の文書（[Reading pnpm-lock.yaml](https://pnpm.io/lockfile)）。そのため、グラフに載るのは textlint の `package.json` にある直接の依存関係と pnpm 本体だけ。間接的な依存関係を検査しているのは OSV-Scanner だけ
 - Dependabot のマルウェアアラートは有効にしていない。Dependabot が読むパッケージは、すべて OSV-Scanner でも検査しているため
 - Actions のアクションは SHA で固定しているため、Dependabot のアラートは出ない（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner もデフォルトでは Actions を検査しない
 - 修正版がなく影響もない脆弱性は、ロックファイルと同じディレクトリの `osv-scanner.toml` に、理由と期限（`ignoreUntil`）を付けて除外する。設定はそのディレクトリのロックファイルにだけ効く（[Configuration](https://google.github.io/osv-scanner/configuration/)）
