@@ -11,6 +11,7 @@
       "dorny/paths-filter@*",
       "pnpm/action-setup@*",
       "bats-core/bats-action@*",
+      "amannn/action-semantic-pull-request@*",
       "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@*",
       "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@*"
     ]
