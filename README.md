@@ -44,6 +44,18 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 - Actions のアクションは SHA で固定しているため、Dependabot のアラートは出ない（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner もデフォルトでは Actions を検査しない
 - 修正版がなく影響もない脆弱性は、ロックファイルと同じディレクトリの `osv-scanner.toml` に、理由と期限（`ignoreUntil`）を付けて除外する。設定はそのディレクトリのロックファイルにだけ効く（[Configuration](https://google.github.io/osv-scanner/configuration/)）
 
+## シークレットの検査
+
+トークンやパスワードなどのシークレットがコミットに含まれていないかを、[Betterleaks](https://github.com/betterleaks/betterleaks) で検査しています。
+
+[`betterleaks.yml`](.github/workflows/betterleaks.yml) は、PR ごとと `main` への push で、`HEAD` からたどれる git 履歴全体を走査します。1 件でも見つかると失敗します。必須チェックなので、失敗するとマージできません。
+
+- 見つかった値を実行ログに出さない（`--redact`）
+- プロバイダーの API に問い合わせて、見つかったシークレットが有効かどうかは確認しない（`--validation` を付けていない）
+- 誤検知は、その行のコメントに `betterleaks:allow` と書いて除外する
+- 行にコメントを書けないときは、ルートの `.betterleaksignore` に fingerprint を 1 行ずつ書いて除外する。fingerprint の形式は `<コミット>:<パス>:<ルール ID>:<行番号>` で、`--report-format json` のレポートでは `Fingerprint` に出る
+- 版と sha256 は、Renovate が [`renovate.json5`](.github/renovate.json5) の `customManagers` で更新する
+
 ## Renovate
 
 依存関係の更新は Renovate で自動化しています。[`.github/workflows/renovate.yml`](.github/workflows/renovate.yml) が日本時間の 0:23 から 3 時間ごとに Renovate を実行します。設定は [`.github/renovate.json5`](.github/renovate.json5) にあります。

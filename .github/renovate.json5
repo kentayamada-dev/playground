@@ -14,6 +14,17 @@
   "dependencyDashboardTitle": "chore(deps): 依存関係の更新状況",
   // デフォルトでは PR にラベルを付けないため、.github/settings/labels.json の dependencies を付ける https://docs.renovatebot.com/configuration-options/#labels
   "labels": ["dependencies"],
+  // sha256 も currentDigest で取り込むと、版を上げるときに新しい版の checksums.txt から引き直して一緒に書き換える
+  // https://github.com/renovatebot/renovate/blob/44.151.1/lib/modules/datasource/github-release-attachments/index.ts#L188-L243
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/workflows/betterleaks\\.yml$/"],
+      "matchStrings": ["BETTERLEAKS_VERSION: (?<currentValue>\\S+)\\s+BETTERLEAKS_SHA256: (?<currentDigest>\\S+)"],
+      "datasourceTemplate": "github-release-attachments",
+      "depNameTemplate": "betterleaks/betterleaks"
+    }
+  ],
   "packageRules": [
     {
       "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],

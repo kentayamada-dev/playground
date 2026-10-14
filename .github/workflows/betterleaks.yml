@@ -1,0 +1,35 @@
+name: betterleaks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  betterleaks:
+    runs-on: ubuntu-26.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # 履歴全体を走査するため
+          fetch-depth: 0
+      # 公式のアクションがなく、イメージは GHCR にしかなく公開時刻が取れないため、Renovate の minimumReleaseAge の待ちが明けない。リリースのバイナリを sha256 で固定して使う
+      # https://docs.renovatebot.com/key-concepts/minimum-release-age/
+      - run: |
+          curl -fsSL -o "$RUNNER_TEMP/betterleaks.tar.gz" "https://github.com/betterleaks/betterleaks/releases/download/${BETTERLEAKS_VERSION}/betterleaks_${BETTERLEAKS_VERSION#v}_linux_arm64.tar.gz"
+          sha256sum -c <<<"$BETTERLEAKS_SHA256  $RUNNER_TEMP/betterleaks.tar.gz"
+          tar -xzf "$RUNNER_TEMP/betterleaks.tar.gz" -C "$RUNNER_TEMP" betterleaks
+        env:
+          # renovate.json5 の customManagers が 2 行続けて読み取り、版と sha256 をまとめて更新するため、間に行を挟まない
+          BETTERLEAKS_VERSION: v1.9.0
+          BETTERLEAKS_SHA256: 1d39116e0a58dc94574715e2aa12a2dbd5062f193eee3fec011fef6ba06bd13b
+      # 既定の git log は --all でほかのブランチも読み、別の PR の検出でこの PR まで落ちるため、HEAD からたどれる履歴に絞る（--all 以外は既定と同じ）
+      # https://github.com/betterleaks/betterleaks/blob/v1.9.0/sources/git.go#L121-L122
+      # 公開リポジトリの実行ログは GitHub にログインすれば誰でも読めるため、--redact で値を伏せる https://docs.github.com/en/actions/how-tos/monitor-workflows/use-workflow-run-logs
+      - run: >-
+          "$RUNNER_TEMP/betterleaks" git --no-banner --redact --verbose
+          --log-opts="--full-history --diff-filter=tuxdb HEAD" .

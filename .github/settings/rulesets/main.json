@@ -57,6 +57,10 @@
           {
             "context": "pr-title",
             "integration_id": 15368
+          },
+          {
+            "context": "betterleaks",
+            "integration_id": 15368
           }
         ]
       }
