@@ -25,7 +25,7 @@ jobs:
             test:
               - '.github/scripts/**'
               - '.github/settings/**'
-              # Renovate が ShellCheck の版だけを上げた PR でも検査する
+              # Renovate が ShellCheck・bats・jq の版だけを上げた PR でも検査する
               - 'mise.toml'
               - 'mise.lock'
               - '.github/workflows/test.yml'
@@ -40,21 +40,12 @@ jobs:
           # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
           # https://github.com/jdx/mise-action/blob/v5.0.0/src/index.ts#L724-L745
           version: 2026.9.17
-          install_args: shellcheck
+          # bats のテストは gh をスタブに置き換えるが、スクリプトとスタブが使う jq は本物なので入れる
+          install_args: shellcheck bats jq
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         run: git ls-files -z '*.sh' '*.bats' | xargs -0 shellcheck
         # 未指定時の bash -e {0} は pipefail がなく、git ls-files の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
         shell: bash
-      - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
-        uses: bats-core/bats-action@77d6fb60505b4d0d1d73e48bd035b55074bbfb43 # 4.0.0
-        with:
-          bats-version: 1.14.0
-          support-install: false
-          assert-install: false
-          detik-install: false
-          file-install: false
-          # bats の取得は GitHub API 経由で、未認証だとレート制限に当たりやすい https://github.com/bats-core/bats-action/blob/4.0.0/README.md#authenticated-requests
-          github-token: ${{ secrets.GITHUB_TOKEN }}
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         run: git ls-files -z '*.bats' | xargs -0 bats
         shell: bash
