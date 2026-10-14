@@ -17,7 +17,7 @@ permissions:
   contents: read
   security-events: write
 
-# Code scanning は PR と main の結果を category で突き合わせ、category は呼び出し元のワークフローのパスで決まる。
+# Code scanning は PR と main の結果を category で突き合わせ、category は「呼び出し元のワークフローのパス:再利用ワークフローのジョブ名」になる。
 # ワークフローを分けると突き合わせられず、PR の Code scanning の結果が neutral になる https://github.com/github/codeql-action/issues/1179
 jobs:
   # 必須チェックの名前は「このジョブ名 / 再利用ワークフローのジョブ名」になるため、変えるときは rulesets/main.json も合わせる
