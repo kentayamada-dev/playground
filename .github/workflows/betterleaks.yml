@@ -26,7 +26,7 @@ jobs:
         env:
           # renovate.json5 の customManagers が 2 行続けて読み取り、版と sha256 をまとめて更新するため、間に行を挟まない
           BETTERLEAKS_VERSION: v1.9.0
-          BETTERLEAKS_SHA256: 1d39116e0a58dc94574715e2aa12a2dbd5062f193eee3fec011fef6ba06bd13b
+          BETTERLEAKS_SHA256: 0d39116e0a58dc94574715e2aa12a2dbd5062f193eee3fec011fef6ba06bd13b
       # 既定の git log は --all でほかのブランチも読み、別の PR の検出でこの PR まで落ちるため、HEAD からたどれる履歴に絞る（--all 以外は既定と同じ）
       # https://github.com/betterleaks/betterleaks/blob/v1.9.0/sources/git.go#L121-L122
       # 公開リポジトリの実行ログは GitHub にログインすれば誰でも読めるため、--redact で値を伏せる https://docs.github.com/en/actions/how-tos/monitor-workflows/use-workflow-run-logs
