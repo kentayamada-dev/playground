@@ -26,8 +26,8 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 - 必須チェックは、`main` の最新を取り込んだ状態で通す必要がある。`main` が先に進んだら、PR のブランチに取り込んでから検査し直す
 - `textlint` と `test` は、PR で関係するファイルを変えていなければ、ステップを飛ばして成功になる。`on.pull_request.paths` で絞ると、実行されなかった PR の必須チェックが Pending のまま残るため
 - `editorconfig` は、PR で変えたファイルにかかわらず、リポジトリ全体を検査する。`pnpm-lock.yaml` など、editorconfig-checker がデフォルトで除外するファイルは検査しない（[Default Excludes](https://github.com/editorconfig-checker/editorconfig-checker/blob/v4.0.2/README.md#default-excludes)）
-- `actionlint` は、PR で変えたファイルにかかわらず、すべてのワークフローを検査する。GitHub ホストのランナーのラベル `ubuntu-26.04-arm` を actionlint v1.7.12 が知らないため、`actionlint.yaml` でセルフホストのランナーのラベルとして認めている（[既知のラベルの一覧](https://github.com/rhysd/actionlint/blob/v1.7.12/rule_runner_label.go)）
-- `renovate-config-validator` は、PR で変えたファイルにかかわらず、[`renovate.yml`](.github/workflows/renovate.yml) で動かす Renovate と同じ版の Docker イメージをジョブのコンテナにして検査する。エラーだけでなく警告でも失敗する。`--strict` を付けていないので、設定の移行が必要なだけでは失敗しない（[renovate-config-validator の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L101-L120)）
+- `actionlint` は、PR で変えたファイルにかかわらず、すべてのワークフローを検査する。actionlint v1.7.12 は、GitHub ホストのランナーのラベル `ubuntu-26.04-arm` を知らない（[既知のラベルの一覧](https://github.com/rhysd/actionlint/blob/v1.7.12/rule_runner_label.go)）。そのため、`actionlint.yaml` でセルフホストのランナーのラベルとして認めている
+- `renovate-config-validator` は、PR で変えたファイルにかかわらず検査する。[`renovate.yml`](.github/workflows/renovate.yml) で動かす Renovate と同じ版の Docker イメージを、ジョブのコンテナにして使う。エラーだけでなく警告でも失敗する。`--strict` を付けていないので、設定の移行が必要なだけでは失敗しない（[renovate-config-validator の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L101-L120)）
 - ワークフローのほかに、CodeQL のデフォルトセットアップが GitHub Actions のワークフローを解析する。エラー・警告のアラートか、medium 以上の重大度のセキュリティアラートがあると、ルールセットの `code_scanning` ルールでマージできない
 - CodeQL の解析は、`main` への push、`main` に向けた PR の作成と push、週 1 回の定期実行で動く。フォークからの PR は解析しない（[デフォルトセットアップ](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types)）
 
