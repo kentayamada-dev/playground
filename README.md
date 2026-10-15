@@ -30,7 +30,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 - `actionlint` は、PR で変えたファイルにかかわらず、すべてのワークフローを検査する。actionlint v1.7.12 は、GitHub ホストのランナーのラベル `ubuntu-26.04-arm` を知らない（[既知のラベルの一覧](https://github.com/rhysd/actionlint/blob/v1.7.12/rule_runner_label.go)）。そのため、`actionlint.yaml` でセルフホストのランナーのラベルとして認めている
 - `renovate-config-validator` は、PR で変えたファイルにかかわらず検査する。[`renovate.yml`](.github/workflows/renovate.yml) で動かす Renovate と同じ版の Docker イメージを、ジョブのコンテナにして使う。エラーだけでなく警告でも失敗する。`--strict` を付けていないので、設定の移行が必要なだけでは失敗しない（[renovate-config-validator の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L101-L120)）
 - `zizmor` は、PR で変えたファイルにかかわらず、すべてのワークフローを検査する。指摘が 1 件でもあると失敗する。PR の注釈は最初の 10 件までで、残りはジョブのログにだけ出る（[Output formats](https://docs.zizmor.sh/usage/#output-formats)）
-- GitHub API で調べる監査（`impostor-commit`・`known-vulnerable-actions`・`ref-confusion`）も動かすため、`zizmor` には `GITHUB_TOKEN` を渡す（[Operating modes](https://docs.zizmor.sh/usage/#operating-modes)）。指摘を無視するときは、YAML の該当する行に `# zizmor: ignore[<監査名>]` と書く（[Ignoring results](https://docs.zizmor.sh/usage/#ignoring-results)）
+- `zizmor` には `GITHUB_TOKEN` を渡し、GitHub API で調べる監査も動かす（[Operating modes](https://docs.zizmor.sh/usage/#operating-modes)）。対象は `impostor-commit`・`known-vulnerable-actions`・`ref-confusion` の 3 つ。指摘を無視するときは、YAML の該当する行に `# zizmor: ignore[<監査名>]` と書く（[Ignoring results](https://docs.zizmor.sh/usage/#ignoring-results)）
 - ワークフローのほかに、CodeQL のデフォルトセットアップが GitHub Actions のワークフローを解析する。エラー・警告のアラートか、medium 以上の重大度のセキュリティアラートがあると、ルールセットの `code_scanning` ルールでマージできない
 - CodeQL の解析は、`main` への push、`main` に向けた PR の作成と push、週 1 回の定期実行で動く。フォークからの PR は解析しない（[デフォルトセットアップ](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types)）
 
@@ -99,12 +99,12 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 ## 使うツール
 
-CI で使うツール（actionlint・Betterleaks・editorconfig-checker・ShellCheck・shfmt・bats・jq・zizmor）は、[mise](https://mise.jdx.dev/) で入れています。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、mise-action の `working_directory` で読ませています。
+CI のツール（actionlint・Betterleaks・editorconfig-checker・ShellCheck・shfmt・bats・jq・zizmor）は、[mise](https://mise.jdx.dev/) で入れています。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、mise-action の `working_directory` で読ませています。
 
 - mise-action は、`mise.lock` があると `mise install --locked` で入れる。`mise.lock` にない版やプラットフォームは入らないので、`mise.toml` を書き換えたら、`.github` で `mise lock` を実行して `mise.lock` も更新する
 - `mise.lock` には、CI の linux-arm64 だけを記録している。`mise lock` は `--platform` を付けないと `mise.lock` にあるプラットフォームだけを対象にするので、手元で実行しても macOS などの記録は増えない（[`mise lock`](https://mise.jdx.dev/cli/lock.html)）
 - 署名は `mise lock` で `mise.lock` を更新するときに検証する。CI のインストールでは検証し直さず、`mise.lock` の sha256 と照合する（[`locked_verify_provenance`](https://mise.jdx.dev/configuration/settings.html#locked_verify_provenance)）
-- Betterleaks は `checksums.txt` を cosign の署名で、actionlint・jq・zizmor は GitHub の artifact attestations で検証する。検証の方法は、aqua レジストリの定義（[Betterleaks](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/betterleaks/betterleaks/registry.yaml)・[actionlint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/rhysd/actionlint/registry.yaml)・[jq](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/jqlang/jq/registry.yaml)・[zizmor](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/zizmorcore/zizmor/registry.yaml)）に従う
+- Betterleaks は `checksums.txt` を cosign の署名で検証する。actionlint・jq・zizmor は、GitHub の artifact attestations で検証する。検証の方法は、aqua レジストリの定義（[Betterleaks](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/betterleaks/betterleaks/registry.yaml)・[actionlint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/rhysd/actionlint/registry.yaml)・[jq](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/jqlang/jq/registry.yaml)・[zizmor](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/zizmorcore/zizmor/registry.yaml)）に従う
 - editorconfig-checker は、mise のレジストリで aqua ではなく github バックエンドを使う。GitHub の artifact attestations で検証する（[github バックエンド](https://mise.jdx.dev/dev-tools/backends/github.html)）
 - shfmt は、mise のレジストリでは aqua バックエンドになるが、aqua レジストリの定義に検証の設定がない（[mvdan/sh](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/mvdan/sh/registry.yaml)）。そのため、`mise.toml` に `github:mvdan/sh` と書いて github バックエンドで入れ、GitHub の artifact attestations で検証する
 - ShellCheck のリリースには署名もチェックサムのファイルもないので、`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest を使う
