@@ -9,7 +9,7 @@
 
 ## CI の検査
 
-GitHub Actions で次の検査を実行します。必須チェックが通らない PR はマージできません。必須チェックは [`rulesets/main.json`](.github/settings/rulesets/main.json) に定義しています。
+GitHub Actions で、次のとおり検査します。必須チェックが通らない PR はマージできません。必須チェックは [`rulesets/main.json`](.github/settings/rulesets/main.json) に定義しています。
 
 | ワークフロー | 実行のタイミング | 検査する内容 | 必須チェック |
 | --- | --- | --- | --- |
