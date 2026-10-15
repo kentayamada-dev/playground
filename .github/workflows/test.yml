@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - test/mise-github-dir-tools
 
 permissions:
   contents: read
@@ -44,6 +45,14 @@ jobs:
           working_directory: .github
           # bats のテストは gh をスタブに置き換えるが、スクリプトとスタブが使う jq は本物なので入れる
           install_args: shellcheck bats jq
+      - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
+        run: |
+          for t in shellcheck bats jq; do command -v "$t"; done
+          shellcheck --version
+          bats --version
+          jq --version
+          echo "$PATH" | tr ':' '\n'
+        shell: bash
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         run: git ls-files -z '*.sh' '*.bats' | xargs -0 shellcheck
         # 未指定時の bash -e {0} は pipefail がなく、git ls-files の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell

@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - test/mise-github-dir-tools
 
 permissions:
   contents: read
@@ -27,6 +28,11 @@ jobs:
           # ローカルでは使わないので、mise.toml と mise.lock はルートではなく .github に置いている
           working_directory: .github
           install_args: betterleaks
+      - run: |
+          command -v betterleaks
+          betterleaks --version || betterleaks version
+          echo "$PATH" | tr ':' '\n'
+        shell: bash
       # 既定の git log は --all でほかのブランチも読み、別の PR の検出でこの PR まで落ちるため、HEAD からたどれる履歴に絞る（--all 以外は既定と同じ）
       # https://github.com/betterleaks/betterleaks/blob/v1.9.0/sources/git.go#L121-L122
       # 公開リポジトリの実行ログは GitHub にログインすれば誰でも読めるため、--redact で値を伏せる https://docs.github.com/en/actions/how-tos/monitor-workflows/use-workflow-run-logs
