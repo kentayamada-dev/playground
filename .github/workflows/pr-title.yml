@@ -13,7 +13,6 @@ on:
       - reopened
 
 # タイトルを続けて直したときに、同じ PR の古い実行を取り消して無駄な実行を減らす
-# 古い実行が後から終わっても必須チェックには後から作られた実行の結果が使われるので、正しさのためには要らない https://github.com/kentayamada-dev/playground/pull/142 https://github.com/kentayamada-dev/playground/pull/143
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
