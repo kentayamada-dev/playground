@@ -1,5 +1,29 @@
 # playground
 
+個人の実験用リポジトリです。GitHub のリポジトリの設定・CI・依存関係の更新を、Git で管理する定義とワークフローにまとめています。
+
+- [コントリビューションガイド](CONTRIBUTING.md): issue・ブランチ・PR・コードの規約
+- [行動規範](CODE_OF_CONDUCT.md)
+- [セキュリティポリシー](SECURITY.md): 脆弱性を非公開で報告する手順
+- [ライセンス](LICENSE): MIT License
+
+## CI の検査
+
+GitHub Actions で、次のとおり検査します。必須チェックが通らない PR はマージできません。必須チェックは [`rulesets/main.json`](.github/settings/rulesets/main.json) に定義しています。
+
+| ワークフロー | 実行のタイミング | 検査する内容 | 必須チェック |
+| --- | --- | --- | --- |
+| [`textlint.yml`](.github/workflows/textlint.yml) | PR・`main` への push | リポジトリのすべての `.md` の表記。ルールは [`.github/textlint`](.github/textlint) にある | `textlint` |
+| [`test.yml`](.github/workflows/test.yml) | PR・`main` への push | `.sh` と `.bats` を ShellCheck で検査し、bats のテストを実行する | `test` |
+| [`pr-title.yml`](.github/workflows/pr-title.yml) | PR の作成・編集・push・再オープン | PR タイトルが Conventional Commits 形式に沿い、説明を日本語で書いているか。規約は [CONTRIBUTING.md](CONTRIBUTING.md#タイトルとコミットメッセージ) | `pr-title` |
+| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | PR・`main` への push・毎日 | 依存関係の脆弱性とマルウェア。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) | `osv-scanner / osv-scan`（PR の検査だけ） |
+| [`betterleaks.yml`](.github/workflows/betterleaks.yml) | PR・`main` への push | コミットに含まれるシークレット。詳しくは [シークレットの検査](#シークレットの検査) | `betterleaks` |
+
+- マージは squash だけで、PR タイトルがそのままコミットのタイトルになる（[`repository.json`](.github/settings/repository.json)）。マージの画面や `gh pr merge --subject` で書き換えたタイトルは検査しない
+- 必須チェックは、`main` の最新を取り込んだ状態で通す必要がある。`main` が先に進んだら、PR のブランチに取り込んでから検査し直す
+- `textlint` と `test` は、PR で関係するファイルを変えていなければ、ステップを飛ばして成功になる。`on.pull_request.paths` で絞ると、実行されなかった PR の必須チェックが Pending のまま残るため
+- ワークフローのほかに、CodeQL のデフォルトセットアップが GitHub Actions のワークフローを解析する。エラー・警告のアラートか、medium 以上の重大度のセキュリティアラートがあると、ルールセットの `code_scanning` ルールでマージできない
+
 ## リポジトリの設定
 
 GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し、次のコマンドで反映します。何度実行しても同じ状態になります。`gh` と `jq` が必要です（`mise install` で入る）。
@@ -19,6 +43,14 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 - 定義にないルールセットとラベルは、GitHub の画面で作ったものも削除される。消したラベルは issue や PR からも外れる。Organization のルールセットは対象外
 - シークレットスキャンとプッシュ保護は、リポジトリの設定と同じ API で変えるため、`repository.json` の `security_and_analysis` に書く
 - CodeQL のデフォルトセットアップは、今の設定と違うときだけ更新する
+
+### 実行に必要な権限
+
+実行するアカウントには、リポジトリの管理者権限が必要です。脆弱性アラートやプライベートな脆弱性報告などを切り替える API が、管理者権限を求めるためです（[リポジトリの REST API](https://docs.github.com/en/rest/repos/repos)）。
+
+`gh` は `gh auth login` でログインしておきます。Actions や CodeQL の設定を変える API には、`repo` スコープが必要です（[Actions の権限の API](https://docs.github.com/en/rest/actions/permissions)・[CodeQL の API](https://docs.github.com/en/rest/code-scanning/code-scanning)）。`gh auth login` で発行されるトークンには、このスコープが含まれます（[gh の実装](https://github.com/cli/cli/blob/v2.102.0/internal/authflow/flow.go)）。
+
+- 環境変数 `GH_TOKEN` か `GITHUB_TOKEN` があると、`gh` はログインしたトークンより優先してそちらを使う（`gh help environment`）。権限の足りないトークンが入っていると、途中で失敗する
 
 ### GitHub Actions の設定
 
@@ -70,6 +102,21 @@ CI と手元のスクリプトで使うツール（Betterleaks・ShellCheck・ba
 ## Renovate
 
 依存関係の更新は Renovate で自動化しています。[`.github/workflows/renovate.yml`](.github/workflows/renovate.yml) が日本時間の 0:23 から 3 時間ごとに Renovate を実行します。設定は [`.github/renovate.json5`](.github/renovate.json5) にあります。
+
+### 自動マージ
+
+更新の種類によって、自動でマージするかどうかを分けています。
+
+| 更新の種類 | マージのしかた |
+| --- | --- |
+| minor・patch・digest | 公開後 14 日を過ぎてから、自動でマージする |
+| pin・pinDigest（バージョンやダイジェストの固定） | 自動でマージする |
+| ロックファイルの更新 | 自動でマージする。PR は毎週月曜の 0〜3 時に作る |
+| major など、上記以外の更新 | 自動ではマージしない。内容を確認して手動でマージする |
+
+- 自動マージには GitHub の自動マージを使い、必須チェックがすべて通るとマージされる（[Renovate の自動マージ](https://docs.renovatebot.com/key-concepts/automerge/)・[GitHub の自動マージ](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request)）
+- 必須チェックは `main` の最新を取り込んだ状態で通す必要があるため、同じ実行で作った PR の 2 件目以降は、次の実行まで自動マージされない
+- 更新の状況は、Dependency Dashboard の issue「chore(deps): 依存関係の更新状況」にまとまる
 
 ### トークンの準備
 
