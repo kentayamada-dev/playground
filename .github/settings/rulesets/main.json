@@ -73,6 +73,10 @@
           {
             "context": "renovate-config-validator",
             "integration_id": 15368
+          },
+          {
+            "context": "zizmor",
+            "integration_id": 15368
           }
         ]
       }
