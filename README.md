@@ -53,14 +53,6 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 - 環境変数 `GH_TOKEN` か `GITHUB_TOKEN` があると、`gh` はログインしたトークンより優先してそちらを使う（`gh help environment`）。権限の足りないトークンが入っていると、途中で失敗する
 
-Fine-grained personal access token を使うときは、Repository permissions を次の表のとおりに設定します。表は各 API のドキュメントにある権限から決めたもので、Fine-grained token での実行は未確認です（[Fine-grained token に必要な権限](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens)）。
-
-| Permission | Access | 用途 |
-| --- | --- | --- |
-| Administration | Read and write | ルールセット・リポジトリの設定・Actions の設定・セキュリティの機能・CodeQL のデフォルトセットアップの取得と変更 |
-| Issues | Read and write | ラベルの取得・作成・更新・削除。ラベルの API は、Issues と Pull requests のどちらかの権限で動く。Pull requests を Read and write にしてもよい（[ラベルの API](https://docs.github.com/en/rest/issues/labels)） |
-| Metadata | Read-only | 自動で付く（必須）。ルールセットの一覧の取得 |
-
 ### GitHub Actions の設定
 
 | 項目 | 設定 |
