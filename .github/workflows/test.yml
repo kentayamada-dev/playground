@@ -25,11 +25,14 @@ jobs:
             test:
               - '.github/scripts/**'
               - '.github/settings/**'
-              # Renovate が ShellCheck・bats・jq の版だけを上げた PR でも検査する
+              # Renovate が ShellCheck・shfmt・bats・jq の版だけを上げた PR でも検査する
               - '.github/mise.toml'
               - '.github/mise.lock'
               - '.github/workflows/test.yml'
-              # ShellCheck と bats は .github/scripts の外にある .sh・.bats も対象にする
+              # shfmt はインデントなどの整形の設定を .editorconfig から読むため、.editorconfig だけを変えた PR でも検査する
+              # https://github.com/mvdan/sh/blob/v3.14.1/cmd/shfmt/shfmt.1.scd?plain=1#L19-L21
+              - '.editorconfig'
+              # ShellCheck・shfmt・bats は .github/scripts の外にある .sh・.bats も対象にする
               - '**/*.sh'
               - '**/*.bats'
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
@@ -43,10 +46,13 @@ jobs:
           # ローカルでは使わないので、mise.toml と mise.lock はルートではなく .github に置いている
           working_directory: .github
           # bats のテストは gh をスタブに置き換えるが、スクリプトとスタブが使う jq は本物なので入れる
-          install_args: shellcheck bats jq
+          install_args: shellcheck github:mvdan/sh bats jq
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         run: git ls-files -z '*.sh' '*.bats' | xargs -0 shellcheck
         # 未指定時の bash -e {0} は pipefail がなく、git ls-files の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
+        shell: bash
+      - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
+        run: git ls-files -z '*.sh' '*.bats' | xargs -0 shfmt --diff
         shell: bash
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         run: git ls-files -z '*.bats' | xargs -0 bats

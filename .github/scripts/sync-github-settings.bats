@@ -13,16 +13,16 @@ setup() {
   real_settings="$BATS_TEST_DIRNAME/../settings"
   mkdir -p "$repo/.github/scripts" "$settings/rulesets"
   cp "$BATS_TEST_DIRNAME/sync-github-settings.sh" "$script"
-  echo '{}' > "$settings/repository.json"
-  echo '{}' > "$settings/security.json"
-  echo '{}' > "$settings/actions.json"
-  echo '[]' > "$settings/labels.json"
+  echo '{}' >"$settings/repository.json"
+  echo '{}' >"$settings/security.json"
+  echo '{}' >"$settings/actions.json"
+  echo '[]' >"$settings/labels.json"
 
   # gh api の偽物。GitHub 上の状態を $STUB_DIR 配下の JSON として読み書きする
   export STUB_DIR="$BATS_TEST_TMPDIR/stub"
   mkdir -p "$STUB_DIR/bin"
   PATH="$STUB_DIR/bin:$PATH"
-  cat > "$STUB_DIR/bin/gh" <<'EOF'
+  cat >"$STUB_DIR/bin/gh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 pwd -P >> "$STUB_DIR/gh.pwd"
@@ -181,28 +181,28 @@ case "$method $endpoint" in
 esac
 EOF
   chmod +x "$STUB_DIR/bin/gh"
-  echo '[]' > "$STUB_DIR/rulesets.json"
-  echo '{}' > "$STUB_DIR/repository.json"
-  echo '{}' > "$STUB_DIR/security.json"
-  echo '{"state": "not-configured", "query_suite": "default", "languages": ["actions"], "runs": 0}' > "$STUB_DIR/code-scanning.json"
-  echo '{"enabled": true, "allowed_actions": "all", "sha_pinning_required": false}' > "$STUB_DIR/actions-permissions.json"
-  echo '{}' > "$STUB_DIR/selected-actions.json"
-  echo '[]' > "$STUB_DIR/labels.json"
-  echo '{"approval_policy": "first_time_contributors"}' > "$STUB_DIR/fork-pr-approval.json"
-  echo '{"default_workflow_permissions": "write", "can_approve_pull_request_reviews": true}' > "$STUB_DIR/workflow-permissions.json"
-  echo 100 > "$STUB_DIR/next_id"
+  echo '[]' >"$STUB_DIR/rulesets.json"
+  echo '{}' >"$STUB_DIR/repository.json"
+  echo '{}' >"$STUB_DIR/security.json"
+  echo '{"state": "not-configured", "query_suite": "default", "languages": ["actions"], "runs": 0}' >"$STUB_DIR/code-scanning.json"
+  echo '{"enabled": true, "allowed_actions": "all", "sha_pinning_required": false}' >"$STUB_DIR/actions-permissions.json"
+  echo '{}' >"$STUB_DIR/selected-actions.json"
+  echo '[]' >"$STUB_DIR/labels.json"
+  echo '{"approval_policy": "first_time_contributors"}' >"$STUB_DIR/fork-pr-approval.json"
+  echo '{"default_workflow_permissions": "write", "can_approve_pull_request_reviews": true}' >"$STUB_DIR/workflow-permissions.json"
+  echo 100 >"$STUB_DIR/next_id"
 }
 
 given_github_rulesets() {
-  echo "$1" > "$STUB_DIR/rulesets.json"
+  echo "$1" >"$STUB_DIR/rulesets.json"
 }
 
 given_github_repository() {
-  echo "$1" > "$STUB_DIR/repository.json"
+  echo "$1" >"$STUB_DIR/repository.json"
 }
 
 define_repository() {
-  echo "$1" > "$settings/repository.json"
+  echo "$1" >"$settings/repository.json"
 }
 
 assert_github_repository() {
@@ -213,15 +213,15 @@ assert_github_repository() {
 }
 
 given_github_security() {
-  echo "$1" > "$STUB_DIR/security.json"
+  echo "$1" >"$STUB_DIR/security.json"
 }
 
 given_github_labels() {
-  echo "$1" > "$STUB_DIR/labels.json"
+  echo "$1" >"$STUB_DIR/labels.json"
 }
 
 define_labels() {
-  echo "$1" > "$settings/labels.json"
+  echo "$1" >"$settings/labels.json"
 }
 
 assert_github_labels() {
@@ -246,7 +246,7 @@ assert_github_workflow_permissions() {
 }
 
 define_actions() {
-  echo "$1" > "$settings/actions.json"
+  echo "$1" >"$settings/actions.json"
 }
 
 assert_github_actions() {
@@ -259,11 +259,11 @@ assert_github_actions() {
 }
 
 given_github_code_scanning() {
-  echo "$1" > "$STUB_DIR/code-scanning.json"
+  echo "$1" >"$STUB_DIR/code-scanning.json"
 }
 
 define_security() {
-  echo "$1" > "$settings/security.json"
+  echo "$1" >"$settings/security.json"
 }
 
 assert_github_security() {
@@ -282,7 +282,7 @@ assert_github_code_scanning() {
 }
 
 define_ruleset() {
-  echo "$2" > "$settings/rulesets/$1"
+  echo "$2" >"$settings/rulesets/$1"
 }
 
 assert_github_rulesets() {
@@ -743,7 +743,7 @@ path_without() {
 
 @test "ルールセットの一覧のキャッシュが古くても、今の一覧をもとに更新し、重複して作成しない" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
-  echo '[]' > "$STUB_DIR/rulesets.stale.json"
+  echo '[]' >"$STUB_DIR/rulesets.stale.json"
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
 
   run -0 "$script"
@@ -753,7 +753,7 @@ path_without() {
 
 @test "ラベルの一覧のキャッシュが古くても、今の一覧をもとに、もうないラベルを削除しようとしない" {
   given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}]'
-  echo '[{"name": "bug", "color": "d73a4a", "description": "不具合"}, {"name": "wontfix", "color": "ffffff", "description": "Will not be worked on"}]' > "$STUB_DIR/labels.stale.json"
+  echo '[{"name": "bug", "color": "d73a4a", "description": "不具合"}, {"name": "wontfix", "color": "ffffff", "description": "Will not be worked on"}]' >"$STUB_DIR/labels.stale.json"
   define_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}]'
 
   run -0 "$script"
@@ -762,7 +762,7 @@ path_without() {
 }
 
 @test "CodeQL のデフォルトセットアップのキャッシュが古くても、今の設定と比べて更新する" {
-  echo '{"state": "configured", "query_suite": "default", "languages": ["actions"]}' > "$STUB_DIR/code-scanning.stale.json"
+  echo '{"state": "configured", "query_suite": "default", "languages": ["actions"]}' >"$STUB_DIR/code-scanning.stale.json"
   define_security '{"code_scanning_default_setup": {"state": "configured", "query_suite": "default"}}'
 
   run -0 "$script"
@@ -892,8 +892,8 @@ path_without() {
 
 @test "GH_REPO が設定されていても、ほかのリポジトリには反映せず、このリポジトリに反映する" {
   other='[{"id": 1, "source_type": "Repository", "name": "other", "enforcement": "active"}]'
-  echo "$other" > "$STUB_DIR/other-repo-rulesets.json"
-  echo '{"has_wiki": true}' > "$STUB_DIR/other-repo-repository.json"
+  echo "$other" >"$STUB_DIR/other-repo-rulesets.json"
+  echo '{"has_wiki": true}' >"$STUB_DIR/other-repo-repository.json"
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
   define_repository '{"has_wiki": false}'
   export GH_REPO=someone/other
