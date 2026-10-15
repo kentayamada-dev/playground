@@ -23,3 +23,4 @@ jobs:
           working_directory: .github
           install_args: editorconfig-checker
       - run: editorconfig-checker -format github-actions
+      - run: echo $GITHUB_REF_NAME
