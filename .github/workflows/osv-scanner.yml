@@ -10,12 +10,8 @@ on:
     - cron: '41 21 * * *'
   workflow_dispatch:
 
-# 再利用ワークフローのジョブが要求する権限。呼び出し側より広げられないため、ここで与えないと起動できない
-# https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows
-permissions:
-  actions: read
-  contents: read
-  security-events: write
+# 書き込み権限はジョブごとに与え、あとから足したジョブに引き継がせない https://docs.zizmor.sh/audits/#excessive-permissions
+permissions: {}
 
 # Code scanning は PR と main の結果を category で突き合わせ、category は「呼び出し元のワークフローのパス:再利用ワークフローのジョブ名」になる。
 # ワークフローを分けると突き合わせられず、PR の Code scanning の結果が neutral になる https://github.com/github/codeql-action/issues/1179
@@ -24,10 +20,20 @@ jobs:
   osv-scanner:
     if: github.event_name == 'pull_request'
     uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
+    # 再利用ワークフローのジョブが要求する権限。呼び出し側より広げられないため、ここで与えないと起動できない
+    # https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     with:
       runs-on: ubuntu-26.04-arm
   osv-scanner-full:
     if: github.event_name != 'pull_request'
     uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     with:
       runs-on: ubuntu-26.04-arm

@@ -17,6 +17,8 @@ jobs:
         with:
           # 履歴全体を走査するため
           fetch-depth: 0
+          # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
+          persist-credentials: false
       # 公式のアクションがなく、イメージは GHCR にしかなく公開時刻が取れないため、Renovate の minimumReleaseAge の待ちが明けない。
       # mise で入れ、mise.toml の版と mise.lock のハッシュは Renovate の mise マネージャーが更新する https://docs.renovatebot.com/key-concepts/minimum-release-age/
       - uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
