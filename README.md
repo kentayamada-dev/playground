@@ -116,7 +116,7 @@ CI で使うツール（Betterleaks・ShellCheck・bats・jq）は、[mise](http
 
 - 自動マージには GitHub の自動マージを使い、必須チェックがすべて通るとマージされる（[Renovate の自動マージ](https://docs.renovatebot.com/key-concepts/automerge/)・[GitHub の自動マージ](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request)）
 - 必須チェックは `main` の最新を取り込んだ状態で通す必要があるため、同じ実行で作った PR の 2 件目以降は、次の実行まで自動マージされない
-- 脆弱性アラートから作る PR は、公開後 14 日を待たずに作られる（[Minimum Release Age](https://docs.renovatebot.com/key-concepts/minimum-release-age/)）。minor・patch の更新なら、待たずに自動マージされると推測している。脆弱性アラート向けのデフォルトの設定に `automerge` がなく、上の表の設定が残るため（[Renovate のソース](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config/options/index.ts#L2429-L2449)）。実際の PR では未確認
+- 脆弱性アラートから作る PR は、公開後 14 日を待たずに作られ、minor・patch の更新ならそのまま自動でマージされる（[Minimum Release Age](https://docs.renovatebot.com/key-concepts/minimum-release-age/)）。検証用ブランチで OSV の脆弱性情報から作らせた PR（[#141](https://github.com/kentayamada-dev/playground/pull/141)）で確認した。このとき Renovate は、`pnpm-workspace.yaml` の `minimumReleaseAgeExclude` に修正版を書き足す
 - 更新の状況は、Dependency Dashboard の issue「chore(deps): 依存関係の更新状況」にまとまる
 
 ### トークンの準備
