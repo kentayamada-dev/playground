@@ -190,7 +190,7 @@ EOF
   echo '[]' >"$STUB_DIR/labels.json"
   echo '{"approval_policy": "first_time_contributors"}' >"$STUB_DIR/fork-pr-approval.json"
   echo '{"default_workflow_permissions": "write", "can_approve_pull_request_reviews": true}' >"$STUB_DIR/workflow-permissions.json"
-  echo 100 >"$STUB_DIR/next_id"
+  echo 100 > "$STUB_DIR/next_id"
 }
 
 given_github_rulesets() {
