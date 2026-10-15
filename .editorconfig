@@ -12,3 +12,6 @@ trim_trailing_whitespace = true
 # https://spec.commonmark.org/0.31.2/#list-items
 [*.md]
 indent_size = unset
+
+[*.{sh,bats}]
+space_redirects = true
