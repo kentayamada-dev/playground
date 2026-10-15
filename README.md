@@ -19,11 +19,15 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | PR・`main` への push・毎日 | 依存関係の脆弱性とマルウェア。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) | `osv-scanner / osv-scan`（PR の検査だけ） |
 | [`betterleaks.yml`](.github/workflows/betterleaks.yml) | PR・`main` への push | コミットに含まれるシークレット。詳しくは [シークレットの検査](#シークレットの検査) | `betterleaks` |
 | [`editorconfig.yml`](.github/workflows/editorconfig.yml) | PR・`main` への push | git で管理するファイルが [`.editorconfig`](.editorconfig) の文字コード・改行・インデント・末尾の空白に沿っているか。[editorconfig-checker](https://github.com/editorconfig-checker/editorconfig-checker) で検査する | `editorconfig` |
+| [`actionlint.yml`](.github/workflows/actionlint.yml) | PR・`main` への push | GitHub Actions のワークフローのキー・式・`run:` のスクリプト。[actionlint](https://github.com/rhysd/actionlint) で検査し、`run:` のスクリプトは actionlint から ShellCheck にかける。設定は [`.github/actionlint.yaml`](.github/actionlint.yaml) にある | `actionlint` |
+| [`renovate-config-validator.yml`](.github/workflows/renovate-config-validator.yml) | PR・`main` への push | [`.github/renovate.json5`](.github/renovate.json5) の構文と、オプションの名前・値。Renovate の [renovate-config-validator](https://docs.renovatebot.com/config-validation/) で検査する | `renovate-config-validator` |
 
 - マージは squash だけで、PR タイトルがそのままコミットのタイトルになる（[`repository.json`](.github/settings/repository.json)）。マージの画面や `gh pr merge --subject` で書き換えたタイトルは検査しない
 - 必須チェックは、`main` の最新を取り込んだ状態で通す必要がある。`main` が先に進んだら、PR のブランチに取り込んでから検査し直す
-- `textlint` と `test` は、PR で関係するファイルを変えていなければ、ステップを飛ばして成功になる。`on.pull_request.paths` で絞ると、実行されなかった PR の必須チェックが Pending のまま残るため
+- `textlint`・`test`・`renovate-config-validator` は、PR で関係するファイルを変えていなければ、ステップを飛ばして成功になる。`on.pull_request.paths` で絞ると、実行されなかった PR の必須チェックが Pending のまま残るため
 - `editorconfig` は、PR で変えたファイルにかかわらず、リポジトリ全体を検査する。`pnpm-lock.yaml` など、editorconfig-checker がデフォルトで除外するファイルは検査しない（[Default Excludes](https://github.com/editorconfig-checker/editorconfig-checker/blob/v4.0.2/README.md#default-excludes)）
+- `actionlint` は、PR で変えたファイルにかかわらず、すべてのワークフローを検査する。GitHub ホストのランナーのラベル `ubuntu-26.04-arm` を actionlint v1.7.12 が知らないため、`actionlint.yaml` でセルフホストのランナーのラベルとして認めている（[既知のラベルの一覧](https://github.com/rhysd/actionlint/blob/v1.7.12/rule_runner_label.go)）
+- `renovate-config-validator` は、[`renovate.yml`](.github/workflows/renovate.yml) で動かす Renovate と同じ版の Docker イメージで検査する。エラーだけでなく警告でも失敗する。`--strict` を付けていないので、設定の移行が必要なだけでは失敗しない（[renovate-config-validator の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L101-L120)）
 - ワークフローのほかに、CodeQL のデフォルトセットアップが GitHub Actions のワークフローを解析する。エラー・警告のアラートか、medium 以上の重大度のセキュリティアラートがあると、ルールセットの `code_scanning` ルールでマージできない
 - CodeQL の解析は、`main` への push、`main` に向けた PR の作成と push、週 1 回の定期実行で動く。フォークからの PR は解析しない（[デフォルトセットアップ](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types)）
 
@@ -92,7 +96,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 ## 使うツール
 
-CI で使うツール（Betterleaks・editorconfig-checker・ShellCheck・shfmt・bats・jq）は、[mise](https://mise.jdx.dev/) で入れています。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、mise-action の `working_directory` で読ませています。
+CI で使うツール（actionlint・Betterleaks・editorconfig-checker・ShellCheck・shfmt・bats・jq）は、[mise](https://mise.jdx.dev/) で入れています。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、mise-action の `working_directory` で読ませています。
 
 - mise-action は、`mise.lock` があると `mise install --locked` で入れる。`mise.lock` にない版やプラットフォームは入らないので、`mise.toml` を書き換えたら、`.github` で `mise lock` を実行して `mise.lock` も更新する
 - `mise.lock` には、CI の linux-arm64 だけを記録している。`mise lock` は `--platform` を付けないと `mise.lock` にあるプラットフォームだけを対象にするので、手元で実行しても macOS などの記録は増えない（[`mise lock`](https://mise.jdx.dev/cli/lock.html)）

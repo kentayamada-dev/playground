@@ -1,0 +1,36 @@
+name: renovate-config-validator
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  # dorny/paths-filter が PR の変更ファイルを API で取得するため https://github.com/dorny/paths-filter/blob/ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d/README.md?plain=1#L18-L23
+  pull-requests: read
+
+jobs:
+  renovate-config-validator:
+    runs-on: ubuntu-26.04-arm
+    steps:
+      # 必須チェックなので、textlint.yml と同じく on.pull_request.paths で絞らずにステップを if で飛ばす
+      - id: changes
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
+        with:
+          # Renovate がこのワークフローのイメージだけを上げた PR でも、新しい版で検査し直す
+          filters: |
+            renovate:
+              - '.github/renovate.json5'
+              - '.github/workflows/renovate-config-validator.yml'
+      - if: github.event_name == 'push' || steps.changes.outputs.renovate == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # renovate.yml で動かす Renovate と同じイメージで検査し、設定の解釈を本番の実行とそろえる
+      - if: github.event_name == 'push' || steps.changes.outputs.renovate == 'true'
+        uses: docker://renovate/renovate:44.151.1@sha256:f19b0925b1d6f0750da6f521c1c7886ad058b03341f9e757f6f7e3f96b7864c8
+        with:
+          # ファイルを渡すとセルフホストの全体設定として検査されるため、--no-global でリポジトリの設定として検査する
+          # https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L142
+          args: renovate-config-validator --no-global .github/renovate.json5

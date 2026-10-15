@@ -1,0 +1,5 @@
+self-hosted-runner:
+  # GitHub ホストの ubuntu-26.04-arm を actionlint v1.7.12 が知らず、未知のラベルとして報告するため、ここで認める
+  # https://github.com/rhysd/actionlint/blob/v1.7.12/rule_runner_label.go
+  labels:
+    - ubuntu-26.04-arm
