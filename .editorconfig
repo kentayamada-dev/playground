@@ -1,0 +1,14 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# 番号付きリストの続きは本文の開始位置（`1. ` なら 3 スペース）までインデントするため、幅を 2 の倍数にそろえられない
+# https://spec.commonmark.org/0.31.2/#list-items
+[*.md]
+indent_size = unset
