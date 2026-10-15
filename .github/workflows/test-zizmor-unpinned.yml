@@ -1,0 +1,14 @@
+name: test-zizmor-unpinned
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  unpinned:
+    runs-on: ubuntu-26.04-arm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
