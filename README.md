@@ -23,6 +23,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 - 必須チェックは、`main` の最新を取り込んだ状態で通す必要がある。`main` が先に進んだら、PR のブランチに取り込んでから検査し直す
 - `textlint` と `test` は、PR で関係するファイルを変えていなければ、ステップを飛ばして成功になる。`on.pull_request.paths` で絞ると、実行されなかった PR の必須チェックが Pending のまま残るため
 - ワークフローのほかに、CodeQL のデフォルトセットアップが GitHub Actions のワークフローを解析する。エラー・警告のアラートか、medium 以上の重大度のセキュリティアラートがあると、ルールセットの `code_scanning` ルールでマージできない
+- CodeQL の解析は、`main` への push、`main` に向けた PR の作成と push、週 1 回の定期実行で動く。フォークからの PR は解析しない（[デフォルトセットアップ](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types)）
 
 ## リポジトリの設定
 
@@ -51,6 +52,14 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 `gh` は `gh auth login` でログインしておきます。Actions や CodeQL の設定を変える API には、`repo` スコープが必要です（[Actions の権限の API](https://docs.github.com/en/rest/actions/permissions)・[CodeQL の API](https://docs.github.com/en/rest/code-scanning/code-scanning)）。`gh auth login` で発行されるトークンには、このスコープが含まれます（[gh の実装](https://github.com/cli/cli/blob/v2.102.0/internal/authflow/flow.go)）。
 
 - 環境変数 `GH_TOKEN` か `GITHUB_TOKEN` があると、`gh` はログインしたトークンより優先してそちらを使う（`gh help environment`）。権限の足りないトークンが入っていると、途中で失敗する
+
+Fine-grained personal access token を使うときは、Repository permissions を次の表のとおりに設定します。表は各 API のドキュメントにある権限から決めました。このトークンで実行したことはありません（[Fine-grained token に必要な権限](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens)）。
+
+| Permission | Access | 用途 |
+| --- | --- | --- |
+| Administration | Read and write | ルールセット・リポジトリの設定・Actions の設定・セキュリティの機能・CodeQL のデフォルトセットアップの取得と変更 |
+| Issues | Read and write | ラベルの取得・作成・更新・削除。ラベルの API は、Issues と Pull requests のどちらかの権限で動く。Pull requests を Read and write にしてもよい（[ラベルの API](https://docs.github.com/en/rest/issues/labels)） |
+| Metadata | Read-only | 自動で付く（必須）。ルールセットの一覧の取得 |
 
 ### GitHub Actions の設定
 
@@ -115,6 +124,7 @@ CI で使うツール（Betterleaks・ShellCheck・bats・jq）は、[mise](http
 
 - 自動マージには GitHub の自動マージを使い、必須チェックがすべて通るとマージされる（[Renovate の自動マージ](https://docs.renovatebot.com/key-concepts/automerge/)・[GitHub の自動マージ](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request)）
 - 必須チェックは `main` の最新を取り込んだ状態で通す必要があるため、同じ実行で作った PR の 2 件目以降は、次の実行まで自動マージされない
+- 脆弱性アラートから作る PR は、公開後 14 日を待たずに作られる（[Minimum Release Age](https://docs.renovatebot.com/key-concepts/minimum-release-age/)）。minor・patch の更新なら、待たずに自動マージされると推測している。脆弱性アラート向けのデフォルトの設定に `automerge` がなく、上の表の設定が残るため（[Renovate のソース](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config/options/index.ts#L2429-L2449)）。実際の PR では未確認
 - 更新の状況は、Dependency Dashboard の issue「chore(deps): 依存関係の更新状況」にまとまる
 
 ### トークンの準備
