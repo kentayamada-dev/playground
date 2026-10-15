@@ -26,7 +26,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 
 ## リポジトリの設定
 
-GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し、次のコマンドで反映します。何度実行しても同じ状態になります。`gh` と `jq` が必要です（`mise install` で入る）。
+GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し、次のコマンドで反映します。何度実行しても同じ状態になります。`gh` と `jq` が必要です。
 
 ```bash
 .github/scripts/sync-github-settings.sh
@@ -89,13 +89,12 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 ## 使うツール
 
-CI と手元のスクリプトで使うツール（Betterleaks・ShellCheck・bats・jq・gh）は、[mise](https://mise.jdx.dev/) で入れています。[`mise.toml`](mise.toml) で版を、[`mise.lock`](mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元でも `mise install` で同じ版を入れられます。
+CI で使うツール（Betterleaks・ShellCheck・bats・jq）は、[mise](https://mise.jdx.dev/) で入れています。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、mise-action の `working_directory` で読ませています。
 
-- mise-action は、`mise.lock` があると `mise install --locked` で入れる。`mise.lock` にない版やプラットフォームは入らないので、`mise.toml` を書き換えたら `mise lock` を実行して `mise.lock` も更新する
-- `mise.lock` には、CI の linux-arm64 と、macOS（Apple シリコン）の macos-arm64 を記録している。ほかの環境で使うときは、`mise lock --platform` で足す
-- 手元で mise を有効にしていると、このリポジトリでは `gh` も `mise.toml` の版を使う
+- mise-action は、`mise.lock` があると `mise install --locked` で入れる。`mise.lock` にない版やプラットフォームは入らないので、`mise.toml` を書き換えたら、`.github` で `mise lock` を実行して `mise.lock` も更新する
+- `mise.lock` には、CI の linux-arm64 だけを記録している。`mise lock` は `--platform` を付けないと `mise.lock` にあるプラットフォームだけを対象にするので、手元で実行しても macOS などの記録は増えない（[`mise lock`](https://mise.jdx.dev/cli/lock.html)）
 - 署名は `mise lock` で `mise.lock` を更新するときに検証する。CI のインストールでは検証し直さず、`mise.lock` の sha256 と照合する（[`locked_verify_provenance`](https://mise.jdx.dev/configuration/settings.html#locked_verify_provenance)）
-- Betterleaks は `checksums.txt` を cosign の署名で、jq と gh は GitHub の artifact attestations で検証する。検証の方法は、aqua レジストリの定義（[Betterleaks](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/betterleaks/betterleaks/registry.yaml)・[jq](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/jqlang/jq/registry.yaml)・[gh](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/cli/cli/registry.yaml)）に従う
+- Betterleaks は `checksums.txt` を cosign の署名で、jq は GitHub の artifact attestations で検証する。検証の方法は、aqua レジストリの定義（[Betterleaks](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/betterleaks/betterleaks/registry.yaml)・[jq](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/jqlang/jq/registry.yaml)）に従う
 - ShellCheck のリリースには署名もチェックサムのファイルもないので、`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest を使う
 - bats はリリースにファイルがなく、タグのソースアーカイブを入れる。`mise lock` は sha256 を記録しないので、版（タグ）でだけ固定している
 
