@@ -24,7 +24,7 @@ jobs:
           version: 2026.9.18
           # ローカルでは使わないので、mise.toml と mise.lock はルートではなく .github に置いている
           working_directory: .github
-          install_args: zizmor
+          install_args: zizmor@1.29.0
       # 注釈は 1 ステップで最初の 10 件しか表示されず、残りはログにだけ出る https://docs.zizmor.sh/usage/#output-formats
       - run: zizmor --format=github .
         env:
