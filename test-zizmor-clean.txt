@@ -1,1 +1,1 @@
-zizmor の検証用
+zizmor の検証用（synchronize の確認）
