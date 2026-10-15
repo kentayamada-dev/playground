@@ -30,6 +30,16 @@ jobs:
       # 既定の git log は --all でほかのブランチも読み、別の PR の検出でこの PR まで落ちるため、HEAD からたどれる履歴に絞る（--all 以外は既定と同じ）
       # https://github.com/betterleaks/betterleaks/blob/v1.9.0/sources/git.go#L121-L122
       # 公開リポジトリの実行ログは GitHub にログインすれば誰でも読めるため、--redact で値を伏せる https://docs.github.com/en/actions/how-tos/monitor-workflows/use-workflow-run-logs
-      - run: >-
-          betterleaks git --no-banner --redact --verbose
-          --log-opts="--full-history --diff-filter=tuxdb HEAD" .
+      # 見つけたときだけ終了コードを 2 にし、インストールや設定の誤りで落ちたとき（1）には無効化の手順を出さない
+      # https://github.com/betterleaks/betterleaks/blob/v1.9.0/cmd/root.go#L640-L646
+      - run: |
+          status=0
+          betterleaks git --no-banner --redact --verbose --exit-code 2 \
+            --log-opts="--full-history --diff-filter=tuxdb HEAD" . || status=$?
+          if [ "$status" -eq 2 ]; then
+            message='誤検知でなければ、シークレットは push した時点で公開済みです。コミットを消して通すだけで終わらせず、先に発行元で無効化してください'
+            readme="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/main/README.md#シークレットが見つかったとき"
+            echo "::error title=シークレットが見つかりました::$message。手順: $readme"
+            printf '## シークレットが見つかりました\n\n%s。\n\n手順は [README](%s) にあります。\n' "$message" "$readme" >>"$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$status"

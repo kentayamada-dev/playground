@@ -90,6 +90,16 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 - 誤検知は、その行のコメントに `betterleaks:allow` と書いて除外する
 - 行にコメントを書けないときは、ルートの `.betterleaksignore` に fingerprint を 1 行ずつ書いて除外する。fingerprint の形式は `<コミット>:<パス>:<ルール ID>:<行番号>` で、`--report-format json` のレポートでは `Fingerprint` に出る
 
+### シークレットが見つかったとき
+
+誤検知でなければ、次の順に対応します。公開リポジトリなので、シークレットは push した時点で公開済みです。コミットを消して `betterleaks` を通すだけでは足りません（[Removing sensitive data from a repository](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository)）。
+
+1. 発行元でシークレットを無効化し、新しいものを発行する
+2. シークレットを含むコミットを PR のブランチから取り除き、force push する
+3. 無効化できないシークレットなら、GitHub Support に削除を依頼する。force push しても、PR の参照や SHA を指定したアクセスでコミットは GitHub に残るため
+
+`betterleaks` のジョブは、シークレットを見つけて失敗したときだけ、この節へのリンクを job summary とエラーの注釈に出します。インストールの失敗など、ほかの理由で失敗したときは出しません。
+
 ## 使うツール
 
 CI で使うツール（Betterleaks・editorconfig-checker・ShellCheck・shfmt・bats・jq）は、[mise](https://mise.jdx.dev/) で入れています。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、mise-action の `working_directory` で読ませています。
