@@ -23,7 +23,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 - マージは squash だけで、PR タイトルがそのままコミットのタイトルになる（[`repository.json`](.github/settings/repository.json)）。マージの画面や `gh pr merge --subject` で書き換えたタイトルは検査しない
 - 必須チェックは、`main` の最新を取り込んだ状態で通す必要がある。`main` が先に進んだら、PR のブランチに取り込んでから検査し直す
 - `textlint` と `test` は、PR で関係するファイルを変えていなければ、ステップを飛ばして成功になる。`on.pull_request.paths` で絞ると、実行されなかった PR の必須チェックが Pending のまま残るため
-- `editorconfig` は、PR で変えたファイルにかかわらず、リポジトリ全体を検査する。`pnpm-lock.yaml` など、editorconfig-checker が既定で除外するファイルは検査しない（[Default Excludes](https://github.com/editorconfig-checker/editorconfig-checker/blob/v4.0.2/README.md#default-excludes)）
+- `editorconfig` は、PR で変えたファイルにかかわらず、リポジトリ全体を検査する。`pnpm-lock.yaml` など、editorconfig-checker がデフォルトで除外するファイルは検査しない（[Default Excludes](https://github.com/editorconfig-checker/editorconfig-checker/blob/v4.0.2/README.md#default-excludes)）
 - ワークフローのほかに、CodeQL のデフォルトセットアップが GitHub Actions のワークフローを解析する。エラー・警告のアラートか、medium 以上の重大度のセキュリティアラートがあると、ルールセットの `code_scanning` ルールでマージできない
 - CodeQL の解析は、`main` への push、`main` に向けた PR の作成と push、週 1 回の定期実行で動く。フォークからの PR は解析しない（[デフォルトセットアップ](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types)）
 
@@ -98,7 +98,7 @@ CI で使うツール（Betterleaks・editorconfig-checker・ShellCheck・bats�
 - `mise.lock` には、CI の linux-arm64 だけを記録している。`mise lock` は `--platform` を付けないと `mise.lock` にあるプラットフォームだけを対象にするので、手元で実行しても macOS などの記録は増えない（[`mise lock`](https://mise.jdx.dev/cli/lock.html)）
 - 署名は `mise lock` で `mise.lock` を更新するときに検証する。CI のインストールでは検証し直さず、`mise.lock` の sha256 と照合する（[`locked_verify_provenance`](https://mise.jdx.dev/configuration/settings.html#locked_verify_provenance)）
 - Betterleaks は `checksums.txt` を cosign の署名で、jq は GitHub の artifact attestations で検証する。検証の方法は、aqua レジストリの定義（[Betterleaks](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/betterleaks/betterleaks/registry.yaml)・[jq](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/jqlang/jq/registry.yaml)）に従う
-- editorconfig-checker は、mise のレジストリで aqua ではなく github バックエンドを使い、GitHub の artifact attestations で検証する（[github バックエンド](https://mise.jdx.dev/dev-tools/backends/github.html)）
+- editorconfig-checker は、mise のレジストリで aqua ではなく github バックエンドを使う。GitHub の artifact attestations で検証する（[github バックエンド](https://mise.jdx.dev/dev-tools/backends/github.html)）
 - ShellCheck のリリースには署名もチェックサムのファイルもないので、`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest を使う
 - bats はリリースにファイルがなく、タグのソースアーカイブを入れる。`mise lock` は sha256 を記録しないので、版（タグ）でだけ固定している
 
