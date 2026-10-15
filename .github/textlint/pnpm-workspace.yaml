@@ -10,8 +10,11 @@ trustPolicy: no-downgrade
 # https://pnpm.io/registries
 registries:
   https://npm.flatt.tech/:
-    scopes: ["@", "@jsr"]
+    scopes: [ "@", "@jsr" ]
     prefix: npmjs
   # GitHub Packages は使わないため、名前解決されない .invalid に向けて gh: を失敗させる https://www.rfc-editor.org/rfc/rfc6761#section-6.4
   https://gh.invalid/:
     prefix: gh
+minimumReleaseAgeExclude:
+  # Renovate security update: handlebars@4.7.10
+  - handlebars@4.7.10
