@@ -53,7 +53,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 - 環境変数 `GH_TOKEN` か `GITHUB_TOKEN` があると、`gh` はログインしたトークンより優先してそちらを使う（`gh help environment`）。権限の足りないトークンが入っていると、途中で失敗する
 
-Fine-grained personal access token を使うときは、Repository permissions を次の表のとおりに設定します。表は各 API のドキュメントにある権限から決めました。このトークンで実行したことはありません（[Fine-grained token に必要な権限](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens)）。
+Fine-grained personal access token を使うときは、Repository permissions を次の表のとおりに設定します。表は各 API のドキュメントにある権限から決めたもので、Fine-grained token での実行は未確認です（[Fine-grained token に必要な権限](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens)）。
 
 | Permission | Access | 用途 |
 | --- | --- | --- |
