@@ -26,8 +26,8 @@ jobs:
               - '.github/scripts/**'
               - '.github/settings/**'
               # Renovate が ShellCheck・bats・jq の版だけを上げた PR でも検査する
-              - 'mise.toml'
-              - 'mise.lock'
+              - '.github/mise.toml'
+              - '.github/mise.lock'
               - '.github/workflows/test.yml'
               # ShellCheck と bats は .github/scripts の外にある .sh・.bats も対象にする
               - '**/*.sh'
@@ -40,6 +40,8 @@ jobs:
           # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
           # https://github.com/jdx/mise-action/blob/v5.0.0/src/index.ts#L724-L745
           version: 2026.9.18
+          # ローカルでは使わないので、mise.toml と mise.lock はルートではなく .github に置いている
+          working_directory: .github
           # bats のテストは gh をスタブに置き換えるが、スクリプトとスタブが使う jq は本物なので入れる
           install_args: shellcheck bats jq
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
