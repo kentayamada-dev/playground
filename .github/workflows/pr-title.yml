@@ -12,7 +12,7 @@ on:
       - synchronize
       - reopened
 
-# タイトルを続けて直したとき、前のタイトルを検査した実行が後から終わってその結果が残るのを防ぐ（起こるかは未確認）
+# タイトルを続けて直したときに、同じ PR の古い実行を取り消して無駄な実行を減らす
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
