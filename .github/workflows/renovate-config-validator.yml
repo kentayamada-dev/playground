@@ -22,7 +22,7 @@ jobs:
         with:
           # Renovate がこのワークフローのイメージだけを上げた PR でも、新しい版で検査し直す
           filters: |
-            renovate:
+            renovate: [
               - '.github/renovate.json5'
               - '.github/workflows/renovate-config-validator.yml'
       - if: github.event_name == 'push' || steps.changes.outputs.renovate == 'true'
