@@ -6,7 +6,7 @@
   // CONTRIBUTING.md でタイトルを Conventional Commits 形式と定めているため、履歴からの自動判定に任せない https://docs.renovatebot.com/configuration-options/#semanticcommits
   "semanticCommits": "enabled",
   // ルールセットで squash マージだけを許可している
-  "automergeStrategy": "squash",
+  "automergeStrateg": "squash",
   // ロックファイル更新と Renovate 関連の PR は 0〜3 時に集中し、時間あたりの上限（デフォルト 2）だと並び順が最後のロックファイル更新が後回しになる。同時に開く数は prConcurrentLimit（デフォルト 10）で抑える
   // https://docs.renovatebot.com/configuration-options/#prhourlylimit https://docs.renovatebot.com/configuration-options/#prconcurrentlimit
   "prHourlyLimit": 0,
