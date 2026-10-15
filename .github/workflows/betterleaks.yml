@@ -37,8 +37,12 @@ jobs:
             --log-opts="--full-history --diff-filter=tuxdb HEAD" . || status=$?
           if [ "${status:-0}" -eq 2 ]; then
             message='誤検知でなければ、シークレットは push した時点で公開済みです。コミットを消して通すだけで終わらせず、先に発行元で無効化してください'
-            readme="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/main/README.md#シークレットが見つかったとき"
-            echo "::error title=シークレットが見つかりました::$message。手順: $readme"
+            # README の見出し「シークレットが見つかったとき」を URL エンコードしたもの。注釈の自動リンクが日本語の手前で切れるため
+            # https://github.com/kentayamada-dev/playground/actions/runs/38739495976
+            readme="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/main/README.md#%E3%82%B7%E3%83%BC%E3%82%AF%E3%83%AC%E3%83%83%E3%83%88%E3%81%8C%E8%A6%8B%E3%81%A4%E3%81%8B%E3%81%A3%E3%81%9F%E3%81%A8%E3%81%8D"
+            # ワークフローコマンドでは % がエスケープの記号になるため、%25 にする
+            # https://github.com/actions/toolkit/blob/7e25f67e8fd17369aa21e6e816ac99654106e0dc/packages/core/src/command.ts#L103-L108
+            echo "::error title=シークレットが見つかりました::$message。手順: ${readme//%/%25}"
             printf '## シークレットが見つかりました\n\n%s。\n\n手順は [README](%s) にあります。\n' "$message" "$readme" >>"$GITHUB_STEP_SUMMARY"
           fi
           exit "${status:-0}"
