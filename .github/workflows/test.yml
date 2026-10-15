@@ -35,7 +35,7 @@ jobs:
               # ShellCheck・shfmt・bats は .github/scripts の外にある .sh・.bats も対象にする
               - '**/*.sh'
               - '**/*.bats'
-      - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
+      - if: github.event_name == 'push' || steps.change.outputs.test == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: github.event_name == 'push' || steps.changes.outputs.test == 'true'
         uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
