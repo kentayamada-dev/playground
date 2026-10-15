@@ -12,11 +12,6 @@ on:
       - synchronize
       - reopened
 
-# タイトルを続けて直したとき、前のタイトルを検査した実行が後から終わってその結果が残るのを防ぐ（起こるかは未確認）
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
 # アクションは最新のタイトルを読むため、PR を API で取得し直す https://github.com/amannn/action-semantic-pull-request/blob/48f256284bd46cdaab1048c3721360e808335d50/src/index.js#L38-L46
 permissions:
   pull-requests: read
@@ -46,3 +41,6 @@ jobs:
           # u フラグなしで RegExp にされ \p{...} を使えないため、ひらがな・カタカナ・漢字はブロックの範囲で書く https://github.com/amannn/action-semantic-pull-request/blob/48f256284bd46cdaab1048c3721360e808335d50/src/validatePrTitle.js#L129
           subjectPattern: '^(?!\s)(?!(?:修正|改善)\s*$)(?=.*[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]).+$'
           subjectPatternError: 'タイトル「{title}」の説明「{subject}」が CONTRIBUTING.md の規約に合いません。説明は「: 」の直後から日本語で書き、「修正」「改善」のような中身のわからない言葉だけにしないでください'
+      # 検証用: タイトルに「遅延」を含む実行だけ、判定のあとで終わる時刻を遅らせる
+      - if: always() && contains(github.event.pull_request.title, '遅延')
+        run: sleep 120
