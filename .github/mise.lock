@@ -3,14 +3,14 @@
 lockfile_version = 3
 
 [[tools.actionlint]]
-version = "1.7.12"
+version = "1.7.11"
 backend = "aqua:rhysd/actionlint"
-specifiers = ["1.7.12"]
+specifiers = ["1.7.11"]
 
 [tools.actionlint."platforms.linux-arm64"]
-checksum = "sha256:325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6"
-url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924897"
+checksum = "sha256:21bc0dfb57a913fe175298c2a9e906ee630f747cb66d0a934d0d4b69f4ee1235"
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.11/actionlint_1.7.11_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/355827685"
 provenance = "github-attestations"
 
 [[tools.bats]]
@@ -34,25 +34,25 @@ url_api = "https://api.github.com/repos/betterleaks/betterleaks/releases/assets/
 provenance = "cosign"
 
 [[tools.editorconfig-checker]]
-version = "4.0.2"
+version = "4.0.1"
 backend = "github:editorconfig-checker/editorconfig-checker"
-specifiers = ["4.0.2"]
+specifiers = ["4.0.1"]
 
 [tools.editorconfig-checker."platforms.linux-arm64"]
-checksum = "sha256:abad76da8c9950fdc2a314bcd66969172aa823e9c595fa7e3a389a91e34d025e"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v4.0.2/editorconfig-checker-linux-arm64.tar.gz"
-url_api = "https://api.github.com/repos/editorconfig-checker/editorconfig-checker/releases/assets/574675779"
+checksum = "sha256:f162c749ade763ed4954de678ebb786c99431b9a615a964c284605e68dbbd3f9"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v4.0.1/editorconfig-checker-linux-arm64.tar.gz"
+url_api = "https://api.github.com/repos/editorconfig-checker/editorconfig-checker/releases/assets/543952366"
 provenance = "github-attestations"
 
 [[tools."github:mvdan/sh"]]
-version = "3.14.1"
+version = "3.14.0"
 backend = "github:mvdan/sh"
-specifiers = ["3.14.1"]
+specifiers = ["3.14.0"]
 
 [tools."github:mvdan/sh"."platforms.linux-arm64"]
-checksum = "sha256:5f2db09dae91fca848f7adbdd014632e921a383863a2ad7e0450ad3aba0c6489"
-url = "https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_linux_arm64"
-url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/547320869"
+checksum = "sha256:8029959a945b5c6f2bc92ce53fca5cf0384c811cc0884b25b196a093a005657a"
+url = "https://github.com/mvdan/sh/releases/download/v3.14.0/shfmt_v3.14.0_linux_arm64"
+url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/534119958"
 provenance = "github-attestations"
 
 [[tools.jq]]
