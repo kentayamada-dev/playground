@@ -1,0 +1,25 @@
+name: editorconfig
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  editorconfig:
+    runs-on: ubuntu-26.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
+        with:
+          # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
+          # https://github.com/jdx/mise-action/blob/v5.0.0/src/index.ts#L724-L745
+          version: 2026.9.18
+          # ローカルでは使わないので、mise.toml と mise.lock はルートではなく .github に置いている
+          working_directory: .github
+          install_args: editorconfig-checker
+      - run: editorconfig-checker -format github-actions

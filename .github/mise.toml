@@ -1,5 +1,6 @@
 [tools]
 bats = "1.14.0"
 betterleaks = "1.9.0"
+editorconfig-checker = "4.0.2"
 jq = "1.8.2"
 shellcheck = "0.11.0"
