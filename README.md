@@ -167,8 +167,3 @@ Repository permissions は次の表のとおりに設定し、ほかは No acces
 ```bash
 gh secret set RENOVATE_TOKEN --repo kentayamada-dev/playground
 ```
-
-## 検証用
-
-- [存在しないファイル](no-such-file.md)
-- [存在しないアンカー](CONTRIBUTING.md#存在しない見出し)
