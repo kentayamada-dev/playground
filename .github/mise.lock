@@ -55,6 +55,17 @@ url = "https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_linux
 url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/547320869"
 provenance = "github-attestations"
 
+[[tools."github:suzuki-shunsuke/ghalint"]]
+version = "1.5.6"
+backend = "github:suzuki-shunsuke/ghalint"
+specifiers = ["1.5.6"]
+
+[tools."github:suzuki-shunsuke/ghalint"."platforms.linux-arm64"]
+checksum = "sha256:203a22c70b40bb161626973ad2a8dd06aeb736699fc8e03dd425dee8ff3406e6"
+url = "https://github.com/suzuki-shunsuke/ghalint/releases/download/v1.5.6/ghalint_1.5.6_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/suzuki-shunsuke/ghalint/releases/assets/409631231"
+provenance = "github-attestations"
+
 [[tools.jq]]
 version = "1.8.2"
 backend = "aqua:jqlang/jq"
