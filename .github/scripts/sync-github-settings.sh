@@ -15,9 +15,44 @@ gh_api() {
   local operation=$1
   shift
   if ! gh api "$@"; then
-    echo "エラー: ${operation}で失敗しました。それより前の設定は反映済みです" >&2
+    if $check_only; then
+      echo "エラー: ${operation}で失敗しました" >&2
+    else
+      echo "エラー: ${operation}で失敗しました。それより前の設定は反映済みです" >&2
+    fi
     return 1
   fi
+}
+
+drift_count=0
+
+drift() {
+  echo "ずれ: $1"
+  drift_count=$((drift_count + 1))
+}
+
+report_drift() {
+  local subject=$1 desired actual
+  # GitHub は配列を定義と違う順で返すことがある（selected-actions の patterns_allowed で確認）。定義の配列はどれも順序で意味が変わらないとみなし、並べ替えて比べる
+  desired=$(jq -S 'walk(if type == "array" then sort else . end)' <<<"$2")
+  actual=$(jq -S 'walk(if type == "array" then sort else . end)' <<<"$3")
+  if [ "$desired" != "$actual" ]; then
+    drift "$subject"
+    diff -u --label 定義 --label GitHub <(echo "$desired") <(echo "$actual") || [ $? -eq 1 ]
+  fi
+}
+
+# 定義に書いた項目だけを反映する設定は、GitHub 上の値から定義にある項目だけを取り出して比べる
+report_defined_drift() {
+  local subject=$1 desired=$2 actual
+  actual=$(jq --argjson desired "$desired" '
+    def defined_only($desired):
+      if ($desired | type) == "object" and type == "object" then
+        . as $actual | reduce ($desired | keys[]) as $key ({}; .[$key] = ($actual[$key] | defined_only($desired[$key])))
+      else . end;
+    defined_only($desired)
+  ' <<<"$3")
+  report_drift "$subject" "$desired" "$actual"
 }
 
 settings_dir=.github/settings
@@ -57,14 +92,24 @@ sync_rulesets() {
     return 1
   fi
 
-  local name id
+  local name id actual
   if $has_definitions; then
     for file in "${files[@]}"; do
       name=$(jq -r '.name' "$file")
       id=$(jq -r --arg name "$name" '.[][] | select(.name == $name) | .id' <<<"$existing")
       if [ -z "$id" ]; then
-        gh_api "ルールセット $name の作成" --method POST 'repos/{owner}/{repo}/rulesets' --input "$file" --silent
-        echo "作成: ルールセット $name ($file)"
+        if $check_only; then
+          drift "ルールセット $name ($file) が GitHub にありません"
+        else
+          gh_api "ルールセット $name の作成" --method POST 'repos/{owner}/{repo}/rulesets' --input "$file" --silent
+          echo "作成: ルールセット $name ($file)"
+        fi
+      elif $check_only; then
+        # 一覧の応答には rules や conditions が含まれないため、1 件ずつ取得する
+        # https://docs.github.com/en/rest/repos/rules?apiVersion=2022-11-28#get-all-repository-rulesets
+        actual=$(gh_get "ルールセット $name の取得" "repos/{owner}/{repo}/rulesets/$id")
+        report_drift "ルールセット $name ($file)" "$(cat "$file")" \
+          "$(jq 'del(.id, .source_type, .source, .node_id, .created_at, .updated_at, .current_user_can_bypass, ._links)' <<<"$actual")"
       else
         gh_api "ルールセット $name の反映" --method PUT "repos/{owner}/{repo}/rulesets/$id" --input "$file" --silent
       fi
@@ -76,8 +121,12 @@ sync_rulesets() {
   stale=$(jq -r --argjson names "$names" '.[][] | select(.name | IN($names[]) | not) | .id' <<<"$existing")
   for id in $stale; do
     name=$(jq -r --argjson id "$id" '.[][] | select(.id == $id) | .name' <<<"$existing")
-    gh_api "ルールセット $name の削除" --method DELETE "repos/{owner}/{repo}/rulesets/$id" --silent
-    echo "削除: ルールセット $name"
+    if $check_only; then
+      drift "定義にないルールセット $name が GitHub にあります"
+    else
+      gh_api "ルールセット $name の削除" --method DELETE "repos/{owner}/{repo}/rulesets/$id" --silent
+      echo "削除: ルールセット $name"
+    fi
   done
 }
 
@@ -91,6 +140,12 @@ validate_repository() {
 }
 
 sync_repository() {
+  if $check_only; then
+    local actual
+    actual=$(gh_get 'リポジトリの設定の取得' 'repos/{owner}/{repo}')
+    report_defined_drift 'リポジトリの設定' "$(cat "$repository_definition")" "$actual"
+    return 0
+  fi
   # has_discussions は API のドキュメントの項目にないが、gh repo edit も同じ API に送っている
   # https://github.com/cli/cli/blob/v2.102.0/pkg/cmd/repo/edit/edit.go
   gh_api 'リポジトリの設定の反映' --method PATCH 'repos/{owner}/{repo}' --input "$repository_definition" --silent
@@ -113,23 +168,54 @@ validate_security() {
   fi
 }
 
+security_feature_enabled() {
+  local feature=$1 response
+  if [ "$feature" != vulnerability_alerts ]; then
+    response=$(gh_get "$feature の取得" "repos/{owner}/{repo}/${feature//_/-}") || return 1
+    jq -r .enabled <<<"$response"
+    return 0
+  fi
+  # 脆弱性アラートは、無効なら 404 を返す。gh はそれを (HTTP 404) と示して失敗するため、ほかの失敗と見分ける
+  # https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#check-if-vulnerability-alerts-are-enabled-for-a-repository
+  if response=$(gh api -H 'Cache-Control: no-cache' 'repos/{owner}/{repo}/vulnerability-alerts' 2>&1); then
+    echo true
+  elif [[ $response == *'(HTTP 404)'* ]]; then
+    echo false
+  else
+    echo "$response" >&2
+    echo "エラー: $feature の取得で失敗しました" >&2
+    return 1
+  fi
+}
+
 sync_security() {
-  local feature enabled
+  local feature enabled current
   for feature in $security_features; do
     enabled=$(jq -r --arg feature "$feature" 'if has($feature) then .[$feature] else empty end' "$security_definition")
-    if [ "$enabled" = true ]; then
+    if [ -z "$enabled" ]; then
+      continue
+    elif $check_only; then
+      current=$(security_feature_enabled "$feature")
+      if [ "$current" != "$enabled" ]; then
+        drift "$feature が定義では $enabled、GitHub では $current"
+      fi
+    elif [ "$enabled" = true ]; then
       gh_api "$feature の反映" --method PUT "repos/{owner}/{repo}/${feature//_/-}" --silent
-    elif [ "$enabled" = false ]; then
+    else
       gh_api "$feature の反映" --method DELETE "repos/{owner}/{repo}/${feature//_/-}" --silent
     fi
   done
 
-  local desired current
+  local desired
   desired=$(jq -c 'if has("code_scanning_default_setup") then .code_scanning_default_setup else empty end' "$security_definition")
   if [ -z "$desired" ]; then
     return 0
   fi
   current=$(gh_get 'CodeQL のデフォルトセットアップの取得' 'repos/{owner}/{repo}/code-scanning/default-setup')
+  if $check_only; then
+    report_defined_drift 'CodeQL のデフォルトセットアップ' "$desired" "$current"
+    return 0
+  fi
   # 設定が同じでも送ると解析が走るかは未確認のため、違うときだけ送る
   if ! jq -e --argjson desired "$desired" '. as $current | $desired | to_entries | all(.value == $current[.key])' <<<"$current" >/dev/null; then
     gh_api 'CodeQL のデフォルトセットアップの反映' --method PATCH 'repos/{owner}/{repo}/code-scanning/default-setup' --input - --silent <<<"$desired"
@@ -152,26 +238,27 @@ validate_actions() {
   fi
 }
 
+sync_actions_setting() {
+  local subject=$1 key=$2 endpoint=$3 body actual
+  body=$(jq -c --arg key "$key" 'if has($key) then .[$key] else empty end' "$actions_definition")
+  if [ -z "$body" ]; then
+    return 0
+  fi
+  if $check_only; then
+    actual=$(gh_get "${subject}の取得" "$endpoint")
+    report_defined_drift "$subject" "$body" "$actual"
+  else
+    gh_api "${subject}の反映" --method PUT "$endpoint" --input - --silent <<<"$body"
+  fi
+}
+
 sync_actions() {
-  local body
-  body=$(jq -c 'if has("permissions") then .permissions else empty end' "$actions_definition")
-  if [ -n "$body" ]; then
-    gh_api 'Actions の権限の反映' --method PUT 'repos/{owner}/{repo}/actions/permissions' --input - --silent <<<"$body"
-  fi
-  body=$(jq -c 'if has("selected_actions") then .selected_actions else empty end' "$actions_definition")
-  if [ -n "$body" ]; then
-    # allowed_actions が selected でないと受け付けないため、権限のあとで送る
-    # https://docs.github.com/en/rest/actions/permissions?apiVersion=2022-11-28#set-allowed-actions-and-reusable-workflows-for-a-repository
-    gh_api '実行できるアクションの反映' --method PUT 'repos/{owner}/{repo}/actions/permissions/selected-actions' --input - --silent <<<"$body"
-  fi
-  body=$(jq -c 'if has("fork_pr_contributor_approval") then .fork_pr_contributor_approval else empty end' "$actions_definition")
-  if [ -n "$body" ]; then
-    gh_api 'フォークからの PR の承認の方針の反映' --method PUT 'repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval' --input - --silent <<<"$body"
-  fi
-  body=$(jq -c 'if has("workflow_permissions") then .workflow_permissions else empty end' "$actions_definition")
-  if [ -n "$body" ]; then
-    gh_api 'GITHUB_TOKEN の既定の権限の反映' --method PUT 'repos/{owner}/{repo}/actions/permissions/workflow' --input - --silent <<<"$body"
-  fi
+  sync_actions_setting 'Actions の権限' permissions 'repos/{owner}/{repo}/actions/permissions'
+  # allowed_actions が selected でないと受け付けないため、権限のあとで送る
+  # https://docs.github.com/en/rest/actions/permissions?apiVersion=2022-11-28#set-allowed-actions-and-reusable-workflows-for-a-repository
+  sync_actions_setting '実行できるアクション' selected_actions 'repos/{owner}/{repo}/actions/permissions/selected-actions'
+  sync_actions_setting 'フォークからの PR の承認の方針' fork_pr_contributor_approval 'repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval'
+  sync_actions_setting 'GITHUB_TOKEN の既定の権限' workflow_permissions 'repos/{owner}/{repo}/actions/permissions/workflow'
 }
 
 labels_definition="$settings_dir/labels.json"
@@ -211,23 +298,42 @@ sync_labels() {
   for ((i = 0; i < count; i++)); do
     label=$(jq -c ".[$i]" "$labels_definition")
     name=$(jq -r '.name' <<<"$label")
-    if jq -e --arg name "$name" 'any(.[][]; .name == $name)' <<<"$existing" >/dev/null; then
-      gh_api "ラベル $name の反映" --method PATCH "repos/{owner}/{repo}/labels/$(uri_encode "$name")" --input - --silent <<<"$(jq -c 'del(.name)' <<<"$label")"
+    if ! jq -e --arg name "$name" 'any(.[][]; .name == $name)' <<<"$existing" >/dev/null; then
+      if $check_only; then
+        drift "ラベル $name が GitHub にありません"
+      else
+        gh_api "ラベル $name の作成" --method POST 'repos/{owner}/{repo}/labels' --input - --silent <<<"$label"
+        echo "作成: ラベル $name"
+      fi
+    elif $check_only; then
+      report_defined_drift "ラベル $name" "$label" "$(jq -c --arg name "$name" 'first(.[][] | select(.name == $name))' <<<"$existing")"
     else
-      gh_api "ラベル $name の作成" --method POST 'repos/{owner}/{repo}/labels' --input - --silent <<<"$label"
-      echo "作成: ラベル $name"
+      gh_api "ラベル $name の反映" --method PATCH "repos/{owner}/{repo}/labels/$(uri_encode "$name")" --input - --silent <<<"$(jq -c 'del(.name)' <<<"$label")"
     fi
   done
 
   local stale
   stale=$(jq -r --slurpfile defined "$labels_definition" '.[][] | .name | select(IN($defined[0][].name) | not)' <<<"$existing")
   while IFS= read -r name; do
-    if [ -n "$name" ]; then
+    if [ -z "$name" ]; then
+      continue
+    elif $check_only; then
+      drift "定義にないラベル $name が GitHub にあります"
+    else
       gh_api "ラベル $name の削除" --method DELETE "repos/{owner}/{repo}/labels/$(uri_encode "$name")" --silent
       echo "削除: ラベル $name"
     fi
   done <<<"$stale"
 }
+
+# --check では GitHub を変えず、反映すると変わる箇所をずれとして示す
+check_only=false
+if [ $# -eq 1 ] && [ "$1" = --check ]; then
+  check_only=true
+elif [ $# -ne 0 ]; then
+  echo "使い方: $0 [--check]" >&2
+  exit 1
+fi
 
 # jq がないと定義の検査（if ! jq）が失敗し、定義の不備と誤って示すため、先に確かめる
 for command in gh jq; do
@@ -246,10 +352,21 @@ validate_repository
 validate_security
 validate_actions
 validate_labels
-echo "GitHub に定義を適用しています..."
+if $check_only; then
+  echo "GitHub の設定を定義と比べています..."
+else
+  echo "GitHub に定義を適用しています..."
+fi
 sync_rulesets
 sync_repository
 sync_security
 sync_actions
 sync_labels
-echo "GitHub に定義を適用しました"
+if ! $check_only; then
+  echo "GitHub に定義を適用しました"
+elif [ "$drift_count" -eq 0 ]; then
+  echo "GitHub の設定は定義と一致しています"
+else
+  echo "GitHub の設定に、定義と違う箇所が $drift_count 件あります"
+  exit 1
+fi
