@@ -23,6 +23,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`renovate-config-validator.yml`](.github/workflows/renovate-config-validator.yml) | PR・`main` への push | [`.github/renovate.json5`](.github/renovate.json5) の構文と、オプションの名前・値。Renovate の [renovate-config-validator](https://docs.renovatebot.com/config-validation/) で検査する | `renovate-config-validator` |
 | [`zizmor.yml`](.github/workflows/zizmor.yml) | PR・`main` への push | GitHub Actions のワークフローのセキュリティ上の問題。テンプレートインジェクション・広すぎる権限・checkout の資格情報の残留・フォークにしかないコミットへの固定などを、[zizmor](https://github.com/zizmorcore/zizmor) で検査する | `zizmor` |
 | [`ghalint.yml`](.github/workflows/ghalint.yml) | PR・`main` への push | GitHub Actions のワークフローが、すべてのジョブに `timeout-minutes` を書いているか、シークレットを必要なステップだけに渡しているかなど。[ghalint](https://github.com/suzuki-shunsuke/ghalint) で検査する | `ghalint` |
+| [`lychee.yml`](.github/workflows/lychee.yml) | PR・`main` への push・毎週 | git で管理するファイルに書いたリンクが切れていないか。[lychee](https://github.com/lycheeverse/lychee) で検査する。PR と `main` への push ではリポジトリ内のリンクだけ、毎週の実行では外部のリンクも検査する | `lychee`（リポジトリ内のリンクの検査だけ） |
 
 - マージは squash だけで、PR タイトルがそのままコミットのタイトルになる（[`repository.json`](.github/settings/repository.json)）。マージの画面や `gh pr merge --subject` で書き換えたタイトルは検査しない
 - 必須チェックは、`main` の最新を取り込んだ状態で通す必要がある。`main` が先に進んだら、PR のブランチに取り込んでから検査し直す
@@ -33,6 +34,9 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 - `zizmor` は、PR で変えたファイルにかかわらず、すべてのワークフローを検査する。指摘が 1 件でもあると失敗する。PR の注釈は最初の 10 件までで、残りはジョブのログにだけ出る（[Output formats](https://docs.zizmor.sh/usage/#output-formats)）
 - `zizmor` には `GITHUB_TOKEN` を渡し、GitHub API で調べる監査も動かす（[Operating modes](https://docs.zizmor.sh/usage/#operating-modes)）。対象は `impostor-commit`・`known-vulnerable-actions`・`ref-confusion` の 3 つ。指摘を無視するときは、YAML の該当する行に `# zizmor: ignore[<監査名>]` と書く（[Ignoring results](https://docs.zizmor.sh/usage/#ignoring-results)）
 - `ghalint` は、PR で変えたファイルにかかわらず、すべてのワークフローを検査する。`zizmor` の監査にない次のポリシーのために使う（[Policies](https://github.com/suzuki-shunsuke/ghalint/blob/v1.5.6/README.md#policies)・[zizmor の監査の一覧](https://docs.zizmor.sh/audits/)）。`job_timeout_minutes_is_required` は、すべてのジョブに `timeout-minutes` を求める。`workflow_secrets`・`job_secrets` は、シークレットをワークフロー・ジョブの `env` に置かせない
+- `lychee` は、PR で変えたファイルにかかわらず、`git ls-files` の全ファイルを検査する。ネットワークを使わず（`--offline`）、リポジトリ内のファイルへのリンクと見出しのアンカーだけを確認する。外部のサイトの障害やレート制限で、PR をマージできなくならないようにするため
+- 外部のリンクは、`lychee.yml` の `lychee-external` が毎週月曜と手動の実行（`workflow_dispatch`）で検査する。必須チェックではない。レート制限の `429` は、リンク切れとは限らないため成功として扱う。通らないリンクがあると、[`report-broken-links.sh`](.github/scripts/report-broken-links.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える。直したら issue は手動で閉じる
+- lychee は、ディレクトリを渡すと `.md`・`.html` などの拡張子のファイルしか読まない（[`--extensions`](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L456-L467)）。そのため、`git ls-files` の一覧を渡す。Markdown と HTML 以外のファイルからは URL だけを拾い、コメントに書いた相対パスは検査しない。`mise.lock` の URL は `mise lock` が書くものなので、外部のリンクの検査から除く
 - ワークフローのほかに、CodeQL のデフォルトセットアップが GitHub Actions のワークフローを解析する。エラー・警告のアラートか、medium 以上の重大度のセキュリティアラートがあると、ルールセットの `code_scanning` ルールでマージできない
 - CodeQL の解析は、`main` への push、`main` に向けた PR の作成と push、週 1 回の定期実行で動く。フォークからの PR は解析しない（[デフォルトセットアップ](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types)）
 
@@ -101,7 +105,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 ## 使うツール
 
-CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対象は actionlint・Betterleaks・editorconfig-checker・ShellCheck・shfmt・bats・jq・zizmor・ghalint です。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、mise-action の `working_directory` で読ませています。
+CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対象は actionlint・Betterleaks・editorconfig-checker・ShellCheck・shfmt・bats・jq・zizmor・ghalint・lychee です。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、mise-action の `working_directory` で読ませています。
 
 - mise-action は、`mise.lock` があると `mise install --locked` で入れる。`mise.lock` にない版やプラットフォームは入らないので、`mise.toml` を書き換えたら、`.github` で `mise lock` を実行して `mise.lock` も更新する
 - `mise.lock` には、CI の linux-arm64 だけを記録している。`mise lock` は `--platform` を付けないと `mise.lock` にあるプラットフォームだけを対象にするので、手元で実行しても macOS などの記録は増えない（[`mise lock`](https://mise.jdx.dev/cli/lock.html)）
@@ -111,6 +115,7 @@ CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対�
 - shfmt は、mise のレジストリでは aqua バックエンドになるが、aqua レジストリの定義に検証の設定がない（[mvdan/sh](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/mvdan/sh/registry.yaml)）。そのため、`mise.toml` に `github:mvdan/sh` と書いて github バックエンドで入れ、GitHub の artifact attestations で検証する
 - ghalint も、mise のレジストリでは aqua バックエンドになるが、aqua レジストリの定義の検証を mise が使えない（[suzuki-shunsuke/ghalint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/suzuki-shunsuke/ghalint/registry.yaml)）。cosign は `opts` で渡す形で、mise がネイティブに検証するキーやバンドルの指定がない。SLSA provenance には、署名者の指定がない（[aqua バックエンドの実装](https://github.com/jdx/mise/blob/v2026.9.18/src/backend/aqua.rs#L1368-L1404)）。そのため、`mise.toml` に `github:suzuki-shunsuke/ghalint` と書いて github バックエンドで入れる。GitHub の artifact attestations で検証する
 - ShellCheck のリリースには署名もチェックサムのファイルもないので、`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest を使う
+- lychee のリリースには、署名も GitHub の artifact attestations もない。aqua レジストリの定義にも検証の設定がない（[lycheeverse/lychee](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/lycheeverse/lychee/registry.yaml)）。`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest と同じ値になる
 - bats はリリースにファイルがなく、タグのソースアーカイブを入れる。`mise lock` は sha256 を記録しないので、版（タグ）でだけ固定している
 
 ## Renovate
