@@ -25,20 +25,71 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`ghalint.yml`](.github/workflows/ghalint.yml) | PR・`main` への push | GitHub Actions のワークフローが、すべてのジョブに `timeout-minutes` を書いているか、シークレットを必要なステップだけに渡しているかなど。[ghalint](https://github.com/suzuki-shunsuke/ghalint) で検査する | `ghalint` |
 | [`lychee.yml`](.github/workflows/lychee.yml) | PR・`main` への push・毎週 | git で管理するファイルに書いたリンクが切れていないか。[lychee](https://github.com/lycheeverse/lychee) で検査する。PR と `main` への push ではリポジトリ内のリンクだけ、毎週の実行では外部のリンクも検査する | `lychee`（リポジトリ内のリンクの検査だけ） |
 
+### マージの条件
+
 - マージは squash だけで、PR タイトルがそのままコミットのタイトルになる（[`repository.json`](.github/settings/repository.json)）。マージの画面や `gh pr merge --subject` で書き換えたタイトルは検査しない
 - 必須チェックは、`main` の最新を取り込んだ状態で通す必要がある。`main` が先に進んだら、PR のブランチに取り込んでから検査し直す
-- `textlint` と `test` は、PR で関係するファイルを変えていなければ、ステップを飛ばして成功になる。`on.pull_request.paths` で絞ると、実行されなかった PR の必須チェックが Pending のまま残るため
-- `editorconfig` は、PR で変えたファイルにかかわらず、リポジトリ全体を検査する。`pnpm-lock.yaml` など、editorconfig-checker がデフォルトで除外するファイルは検査しない（[Default Excludes](https://github.com/editorconfig-checker/editorconfig-checker/blob/v4.0.2/README.md#default-excludes)）
-- `actionlint` は、PR で変えたファイルにかかわらず、すべてのワークフローを検査する。actionlint v1.7.12 は、GitHub ホストのランナーのラベル `ubuntu-26.04-arm` を知らない（[既知のラベルの一覧](https://github.com/rhysd/actionlint/blob/v1.7.12/rule_runner_label.go)）。そのため、`actionlint.yaml` でセルフホストのランナーのラベルとして認めている
-- `renovate-config-validator` は、PR で変えたファイルにかかわらず検査する。[`renovate.yml`](.github/workflows/renovate.yml) で動かす Renovate と同じ版の Docker イメージを、ジョブのコンテナにして使う。エラーだけでなく警告でも失敗する。`--strict` を付けていないので、設定の移行が必要なだけでは失敗しない（[renovate-config-validator の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L101-L120)）
-- `zizmor` は、PR で変えたファイルにかかわらず、すべてのワークフローを検査する。指摘が 1 件でもあると失敗する。PR の注釈は最初の 10 件までで、残りはジョブのログにだけ出る（[Output formats](https://docs.zizmor.sh/usage/#output-formats)）
-- `zizmor` には `GITHUB_TOKEN` を渡し、GitHub API で調べる監査も動かす（[Operating modes](https://docs.zizmor.sh/usage/#operating-modes)）。対象は `impostor-commit`・`known-vulnerable-actions`・`ref-confusion` の 3 つ。指摘を無視するときは、YAML の該当する行に `# zizmor: ignore[<監査名>]` と書く（[Ignoring results](https://docs.zizmor.sh/usage/#ignoring-results)）
-- `ghalint` は、PR で変えたファイルにかかわらず、すべてのワークフローを検査する。`zizmor` の監査にない次のポリシーのために使う（[Policies](https://github.com/suzuki-shunsuke/ghalint/blob/v1.5.6/README.md#policies)・[zizmor の監査の一覧](https://docs.zizmor.sh/audits/)）。`job_timeout_minutes_is_required` は、すべてのジョブに `timeout-minutes` を求める。`workflow_secrets`・`job_secrets` は、シークレットをワークフロー・ジョブの `env` に置かせない
-- `lychee` は、PR で変えたファイルにかかわらず、`git ls-files` の全ファイルを検査する。ネットワークを使わず（`--offline`）、リポジトリ内のファイルへのリンクと見出しのアンカーだけを確認する。外部のサイトの障害やレート制限で、PR をマージできなくならないようにするため
-- 外部のリンクは、`lychee.yml` の `lychee-external` が毎週月曜と手動の実行（`workflow_dispatch`）で検査する。必須チェックではない。レート制限の `429` は、リンク切れとは限らないため成功として扱う。通らないリンクがあると、[`report-broken-links.sh`](.github/scripts/report-broken-links.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える。直したら issue は手動で閉じる
-- lychee は、ディレクトリを渡すと `.md`・`.html` などの拡張子のファイルしか読まない（[`--extensions`](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L456-L467)）。そのため、`git ls-files` の一覧を渡す。Markdown と HTML 以外のファイルからは URL だけを拾い、コメントに書いた相対パスは検査しない。`mise.lock` の URL は `mise lock` が書くものなので、外部のリンクの検査から除く
-- ワークフローのほかに、CodeQL のデフォルトセットアップが GitHub Actions のワークフローを解析する。エラー・警告のアラートか、medium 以上の重大度のセキュリティアラートがあると、ルールセットの `code_scanning` ルールでマージできない
-- CodeQL の解析は、`main` への push、`main` に向けた PR の作成と push、週 1 回の定期実行で動く。フォークからの PR は解析しない（[デフォルトセットアップ](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types)）
+- 必須チェックのほかに、CodeQL のアラートがあってもマージできない。詳しくは [CodeQL](#codeql)
+
+### 検査する範囲
+
+チェックごとに、次の範囲を検査します。`textlint` と `test` のほかは、PR で変えたファイルにかかわらず、毎回すべてを検査します。
+
+| チェック | 検査する範囲 |
+| --- | --- |
+| `textlint`・`test` | 関係するファイルを変えた PR だけ。変えていない PR では、ステップを飛ばして成功になる |
+| `editorconfig` | リポジトリ全体。`pnpm-lock.yaml` など、editorconfig-checker がデフォルトで除外するファイルは除く（[Default Excludes](https://github.com/editorconfig-checker/editorconfig-checker/blob/v4.0.2/README.md#default-excludes)） |
+| `actionlint`・`zizmor`・`ghalint` | すべてのワークフロー |
+| `renovate-config-validator` | [`.github/renovate.json5`](.github/renovate.json5) |
+| `lychee` | `git ls-files` のすべてのファイル |
+
+- `on.pull_request.paths` で絞ると、実行されなかった PR の必須チェックが Pending のまま残る。そのため、`textlint` と `test` はステップを飛ばして成功にしている
+
+### ツールごとの補足
+
+#### actionlint
+
+- actionlint v1.7.12 は、GitHub ホストのランナーのラベル `ubuntu-26.04-arm` を知らない（[既知のラベルの一覧](https://github.com/rhysd/actionlint/blob/v1.7.12/rule_runner_label.go)）。そのため、[`actionlint.yaml`](.github/actionlint.yaml) でセルフホストのランナーのラベルとして認めている
+
+#### renovate-config-validator
+
+- [`renovate.yml`](.github/workflows/renovate.yml) で動かす Renovate と同じ版の Docker イメージを、ジョブのコンテナにして使う
+- エラーだけでなく警告でも失敗する。`--strict` を付けていないので、設定の移行が必要なだけでは失敗しない（[renovate-config-validator の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L101-L120)）
+
+#### zizmor
+
+- 指摘が 1 件でもあると失敗する。PR の注釈は最初の 10 件までで、残りはジョブのログにだけ出る（[Output formats](https://docs.zizmor.sh/usage/#output-formats)）
+- `GITHUB_TOKEN` を渡し、GitHub API で調べる監査も動かす（[Operating modes](https://docs.zizmor.sh/usage/#operating-modes)）。対象は `impostor-commit`・`known-vulnerable-actions`・`ref-confusion` の 3 つ
+- 指摘を無視するときは、YAML の該当する行に `# zizmor: ignore[<監査名>]` と書く（[Ignoring results](https://docs.zizmor.sh/usage/#ignoring-results)）
+
+#### ghalint
+
+zizmor の監査にない次のポリシーのために使います（[Policies](https://github.com/suzuki-shunsuke/ghalint/blob/v1.5.6/README.md#policies)・[zizmor の監査の一覧](https://docs.zizmor.sh/audits/)）。
+
+- `job_timeout_minutes_is_required` は、すべてのジョブに `timeout-minutes` を求める
+- `workflow_secrets`・`job_secrets` は、シークレットをワークフロー・ジョブの `env` に置かせない
+
+#### lychee
+
+- ネットワークを使わず（`--offline`）、リポジトリ内のファイルへのリンクと見出しのアンカーだけを確認する。外部のサイトの障害やレート制限で、PR をマージできなくならないようにするため
+- ディレクトリを渡すと `.md`・`.html` などの拡張子のファイルしか読まない（[`--extensions`](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L456-L467)）。そのため、`git ls-files` の一覧を渡す
+- Markdown と HTML 以外のファイルからは URL だけを拾い、コメントに書いた相対パスは検査しない
+
+### 外部リンクの定期検査
+
+外部のリンクは、[`lychee.yml`](.github/workflows/lychee.yml) の `lychee-external` が毎週月曜と手動の実行（`workflow_dispatch`）で検査します。必須チェックではありません。
+
+- レート制限の `429` は、リンク切れとは限らないため成功として扱う
+- `mise.lock` の URL は `mise lock` が書くものなので、検査から除く
+- 通らないリンクがあると、[`report-broken-links.sh`](.github/scripts/report-broken-links.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える
+- リンクを直したら、issue は手動で閉じる
+
+### CodeQL
+
+ワークフローのほかに、CodeQL のデフォルトセットアップが GitHub Actions のワークフローを解析します。
+
+- エラー・警告のアラートか、medium 以上の重大度のセキュリティアラートがあると、ルールセットの `code_scanning` ルールでマージできない
+- 解析は、`main` への push、`main` に向けた PR の作成と push、週 1 回の定期実行で動く。フォークからの PR は解析しない（[デフォルトセットアップ](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types)）
 
 ## リポジトリの設定
 
