@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - test/lychee-broken-link
   # 外部のリンクは、こちらが何も変えなくても移動や削除で切れるため、定期的に検査する
   schedule:
     - cron: '37 0 * * 1'
