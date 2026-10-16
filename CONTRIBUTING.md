@@ -49,11 +49,40 @@ docs/contributing-guide
 - 外部要因への対処（仕様上の制約、ライブラリの不具合、互換性のための回避策）には、根拠となる URL や issue 番号を添えてください
 - 確証のない内容を書くときは「未確認」「推測」と明示してください
 
+`.github/scripts/sync-github-settings.sh` の `gh_get` を縮めた例です。次のコメントは書きません。コードの言い換えで、消しても誤解は生まれないためです。
+
+```bash
+# キャッシュを使わせない
+gh_api "$operation" -H 'Cache-Control: no-cache' "$@"
+```
+
+次のように書きます。消すとヘッダーが要らないように見えて外され、古い値を読む不具合が戻るためです。
+
+```bash
+# GET の応答は Cache-Control: private, max-age=60 で、変更の直後に古い値が返ることがあったため、キャッシュを使わせない
+# https://github.com/kentayamada-dev/playground/pull/53
+gh_api "$operation" -H 'Cache-Control: no-cache' "$@"
+```
+
 ### 定数
 
 - 同じ値を複数の箇所に書くときは、1 つの定数にまとめてください。特にファイルやディレクトリのパスは、場所を移すとすべての箇所を書き換えることになるため、必ずまとめてください
 - 外部の仕様で決まり、こちらの都合で変わらない値（API のパスなど）は、定数にせずそのまま書いてください。ドキュメントと照らし合わせられる形を保つため
 - テストの入力と期待値は、定数にせずそのまま書いてください。テストを単独で読めるようにし、期待値を実装の写しにしないため
+
+`.github/scripts/sync-github-settings.sh` と `.github/scripts/sync-github-settings.bats` から抜き出した例です。
+
+```bash
+# パスは 1 つの定数にまとめる
+settings_dir=.github/settings
+local files=("$settings_dir"/rulesets/*.json)
+
+# API のパスは定数にせず、そのまま書く
+gh_api "ルールセット $name の削除" --method DELETE "repos/{owner}/{repo}/rulesets/$id" --silent
+
+# テストの期待値は、実装の settings_dir を使わずにそのまま書く
+[[ $output == *"作成: ルールセット main (.github/settings/rulesets/main.json)"* ]]
+```
 
 ### テスト
 
