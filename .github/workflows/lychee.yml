@@ -71,23 +71,8 @@ jobs:
         env:
           # github.com のリンクでレート制限にかからないようにする https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L509-L512
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # 失敗のたびに issue を増やさず、開いている issue があれば本文を最新の結果に書き換える
       - if: failure() && steps.lychee.outcome == 'failure'
-        run: |
-          body=$RUNNER_TEMP/issue.md
-          {
-            echo "[外部リンクの定期検査]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) で、次のリンクが通りませんでした。"
-            echo
-            cat "$RUNNER_TEMP/lychee.md"
-          } >"$body"
-          number=$(gh issue list --state open --limit 1000 --json number,title --jq '[.[] | select(.title == env.ISSUE_TITLE)][0].number // empty')
-          if [[ -n $number ]]; then
-            gh issue edit "$number" --body-file "$body"
-          else
-            gh issue create --title "$ISSUE_TITLE" --body-file "$body"
-          fi
-        shell: bash
+        run: .github/scripts/report-broken-links.sh "$RUNNER_TEMP/lychee.md"
         env:
-          ISSUE_TITLE: 'docs: 外部リンクの定期検査で見つかったリンク切れを直す'
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
