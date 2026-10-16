@@ -58,5 +58,17 @@
         }
       ]
     }
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rm -rf \"${CLAUDE_PROJECT_DIR:?}/.claude/tmp\""
+          }
+        ]
+      }
+    ]
   }
 }
