@@ -1,0 +1,13 @@
+name: verify-ghalint-timeout
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  no-timeout:
+    runs-on: ubuntu-26.04-arm
+    steps:
+      - run: echo hello
