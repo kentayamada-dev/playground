@@ -12,6 +12,7 @@ permissions:
 jobs:
   renovate-config-validator:
     runs-on: ubuntu-26.04-arm
+    timeout-minutes: 5
     # renovate.yml で動かす Renovate と同じイメージで検査し、設定の解釈を本番の実行とそろえる。
     # docker:// のアクションは Actions の許可設定で起動できないため、ジョブのコンテナで動かす https://github.com/kentayamada-dev/playground/actions/runs/38712548741
     container:

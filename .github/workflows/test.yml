@@ -14,6 +14,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-26.04-arm
+    timeout-minutes: 5
     steps:
       # 必須チェックなので、textlint.yml と同じく on.pull_request.paths で絞らずにステップを if で飛ばす
       - id: changes

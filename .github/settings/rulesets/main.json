@@ -77,6 +77,10 @@
           {
             "context": "zizmor",
             "integration_id": 15368
+          },
+          {
+            "context": "ghalint",
+            "integration_id": 15368
           }
         ]
       }
