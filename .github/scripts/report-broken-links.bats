@@ -6,7 +6,9 @@ setup() {
   script="$BATS_TEST_DIRNAME/report-broken-links.sh"
   report="$BATS_TEST_TMPDIR/lychee.md"
   echo '* [404] <https://example.com/gone>' >"$report"
-  export GITHUB_SERVER_URL=https://github.com GITHUB_REPOSITORY=owner/repo GITHUB_RUN_ID=123
+  # 外部リンクの定期検査はこのファイルも読むため、lychee が検査しない example.com をダミーの URL に使う
+  # https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L175
+  export GITHUB_SERVER_URL=https://example.com GITHUB_REPOSITORY=owner/repo GITHUB_RUN_ID=123
 
   # gh issue の偽物。GitHub 上の issue を $STUB_DIR/issues.json として読み書きする
   export STUB_DIR="$BATS_TEST_TMPDIR/stub"
@@ -96,7 +98,7 @@ assert_github_issues() {
 
   assert_github_issues '[
     {"number": 22, "title": "chore(deps): 依存関係の更新状況", "state": "open", "body": "ダッシュボード"},
-    {"number": 23, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://github.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
+    {"number": 23, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
   ]'
 }
 
@@ -110,7 +112,7 @@ assert_github_issues() {
 
   assert_github_issues '[
     {"number": 22, "title": "chore(deps): 依存関係の更新状況", "state": "open", "body": "ダッシュボード"},
-    {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://github.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
+    {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
   ]'
 }
 
@@ -121,7 +123,7 @@ assert_github_issues() {
 
   assert_github_issues '[
     {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "closed", "body": "前回の結果"},
-    {"number": 186, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://github.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
+    {"number": 186, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
   ]'
 }
 
@@ -132,7 +134,7 @@ assert_github_issues() {
 
   assert_github_issues '[
     {"number": 190, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す（README）", "state": "open", "body": "手で立てた issue"},
-    {"number": 191, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://github.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
+    {"number": 191, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
   ]'
 }
 
@@ -146,7 +148,7 @@ assert_github_issues() {
 
   assert_github_issues '[
     {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前々回の結果"},
-    {"number": 190, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://github.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
+    {"number": 190, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
   ]'
 }
 
