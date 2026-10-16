@@ -32,7 +32,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 - `renovate-config-validator` は、PR で変えたファイルにかかわらず検査する。[`renovate.yml`](.github/workflows/renovate.yml) で動かす Renovate と同じ版の Docker イメージを、ジョブのコンテナにして使う。エラーだけでなく警告でも失敗する。`--strict` を付けていないので、設定の移行が必要なだけでは失敗しない（[renovate-config-validator の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L101-L120)）
 - `zizmor` は、PR で変えたファイルにかかわらず、すべてのワークフローを検査する。指摘が 1 件でもあると失敗する。PR の注釈は最初の 10 件までで、残りはジョブのログにだけ出る（[Output formats](https://docs.zizmor.sh/usage/#output-formats)）
 - `zizmor` には `GITHUB_TOKEN` を渡し、GitHub API で調べる監査も動かす（[Operating modes](https://docs.zizmor.sh/usage/#operating-modes)）。対象は `impostor-commit`・`known-vulnerable-actions`・`ref-confusion` の 3 つ。指摘を無視するときは、YAML の該当する行に `# zizmor: ignore[<監査名>]` と書く（[Ignoring results](https://docs.zizmor.sh/usage/#ignoring-results)）
-- `ghalint` は、PR で変えたファイルにかかわらず、すべてのワークフローを検査する。`zizmor` の監査にない、すべてのジョブへの `timeout-minutes` の要求（`job_timeout_minutes_is_required`）と、シークレットをワークフロー・ジョブの `env` に置くことの禁止（`workflow_secrets`・`job_secrets`）のために使う（[Policies](https://github.com/suzuki-shunsuke/ghalint/blob/v1.5.6/README.md#policies)・[zizmor の監査の一覧](https://docs.zizmor.sh/audits/)）
+- `ghalint` は、PR で変えたファイルにかかわらず、すべてのワークフローを検査する。`zizmor` の監査にない次のポリシーのために使う（[Policies](https://github.com/suzuki-shunsuke/ghalint/blob/v1.5.6/README.md#policies)・[zizmor の監査の一覧](https://docs.zizmor.sh/audits/)）。`job_timeout_minutes_is_required` は、すべてのジョブに `timeout-minutes` を求める。`workflow_secrets`・`job_secrets` は、シークレットをワークフロー・ジョブの `env` に置かせない
 - ワークフローのほかに、CodeQL のデフォルトセットアップが GitHub Actions のワークフローを解析する。エラー・警告のアラートか、medium 以上の重大度のセキュリティアラートがあると、ルールセットの `code_scanning` ルールでマージできない
 - CodeQL の解析は、`main` への push、`main` に向けた PR の作成と push、週 1 回の定期実行で動く。フォークからの PR は解析しない（[デフォルトセットアップ](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types)）
 
@@ -101,7 +101,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 ## 使うツール
 
-CI のツール（actionlint・Betterleaks・editorconfig-checker・ShellCheck・shfmt・bats・jq・zizmor・ghalint）は、[mise](https://mise.jdx.dev/) で入れています。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、mise-action の `working_directory` で読ませています。
+CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対象は actionlint・Betterleaks・editorconfig-checker・ShellCheck・shfmt・bats・jq・zizmor・ghalint です。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、mise-action の `working_directory` で読ませています。
 
 - mise-action は、`mise.lock` があると `mise install --locked` で入れる。`mise.lock` にない版やプラットフォームは入らないので、`mise.toml` を書き換えたら、`.github` で `mise lock` を実行して `mise.lock` も更新する
 - `mise.lock` には、CI の linux-arm64 だけを記録している。`mise lock` は `--platform` を付けないと `mise.lock` にあるプラットフォームだけを対象にするので、手元で実行しても macOS などの記録は増えない（[`mise lock`](https://mise.jdx.dev/cli/lock.html)）
@@ -109,7 +109,7 @@ CI のツール（actionlint・Betterleaks・editorconfig-checker・ShellCheck�
 - Betterleaks は `checksums.txt` を cosign の署名で検証する。actionlint・jq・zizmor は、GitHub の artifact attestations で検証する。検証の方法は、aqua レジストリの定義（[Betterleaks](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/betterleaks/betterleaks/registry.yaml)・[actionlint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/rhysd/actionlint/registry.yaml)・[jq](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/jqlang/jq/registry.yaml)・[zizmor](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/zizmorcore/zizmor/registry.yaml)）に従う
 - editorconfig-checker は、mise のレジストリで aqua ではなく github バックエンドを使う。GitHub の artifact attestations で検証する（[github バックエンド](https://mise.jdx.dev/dev-tools/backends/github.html)）
 - shfmt は、mise のレジストリでは aqua バックエンドになるが、aqua レジストリの定義に検証の設定がない（[mvdan/sh](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/mvdan/sh/registry.yaml)）。そのため、`mise.toml` に `github:mvdan/sh` と書いて github バックエンドで入れ、GitHub の artifact attestations で検証する
-- ghalint も、mise のレジストリでは aqua バックエンドになるが、aqua レジストリの定義の検証を mise が使えない（[suzuki-shunsuke/ghalint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/suzuki-shunsuke/ghalint/registry.yaml)）。cosign は `opts` で渡す形で、mise がネイティブに検証するキーやバンドルの指定がなく、SLSA provenance には署名者の指定がない（[aqua バックエンドの実装](https://github.com/jdx/mise/blob/v2026.9.18/src/backend/aqua.rs#L1368-L1404)）。そのため、`mise.toml` に `github:suzuki-shunsuke/ghalint` と書いて github バックエンドで入れ、GitHub の artifact attestations で検証する
+- ghalint も、mise のレジストリでは aqua バックエンドになるが、aqua レジストリの定義の検証を mise が使えない（[suzuki-shunsuke/ghalint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/suzuki-shunsuke/ghalint/registry.yaml)）。cosign は `opts` で渡す形で、mise がネイティブに検証するキーやバンドルの指定がない。SLSA provenance には、署名者の指定がない（[aqua バックエンドの実装](https://github.com/jdx/mise/blob/v2026.9.18/src/backend/aqua.rs#L1368-L1404)）。そのため、`mise.toml` に `github:suzuki-shunsuke/ghalint` と書いて github バックエンドで入れ、GitHub の artifact attestations で検証する
 - ShellCheck のリリースには署名もチェックサムのファイルもないので、`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest を使う
 - bats はリリースにファイルがなく、タグのソースアーカイブを入れる。`mise lock` は sha256 を記録しないので、版（タグ）でだけ固定している
 
