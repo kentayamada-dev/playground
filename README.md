@@ -126,7 +126,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 | 項目 | 設定 |
 | --- | --- |
-| 実行できるアクション | GitHub 公式・検証済み作成者のアクションと、`patterns_allowed` に書いたもの（アクション・再利用ワークフロー）だけ。ほかの作成者のアクションや、再利用ワークフローを使うときは、`patterns_allowed` に足す |
+| 実行できるアクション | GitHub 公式・検証済み作成者のアクションと、`patterns_allowed` に書いたアクション・再利用ワークフローだけ。ほかの作成者のアクションや、再利用ワークフローを使うときは、`patterns_allowed` に足す |
 | アクションのバージョン | 完全なコミット SHA で固定する |
 | フォークからの PR | 外部の貢献者の PR のワークフローは、毎回承認してから動く |
 | `GITHUB_TOKEN` の権限 | `permissions` を書かないワークフローでは読み取りだけ。ワークフローから PR を承認できない |
@@ -184,7 +184,7 @@ CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対�
 | bats | aqua | リリースにファイルがなく、タグのソースアーカイブを入れる。`mise lock` は sha256 を記録しないので、版（タグ）でだけ固定している |
 
 - editorconfig-checker は、mise のレジストリで github バックエンドが指定されている
-- shfmt と ghalint は、mise のレジストリでは aqua バックエンドになる。aqua レジストリの定義では mise が検証できないので、`mise.toml` に `github:mvdan/sh`・`github:suzuki-shunsuke/ghalint` と書いて github バックエンドで入れている
+- shfmt と ghalint は、mise のレジストリでは aqua バックエンドになる。aqua レジストリの定義を mise が検証に使えないため、github バックエンドで入れている。`mise.toml` には `github:mvdan/sh`・`github:suzuki-shunsuke/ghalint` と書く
   - shfmt は、aqua レジストリの定義に検証の設定がない（[mvdan/sh](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/mvdan/sh/registry.yaml)）
   - ghalint は、aqua レジストリの定義の検証を mise が使えない（[suzuki-shunsuke/ghalint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/suzuki-shunsuke/ghalint/registry.yaml)）。cosign は `opts` で渡す形で、mise がネイティブに検証するキーやバンドルの指定がない。SLSA provenance には、署名者の指定がない（[aqua バックエンドの実装](https://github.com/jdx/mise/blob/v2026.9.18/src/backend/aqua.rs#L1368-L1404)）
 
