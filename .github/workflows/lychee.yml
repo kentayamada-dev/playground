@@ -1,0 +1,92 @@
+name: lychee
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  # 外部のリンクは、こちらが何も変えなくても移動や削除で切れるため、定期的に検査する
+  schedule:
+    - cron: '37 0 * * 1'
+  workflow_dispatch:
+
+# 書き込み権限はジョブごとに与え、あとから足したジョブに引き継がせない https://docs.zizmor.sh/audits/#excessive-permissions
+permissions: {}
+
+jobs:
+  # 必須チェック。外部のサイトの障害やレート制限で PR をマージできなくならないよう、ネットワークを使わずリポジトリ内のリンクだけを検査する
+  lychee:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
+          persist-credentials: false
+      - uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
+        with:
+          # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
+          # https://github.com/jdx/mise-action/blob/v5.0.0/src/index.ts#L724-L745
+          version: 2026.9.18
+          # ローカルでは使わないので、mise.toml と mise.lock はルートではなく .github に置いている
+          working_directory: .github
+          install_args: lychee
+      # ディレクトリを渡すと .md・.html などの拡張子のファイルしか読まず、ワークフローや設定のコメントにある URL を見落とすため、ファイルを列挙して渡す
+      # https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L456-L467
+      - run: git ls-files | lychee --offline --include-fragments --no-progress --files-from -
+        # 未指定時の bash -e {0} は pipefail がなく、git ls-files の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
+        shell: bash
+  lychee-external:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
+          persist-credentials: false
+      - uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
+        with:
+          # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
+          # https://github.com/jdx/mise-action/blob/v5.0.0/src/index.ts#L724-L745
+          version: 2026.9.18
+          # ローカルでは使わないので、mise.toml と mise.lock はルートではなく .github に置いている
+          working_directory: .github
+          install_args: lychee
+      # mise.lock の URL は mise lock が書くもので、手で直さないため除く
+      # --output に書くと標準出力に何も出ずログで結果を追えないため、tee で issue の本文用にも残す
+      - id: lychee
+        run: >-
+          git ls-files ':!:.github/mise.lock'
+          | lychee --include-fragments --no-progress --format markdown --files-from -
+          | tee "$RUNNER_TEMP/lychee.md"
+        shell: bash
+        env:
+          # github.com のリンクでレート制限にかからないようにする https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L509-L512
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # 失敗のたびに issue を増やさず、開いている issue があれば本文を最新の結果に書き換える
+      - if: failure() && steps.lychee.outcome == 'failure'
+        run: |
+          body=$RUNNER_TEMP/issue.md
+          {
+            echo "[外部リンクの定期検査]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) で、次のリンクが通りませんでした。"
+            echo
+            cat "$RUNNER_TEMP/lychee.md"
+          } >"$body"
+          number=$(gh issue list --state open --limit 1000 --json number,title --jq '[.[] | select(.title == env.ISSUE_TITLE)][0].number // empty')
+          if [[ -n $number ]]; then
+            gh issue edit "$number" --body-file "$body"
+          else
+            gh issue create --title "$ISSUE_TITLE" --body-file "$body"
+          fi
+        shell: bash
+        env:
+          ISSUE_TITLE: 'docs: 外部リンクの定期検査で見つかったリンク切れを直す'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
