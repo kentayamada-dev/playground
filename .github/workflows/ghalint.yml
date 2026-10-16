@@ -25,5 +25,5 @@ jobs:
           version: 2026.9.18
           # ローカルでは使わないので、mise.toml と mise.lock はルートではなく .github に置いている
           working_directory: .github
-          install_args: github:suzuki-shunsuke/ghalint
+          install_args: github:suzuki-shunsuke/ghalint@1.5.5
       - run: ghalint run
