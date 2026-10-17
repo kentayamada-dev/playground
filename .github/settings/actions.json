@@ -8,7 +8,6 @@
     "github_owned_allowed": true,
     "verified_allowed": true,
     "patterns_allowed": [
-      "dorny/paths-filter@*",
       "pnpm/action-setup@*",
       "amannn/action-semantic-pull-request@*",
       "jdx/mise-action@*",

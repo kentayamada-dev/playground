@@ -35,18 +35,19 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 
 ### 検査する範囲
 
-チェックごとに、次の範囲を検査します。`textlint` と `test` のほかは、PR で変えたファイルにかかわらず、毎回すべてを検査します。
+チェックごとに、次の範囲を検査します。どのチェックも、PR で変えたファイルにかかわらず、毎回すべてを検査します。
 
 | チェック | 検査する範囲 |
 | --- | --- |
-| `textlint`・`test` | 関係するファイルを変えた PR だけ。変えていない PR では、ステップを飛ばして成功になる |
+| `textlint` | リポジトリのすべての `.md` |
+| `test` | `git ls-files` のすべての `.sh`・`.bats` |
 | `editorconfig` | リポジトリ全体。`pnpm-lock.yaml` など、editorconfig-checker がデフォルトで除外するファイルは除く（[Default Excludes](https://github.com/editorconfig-checker/editorconfig-checker/blob/v4.0.2/README.md#default-excludes)） |
 | `actionlint`・`zizmor`・`ghalint` | すべてのワークフロー |
 | `renovate-config-validator` | [`.github/renovate.json5`](.github/renovate.json5) |
 | `lychee` | `git ls-files` のすべてのファイル |
 | `json` | `git ls-files` のすべての `.json`。JSON5 の [`.github/renovate.json5`](.github/renovate.json5) は対象にしない |
 
-- `on.pull_request.paths` で絞ると、実行されなかった PR の必須チェックが Pending のまま残る。そのため、`textlint` と `test` はステップを飛ばして成功にしている
+- 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
 
 ### ツールごとの補足
 
