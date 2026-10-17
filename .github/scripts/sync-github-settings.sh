@@ -211,16 +211,14 @@ sync_security() {
   if [ -z "$desired" ]; then
     return 0
   fi
-  current=$(gh_get 'CodeQL のデフォルトセットアップの取得' 'repos/{owner}/{repo}/code-scanning/default-setup')
   if $check_only; then
+    current=$(gh_get 'CodeQL のデフォルトセットアップの取得' 'repos/{owner}/{repo}/code-scanning/default-setup')
     report_defined_drift 'CodeQL のデフォルトセットアップ' "$desired" "$current"
     return 0
   fi
-  # 設定が同じでも送ると解析が走るかは未確認のため、違うときだけ送る
-  if ! jq -e --argjson desired "$desired" '. as $current | $desired | to_entries | all(.value == $current[.key])' <<<"$current" >/dev/null; then
-    gh_api 'CodeQL のデフォルトセットアップの反映' --method PATCH 'repos/{owner}/{repo}/code-scanning/default-setup' --input - --silent <<<"$desired"
-    echo "更新: CodeQL のデフォルトセットアップ"
-  fi
+  # 同じ設定を送っても新しい解析は始まらない（202 で前回の run_id が返る）ため、ほかの設定と同じく比べずに送る
+  # https://github.com/kentayamada-dev/playground/pull/190
+  gh_api 'CodeQL のデフォルトセットアップの反映' --method PATCH 'repos/{owner}/{repo}/code-scanning/default-setup' --input - --silent <<<"$desired"
 }
 
 actions_definition="$settings_dir/actions.json"

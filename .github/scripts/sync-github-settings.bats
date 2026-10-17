@@ -201,11 +201,10 @@ case "$method $endpoint" in
     mv "$security.new" "$security"
     ;;
   "GET repos/{owner}/{repo}/code-scanning/default-setup")
-    jq -c 'del(.runs)' "$(fresh_or_stale "$code_scanning")"
+    jq -c . "$(fresh_or_stale "$code_scanning")"
     ;;
   "PATCH repos/{owner}/{repo}/code-scanning/default-setup")
-    # 設定の更新を受け付けると解析を始めたとみなし、その回数を runs に数える
-    jq --slurpfile body "$input" '. + $body[0] | .runs += 1' "$code_scanning" > "$code_scanning.new"
+    jq --slurpfile body "$input" '. + $body[0]' "$code_scanning" > "$code_scanning.new"
     mv "$code_scanning.new" "$code_scanning"
     ;;
   *)
@@ -218,7 +217,7 @@ EOF
   echo '[]' >"$STUB_DIR/rulesets.json"
   echo '{}' >"$STUB_DIR/repository.json"
   echo '{}' >"$STUB_DIR/security.json"
-  echo '{"state": "not-configured", "query_suite": "default", "languages": ["actions"], "runs": 0}' >"$STUB_DIR/code-scanning.json"
+  echo '{"state": "not-configured", "query_suite": "default", "languages": ["actions"]}' >"$STUB_DIR/code-scanning.json"
   echo '{"enabled": true, "allowed_actions": "all", "sha_pinning_required": false}' >"$STUB_DIR/actions-permissions.json"
   echo '{}' >"$STUB_DIR/selected-actions.json"
   echo '[]' >"$STUB_DIR/labels.json"
@@ -307,7 +306,6 @@ assert_github_security() {
   fi
 }
 
-# runs は、CodeQL の解析を始めた回数
 assert_github_code_scanning() {
   if ! jq -e --argjson expected "$1" '. == $expected' "$STUB_DIR/code-scanning.json" >/dev/null; then
     echo "GitHub 上の CodeQL のデフォルトセットアップ: $(jq -c . "$STUB_DIR/code-scanning.json")"
@@ -582,17 +580,7 @@ path_without() {
 
   run -0 "$script"
 
-  assert_github_code_scanning '{"state": "configured", "query_suite": "extended", "languages": ["actions"], "runs": 1}'
-  [[ $output == *"更新: CodeQL のデフォルトセットアップ"* ]]
-}
-
-@test "CodeQL のデフォルトセットアップが定義と同じなら、更新せず解析も始めない" {
-  given_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
-  define_security '{"code_scanning_default_setup": {"state": "configured", "query_suite": "default"}}'
-
-  run -0 "$script"
-
-  assert_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
+  assert_github_code_scanning '{"state": "configured", "query_suite": "extended", "languages": ["actions"]}'
 }
 
 @test "セキュリティの設定の定義がなければ、ルールセットも含めて何も変更せずに失敗する" {
@@ -630,7 +618,7 @@ path_without() {
 
   run -1 "$script"
 
-  assert_github_code_scanning '{"state": "not-configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
+  assert_github_code_scanning '{"state": "not-configured", "query_suite": "default", "languages": ["actions"]}'
   [[ $output == *".github/settings/security.json"* ]]
 }
 
@@ -795,15 +783,6 @@ path_without() {
   assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}]'
 }
 
-@test "CodeQL のデフォルトセットアップのキャッシュが古くても、今の設定と比べて更新する" {
-  echo '{"state": "configured", "query_suite": "default", "languages": ["actions"]}' >"$STUB_DIR/code-scanning.stale.json"
-  define_security '{"code_scanning_default_setup": {"state": "configured", "query_suite": "default"}}'
-
-  run -0 "$script"
-
-  assert_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"], "runs": 1}'
-}
-
 @test "ルールセットの一覧を取得できなければ、作成せずに失敗する" {
   export STUB_FAIL="GET *"
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
@@ -852,7 +831,6 @@ path_without() {
 
   run -1 "$script"
 
-  [[ $output != *"更新: CodeQL"* ]]
   [[ $output == *"エラー: CodeQL のデフォルトセットアップの反映で失敗しました"* ]]
 }
 
@@ -952,7 +930,7 @@ path_without() {
 
 @test "作成・削除がなければ、適用の開始と完了だけを示す" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
-  given_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
+  given_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"]}'
   given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
   define_repository '{"has_wiki": false}'
@@ -1122,12 +1100,12 @@ GitHub の設定は定義と一致しています' ]
   [[ $output != *"GitHub の設定は定義と一致しています"* ]]
 }
 
-@test "--check は、CodeQL のデフォルトセットアップが定義と違えば、更新も解析もせずに失敗する" {
+@test "--check は、CodeQL のデフォルトセットアップが定義と違えば、更新せずに失敗する" {
   define_security '{"code_scanning_default_setup": {"state": "configured", "query_suite": "default"}}'
 
   run -1 "$script" --check
 
-  assert_github_code_scanning '{"state": "not-configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
+  assert_github_code_scanning '{"state": "not-configured", "query_suite": "default", "languages": ["actions"]}'
   [[ $output == *"ずれ: CodeQL のデフォルトセットアップ"* ]]
   [[ $output == *'+  "state": "not-configured"'* ]]
 }
@@ -1172,8 +1150,11 @@ GitHub の設定は定義と一致しています' ]
   echo '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]' >"$STUB_DIR/rulesets.stale.json"
   given_github_repository '{"has_wiki": false}'
   echo '{"has_wiki": true}' >"$STUB_DIR/repository.stale.json"
+  given_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"]}'
+  echo '{"state": "not-configured", "query_suite": "default", "languages": ["actions"]}' >"$STUB_DIR/code-scanning.stale.json"
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
   define_repository '{"has_wiki": false}'
+  define_security '{"code_scanning_default_setup": {"state": "configured"}}'
 
   run -0 "$script" --check
 }

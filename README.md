@@ -110,7 +110,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 - 定義にないルールセットとラベルは、GitHub の画面で作ったものも削除される。消したラベルは issue や PR からも外れる。Organization のルールセットは対象外
 - シークレットスキャンとプッシュ保護は、リポジトリの設定と同じ API で変えるため、`repository.json` の `security_and_analysis` に書く
-- CodeQL のデフォルトセットアップは、今の設定と違うときだけ更新する
+- CodeQL のデフォルトセットアップも毎回送る。設定が変わらなければ、新しい解析は始まらない（[#190](https://github.com/kentayamada-dev/playground/pull/190) で確認）
 
 ### 実行に必要な権限
 
