@@ -1,6 +1,7 @@
 [default]
 extend-ignore-re = [
-  # prh.yml の正規表現の [Rr]equest のような文字クラスは、閉じ括弧の後ろだけを単語として拾われ、誤綴りと判定されるため
+  # prh.yml の正規表現の [Rr]equest のような文字クラスは、閉じ括弧で識別子が区切られて equest が残り、誤綴りと判定されるため
+  # https://github.com/crate-ci/typos/blob/v1.51.1/docs/design.md#identifiers-and-words
   "\\[[A-Z][a-z]\\][a-z]+",
   # --check の打ち間違いを拒むかを試すテストの入力のため
   "--chek\\b",
