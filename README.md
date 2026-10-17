@@ -24,6 +24,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`zizmor.yml`](.github/workflows/zizmor.yml) | PR・`main` への push | GitHub Actions のワークフローのセキュリティ上の問題。テンプレートインジェクション・広すぎる権限・checkout の資格情報の残留・フォークにしかないコミットへの固定などを、[zizmor](https://github.com/zizmorcore/zizmor) で検査する | `zizmor` |
 | [`ghalint.yml`](.github/workflows/ghalint.yml) | PR・`main` への push | GitHub Actions のワークフローが、すべてのジョブに `timeout-minutes` を書いているか、シークレットを必要なステップだけに渡しているかなど。[ghalint](https://github.com/suzuki-shunsuke/ghalint) で検査する | `ghalint` |
 | [`lychee.yml`](.github/workflows/lychee.yml) | PR・`main` への push・毎週 | git で管理するファイルに書いたリンクが切れていないか。[lychee](https://github.com/lycheeverse/lychee) で検査する。PR と `main` への push ではリポジトリ内のリンクだけ、毎週の実行では外部のリンクも検査する | `lychee`（リポジトリ内のリンクの検査だけ） |
+| [`settings-drift.yml`](.github/workflows/settings-drift.yml) | 毎日・手動 | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 
 ### マージの条件
 
@@ -109,7 +110,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 - 定義にないルールセットとラベルは、GitHub の画面で作ったものも削除される。消したラベルは issue や PR からも外れる。Organization のルールセットは対象外
 - シークレットスキャンとプッシュ保護は、リポジトリの設定と同じ API で変えるため、`repository.json` の `security_and_analysis` に書く
-- CodeQL のデフォルトセットアップは、今の設定と違うときだけ更新する
+- CodeQL のデフォルトセットアップも毎回送る。設定が変わらなければ、新しい解析は始まらない（[#190](https://github.com/kentayamada-dev/playground/pull/190) で確認）
 
 ### 実行に必要な権限
 
@@ -121,6 +122,54 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 | トークンの `repo` スコープ | Actions や CodeQL の設定を変える API が求めるため（[Actions の権限の API](https://docs.github.com/en/rest/actions/permissions)・[CodeQL の API](https://docs.github.com/en/rest/code-scanning/code-scanning)）。`gh auth login` で発行されるトークンには含まれる（[gh の実装](https://github.com/cli/cli/blob/v2.102.0/internal/authflow/flow.go)） |
 
 - 環境変数 `GH_TOKEN` か `GITHUB_TOKEN` があると、`gh` はログインしたトークンより優先してそちらを使う（`gh help environment`）。権限の足りないトークンが入っていると、途中で失敗する
+
+### 定義とのずれの検査
+
+`--check` を付けると、GitHub を変えずに、反映すると変わる箇所を定義とのずれとして示します。ずれがあれば、終了コード 1 で終わります。
+
+```bash
+.github/scripts/sync-github-settings.sh --check
+```
+
+- ルールセットは、GitHub が付ける `id`・`node_id`・`created_at` などを除き、定義と完全に一致するかを比べる
+- ほかの設定は、定義に書いた項目だけを比べる。定義に書いた項目が GitHub の応答になければ、ずれとして示す
+- 配列は並び順を無視して比べる。GitHub は `patterns_allowed` などを、定義と違う順で返すことがあるため
+
+[`settings-drift.yml`](.github/workflows/settings-drift.yml) が毎日これを実行し、ずれがあるか検査に失敗すると issue を作ります。開いている issue があれば、新しく作らずに本文を最新の結果に書き換えます。ずれは、定義を直すか、同期のコマンドで GitHub を定義に揃えて直します。
+
+- 定義を変えた PR をマージしたら、同期のコマンドを実行する。実行し忘れると、次の検査で issue になる
+
+#### 検査に使うトークン
+
+Actions の権限などを読むには Administration の権限が必要ですが、`GITHUB_TOKEN` には与えられません（[`permissions` のキー](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions)）。そのため、リポジトリの secret `SETTINGS_READ_TOKEN` に登録した Fine-grained personal access token で読みます。issue の作成には、ワークフローの `GITHUB_TOKEN` を使います。
+
+トークンは [作成画面](https://github.com/settings/personal-access-tokens/new) で次のように設定します。
+
+| 項目 | 設定する値 |
+| --- | --- |
+| Token name | 任意（例: `settings-read-playground`） |
+| Description | 任意 |
+| Resource owner | `kentayamada-dev` |
+| Expiration | 任意。期限が切れると検査が失敗し、issue が作られる |
+| Repository access | Only select repositories で `kentayamada-dev/playground` を選ぶ |
+
+Repository permissions は次の表のとおりに設定し、ほかは No access のままにします。Account permissions もすべて No access のままにします。
+
+| Permission | Access | 用途 |
+| --- | --- | --- |
+| Administration | Read-only | Actions の権限・脆弱性アラート・セキュリティアップデート・リリースの不変化・CodeQL のデフォルトセットアップの取得 |
+| Contents | Read and write | マージの方法・自動マージ・マージ後のブランチの削除など、マージ関連の設定の取得。読むだけでも書き込みの権限が要る（[Get a repository](https://docs.github.com/en/rest/repos/repos#get-a-repository)） |
+| Issues | Read-only | ラベルの取得 |
+| Metadata | Read-only | 自動で付く（必須）。ルールセット・リポジトリの設定・脆弱性の非公開報告の取得 |
+
+権限の一覧は [Permissions required for fine-grained personal access tokens](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens) に従っています。作成したトークンは、次のコマンドで secret に登録します。
+
+```bash
+gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
+```
+
+- Contents の書き込みの権限があるため、このトークンではブランチやタグを push できる
+- ルールセットの `bypass_actors` は、Administration が Read-only のこのトークンでも返る。ドキュメントには、ルールセットへの書き込み権限がなければ返さないとある（[Get a repository ruleset](https://docs.github.com/en/rest/repos/rules#get-a-repository-ruleset)）
 
 ### GitHub Actions の設定
 

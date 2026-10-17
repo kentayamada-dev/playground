@@ -83,6 +83,40 @@ case "$method $endpoint" in
     if $slurp; then filter="[$filter]"; fi
     jq -c "$filter" "$(fresh_or_stale "$state")"
     ;;
+  "GET repos/{owner}/{repo}/rulesets/"*)
+    id=${endpoint##*/}
+    if ! jq -e --argjson id "$id" 'any(.id == $id and .source_type == "Repository")' "$state" >/dev/null; then
+      echo "gh: Not Found (HTTP 404)" >&2
+      exit 1
+    fi
+    jq -c --argjson id "$id" '.[] | select(.id == $id)' "$(fresh_or_stale "$state")"
+    ;;
+  "GET repos/{owner}/{repo}")
+    jq -c . "$(fresh_or_stale "$repository")"
+    ;;
+  "GET repos/{owner}/{repo}/vulnerability-alerts")
+    # GitHub と同じく、有効なら本文なしで成功し、無効なら 404 を返す
+    if ! jq -e '.vulnerability_alerts == true' "$security" >/dev/null; then
+      echo "gh: Not Found (HTTP 404)" >&2
+      exit 1
+    fi
+    ;;
+  "GET repos/{owner}/{repo}/automated-security-fixes" | "GET repos/{owner}/{repo}/private-vulnerability-reporting" | "GET repos/{owner}/{repo}/immutable-releases")
+    feature=${endpoint#repos/\{owner\}/\{repo\}/}
+    jq -c --arg key "${feature//-/_}" '{enabled: (.[$key] == true)}' "$security"
+    ;;
+  "GET repos/{owner}/{repo}/actions/permissions")
+    jq -c . "$actions_permissions"
+    ;;
+  "GET repos/{owner}/{repo}/actions/permissions/selected-actions")
+    jq -c . "$selected_actions"
+    ;;
+  "GET repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval")
+    jq -c . "$fork_pr_approval"
+    ;;
+  "GET repos/{owner}/{repo}/actions/permissions/workflow")
+    jq -c . "$workflow_permissions"
+    ;;
   "POST repos/{owner}/{repo}/rulesets")
     # 作成と削除の順序で ID が変わらないよう、削除した ID を使い回さず連番で振る
     id=$(cat "$STUB_DIR/next_id")
@@ -167,11 +201,10 @@ case "$method $endpoint" in
     mv "$security.new" "$security"
     ;;
   "GET repos/{owner}/{repo}/code-scanning/default-setup")
-    jq -c 'del(.runs)' "$(fresh_or_stale "$code_scanning")"
+    jq -c . "$(fresh_or_stale "$code_scanning")"
     ;;
   "PATCH repos/{owner}/{repo}/code-scanning/default-setup")
-    # 設定の更新を受け付けると解析を始めたとみなし、その回数を runs に数える
-    jq --slurpfile body "$input" '. + $body[0] | .runs += 1' "$code_scanning" > "$code_scanning.new"
+    jq --slurpfile body "$input" '. + $body[0]' "$code_scanning" > "$code_scanning.new"
     mv "$code_scanning.new" "$code_scanning"
     ;;
   *)
@@ -184,7 +217,7 @@ EOF
   echo '[]' >"$STUB_DIR/rulesets.json"
   echo '{}' >"$STUB_DIR/repository.json"
   echo '{}' >"$STUB_DIR/security.json"
-  echo '{"state": "not-configured", "query_suite": "default", "languages": ["actions"], "runs": 0}' >"$STUB_DIR/code-scanning.json"
+  echo '{"state": "not-configured", "query_suite": "default", "languages": ["actions"]}' >"$STUB_DIR/code-scanning.json"
   echo '{"enabled": true, "allowed_actions": "all", "sha_pinning_required": false}' >"$STUB_DIR/actions-permissions.json"
   echo '{}' >"$STUB_DIR/selected-actions.json"
   echo '[]' >"$STUB_DIR/labels.json"
@@ -273,7 +306,6 @@ assert_github_security() {
   fi
 }
 
-# runs は、CodeQL の解析を始めた回数
 assert_github_code_scanning() {
   if ! jq -e --argjson expected "$1" '. == $expected' "$STUB_DIR/code-scanning.json" >/dev/null; then
     echo "GitHub 上の CodeQL のデフォルトセットアップ: $(jq -c . "$STUB_DIR/code-scanning.json")"
@@ -548,17 +580,7 @@ path_without() {
 
   run -0 "$script"
 
-  assert_github_code_scanning '{"state": "configured", "query_suite": "extended", "languages": ["actions"], "runs": 1}'
-  [[ $output == *"更新: CodeQL のデフォルトセットアップ"* ]]
-}
-
-@test "CodeQL のデフォルトセットアップが定義と同じなら、更新せず解析も始めない" {
-  given_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
-  define_security '{"code_scanning_default_setup": {"state": "configured", "query_suite": "default"}}'
-
-  run -0 "$script"
-
-  assert_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
+  assert_github_code_scanning '{"state": "configured", "query_suite": "extended", "languages": ["actions"]}'
 }
 
 @test "セキュリティの設定の定義がなければ、ルールセットも含めて何も変更せずに失敗する" {
@@ -596,7 +618,7 @@ path_without() {
 
   run -1 "$script"
 
-  assert_github_code_scanning '{"state": "not-configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
+  assert_github_code_scanning '{"state": "not-configured", "query_suite": "default", "languages": ["actions"]}'
   [[ $output == *".github/settings/security.json"* ]]
 }
 
@@ -761,15 +783,6 @@ path_without() {
   assert_github_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}]'
 }
 
-@test "CodeQL のデフォルトセットアップのキャッシュが古くても、今の設定と比べて更新する" {
-  echo '{"state": "configured", "query_suite": "default", "languages": ["actions"]}' >"$STUB_DIR/code-scanning.stale.json"
-  define_security '{"code_scanning_default_setup": {"state": "configured", "query_suite": "default"}}'
-
-  run -0 "$script"
-
-  assert_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"], "runs": 1}'
-}
-
 @test "ルールセットの一覧を取得できなければ、作成せずに失敗する" {
   export STUB_FAIL="GET *"
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
@@ -818,7 +831,6 @@ path_without() {
 
   run -1 "$script"
 
-  [[ $output != *"更新: CodeQL"* ]]
   [[ $output == *"エラー: CodeQL のデフォルトセットアップの反映で失敗しました"* ]]
 }
 
@@ -918,7 +930,7 @@ path_without() {
 
 @test "作成・削除がなければ、適用の開始と完了だけを示す" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
-  given_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"], "runs": 0}'
+  given_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"]}'
   given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
   define_repository '{"has_wiki": false}'
@@ -977,4 +989,190 @@ GitHub に定義を適用しました' ]
   run -0 "$script"
 
   assert_github_labels "$(jq -c . "$settings/labels.json")"
+}
+
+@test "--check は、リポジトリにある定義を同期した直後なら、ずれとせず何も変えずに成功する" {
+  cp "$real_settings"/rulesets/*.json "$settings/rulesets/"
+  cp "$real_settings"/{repository,security,actions,labels}.json "$settings/"
+  run -0 "$script"
+  cat "$STUB_DIR"/*.json >"$BATS_TEST_TMPDIR/github-before"
+
+  run -0 "$script" --check
+
+  cat "$STUB_DIR"/*.json | diff "$BATS_TEST_TMPDIR/github-before" -
+  [ "$output" = 'GitHub の設定を定義と比べています...
+GitHub の設定は定義と一致しています' ]
+}
+
+@test "--check は、GitHub が付ける ID や日時などの項目を、ルールセットのずれとしない" {
+  given_github_rulesets '[{"id": 42, "source_type": "Repository", "source": "owner/repo", "node_id": "RRS_1", "created_at": "2026-10-01T00:00:00+09:00", "updated_at": "2026-10-02T00:00:00+09:00", "current_user_can_bypass": "never", "_links": {"self": {"href": "https://example.com/rulesets/42"}}, "name": "main", "enforcement": "active"}]'
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+
+  run -0 "$script" --check
+}
+
+@test "--check は、配列の並び順だけが違うものをずれとしない" {
+  echo '{"enabled": true, "allowed_actions": "selected"}' >"$STUB_DIR/actions-permissions.json"
+  echo '{"github_owned_allowed": true, "patterns_allowed": ["b/b@*", "a/a@*"]}' >"$STUB_DIR/selected-actions.json"
+  define_actions '{"permissions": {"enabled": true, "allowed_actions": "selected"}, "selected_actions": {"github_owned_allowed": true, "patterns_allowed": ["a/a@*", "b/b@*"]}}'
+
+  run -0 "$script" --check
+}
+
+@test "--check は、ルールセットが定義と違えば、差分を示し、更新せずに失敗する" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+
+  run -1 "$script" --check
+
+  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
+  [[ $output == *"ずれ: ルールセット main (.github/settings/rulesets/main.json)"* ]]
+  [[ $output == *'-  "enforcement": "active",'* ]]
+  [[ $output == *'+  "enforcement": "disabled",'* ]]
+  [[ $output == *"GitHub の設定に、定義と違う箇所が 1 件あります"* ]]
+}
+
+@test "--check は、定義にあるルールセットが GitHub になければ、作成せずに失敗する" {
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+
+  run -1 "$script" --check
+
+  assert_github_rulesets '[]'
+  [[ $output == *"ずれ: ルールセット main (.github/settings/rulesets/main.json) が GitHub にありません"* ]]
+}
+
+@test "--check は、定義にないルールセットが GitHub にあれば、削除せずに失敗する" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+
+  run -1 "$script" --check
+
+  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  [[ $output == *"ずれ: 定義にないルールセット legacy が GitHub にあります"* ]]
+}
+
+@test "--check は、リポジトリの設定のうち、定義に書いていない項目の違いをずれとしない" {
+  given_github_repository '{"has_wiki": false, "default_branch": "main", "security_and_analysis": {"secret_scanning": {"status": "enabled"}, "secret_scanning_validity_checks": {"status": "disabled"}}}'
+  define_repository '{"has_wiki": false, "security_and_analysis": {"secret_scanning": {"status": "enabled"}}}'
+
+  run -0 "$script" --check
+}
+
+@test "--check は、リポジトリの設定が定義と違えば、差分を示し、更新せずに失敗する" {
+  given_github_repository '{"has_wiki": true, "security_and_analysis": {"secret_scanning": {"status": "disabled"}}}'
+  define_repository '{"has_wiki": false, "security_and_analysis": {"secret_scanning": {"status": "enabled"}}}'
+
+  run -1 "$script" --check
+
+  assert_github_repository '{"has_wiki": true, "security_and_analysis": {"secret_scanning": {"status": "disabled"}}}'
+  [[ $output == *"ずれ: リポジトリの設定"* ]]
+  [[ $output == *'+  "has_wiki": true,'* ]]
+  [[ $output == *'+      "status": "disabled"'* ]]
+}
+
+@test "--check は、定義に書いた項目が GitHub の応答になければ、一致とみなさずにずれとする" {
+  given_github_repository '{"has_wiki": false}'
+  define_repository '{"has_wiki": false, "security_and_analysis": {"secret_scanning": {"status": "enabled"}}}'
+
+  run -1 "$script" --check
+
+  [[ $output == *'+  "security_and_analysis": null'* ]]
+}
+
+@test "--check は、セキュリティの機能の有効・無効が定義と違えば、切り替えずに失敗する" {
+  given_github_security '{"vulnerability_alerts": false, "automated_security_fixes": false, "private_vulnerability_reporting": true, "immutable_releases": true}'
+  define_security '{"vulnerability_alerts": true, "automated_security_fixes": false, "private_vulnerability_reporting": true, "immutable_releases": false}'
+
+  run -1 "$script" --check
+
+  assert_github_security '{"vulnerability_alerts": false, "automated_security_fixes": false, "private_vulnerability_reporting": true, "immutable_releases": true}'
+  [[ $output == *"ずれ: vulnerability_alerts が定義では true、GitHub では false"* ]]
+  [[ $output == *"ずれ: immutable_releases が定義では false、GitHub では true"* ]]
+  [[ $output == *"GitHub の設定に、定義と違う箇所が 2 件あります"* ]]
+}
+
+@test "--check は、脆弱性アラートの取得が 404 以外で失敗すれば、無効とみなさずに失敗する" {
+  export STUB_FAIL="GET repos/{owner}/{repo}/vulnerability-alerts"
+  define_security '{"vulnerability_alerts": false}'
+
+  run -1 "$script" --check
+
+  [[ $output == *"エラー: vulnerability_alerts の取得で失敗しました"* ]]
+  [[ $output != *"GitHub の設定は定義と一致しています"* ]]
+}
+
+@test "--check は、CodeQL のデフォルトセットアップが定義と違えば、更新せずに失敗する" {
+  define_security '{"code_scanning_default_setup": {"state": "configured", "query_suite": "default"}}'
+
+  run -1 "$script" --check
+
+  assert_github_code_scanning '{"state": "not-configured", "query_suite": "default", "languages": ["actions"]}'
+  [[ $output == *"ずれ: CodeQL のデフォルトセットアップ"* ]]
+  [[ $output == *'+  "state": "not-configured"'* ]]
+}
+
+@test "--check は、Actions の設定のうち定義と違うものだけをずれとし、更新せずに失敗する" {
+  define_actions '{"fork_pr_contributor_approval": {"approval_policy": "all_external_contributors"}, "workflow_permissions": {"default_workflow_permissions": "write"}}'
+
+  run -1 "$script" --check
+
+  assert_github_fork_pr_approval '{"approval_policy": "first_time_contributors"}'
+  [[ $output == *"ずれ: フォークからの PR の承認の方針"* ]]
+  [[ $output != *"ずれ: GITHUB_TOKEN の既定の権限"* ]]
+}
+
+@test "--check は、色が違うラベル・GitHub にないラベル・定義にないラベルをずれとし、何も変えずに失敗する" {
+  given_github_labels '[{"name": "bug", "color": "ffffff", "description": "不具合", "default": true}, {"name": "wontfix", "color": "ffffff", "description": "Will not be worked on"}]'
+  define_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}, {"name": "good first issue", "color": "7057ff"}]'
+
+  run -1 "$script" --check
+
+  assert_github_labels '[{"name": "bug", "color": "ffffff", "description": "不具合", "default": true}, {"name": "wontfix", "color": "ffffff", "description": "Will not be worked on"}]'
+  [[ $output == *"ずれ: ラベル bug"* ]]
+  [[ $output == *'+  "color": "ffffff",'* ]]
+  [[ $output == *"ずれ: ラベル good first issue が GitHub にありません"* ]]
+  [[ $output == *"ずれ: 定義にないラベル wontfix が GitHub にあります"* ]]
+}
+
+@test "--check は、ずれを見つけても途中で止まらず、ほかの設定も比べてすべて示す" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_labels '[{"name": "bug", "color": "d73a4a"}]'
+
+  run -1 "$script" --check
+
+  [[ $output == *"ずれ: ルールセット main"* ]]
+  [[ $output == *"ずれ: ラベル bug が GitHub にありません"* ]]
+  [[ $output == *"GitHub の設定に、定義と違う箇所が 2 件あります"* ]]
+}
+
+@test "--check は、GitHub の応答のキャッシュが古くても、今の値と比べる" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
+  echo '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]' >"$STUB_DIR/rulesets.stale.json"
+  given_github_repository '{"has_wiki": false}'
+  echo '{"has_wiki": true}' >"$STUB_DIR/repository.stale.json"
+  given_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"]}'
+  echo '{"state": "not-configured", "query_suite": "default", "languages": ["actions"]}' >"$STUB_DIR/code-scanning.stale.json"
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_repository '{"has_wiki": false}'
+  define_security '{"code_scanning_default_setup": {"state": "configured"}}'
+
+  run -0 "$script" --check
+}
+
+@test "--check で GitHub の値を取得できなければ、反映済みとは示さずに失敗する" {
+  export STUB_FAIL="GET repos/{owner}/{repo}"
+
+  run -1 "$script" --check
+
+  [[ $output == *"エラー: リポジトリの設定の取得で失敗しました"* ]]
+  [[ $output != *"反映済み"* ]]
+}
+
+@test "--check 以外の引数を渡すと、GitHub を変えずに使い方を示して失敗する" {
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+
+  run -1 "$script" --chek
+
+  assert_github_rulesets '[]'
+  [[ $output == *"使い方: "*"[--check]"* ]]
 }

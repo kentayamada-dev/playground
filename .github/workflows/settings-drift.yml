@@ -1,0 +1,45 @@
+name: settings-drift
+
+on:
+  # GitHub の画面で変えた設定や、定義を変えたあとに反映し忘れた設定は、PR の検査では見つからないため、定期的に検査する
+  schedule:
+    - cron: '23 22 * * *'
+  workflow_dispatch:
+
+# 書き込み権限はジョブごとに与え、あとから足したジョブに引き継がせない https://docs.zizmor.sh/audits/#excessive-permissions
+permissions: {}
+
+jobs:
+  settings-drift:
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
+          persist-credentials: false
+      - uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
+        with:
+          # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
+          # https://github.com/jdx/mise-action/blob/v5.0.0/src/index.ts#L724-L745
+          version: 2026.10.0
+          # ローカルでは使わないので、mise.toml と mise.lock はルートではなく .github に置いている
+          working_directory: .github
+          install_args: jq
+      # gh のエラーは標準エラー出力に出るため、issue の本文にも残す
+      - id: check
+        run: .github/scripts/sync-github-settings.sh --check 2>&1 | tee "$RUNNER_TEMP/settings-drift.txt"
+        # 未指定時の bash -e {0} は pipefail がなく、tee の前の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
+        shell: bash
+        env:
+          # Actions の権限などを読むには Administration の read 権限が要るが、GITHUB_TOKEN には与えられないため、PAT を使う
+          # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions
+          GH_TOKEN: ${{ secrets.SETTINGS_READ_TOKEN }}
+      - if: failure() && steps.check.outcome == 'failure'
+        run: .github/scripts/report-settings-drift.sh "$RUNNER_TEMP/settings-drift.txt"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
