@@ -158,6 +158,7 @@ Repository permissions は次の表のとおりに設定し、ほかは No acces
 | Permission | Access | 用途 |
 | --- | --- | --- |
 | Administration | Read-only | Actions の権限・脆弱性アラート・セキュリティアップデート・リリースの不変化・CodeQL のデフォルトセットアップの取得 |
+| Contents | Read and write | マージの方法・自動マージ・マージ後のブランチの削除など、マージ関連の設定の取得。読むだけでも書き込みの権限が要る（[Get a repository](https://docs.github.com/en/rest/repos/repos#get-a-repository)） |
 | Issues | Read-only | ラベルの取得 |
 | Metadata | Read-only | 自動で付く（必須）。ルールセット・リポジトリの設定・脆弱性の非公開報告の取得 |
 
@@ -167,8 +168,8 @@ Repository permissions は次の表のとおりに設定し、ほかは No acces
 gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 ```
 
-- ルールセットの `bypass_actors` は、ルールセットへの書き込み権限がないと API が返さない（[Get a repository ruleset](https://docs.github.com/en/rest/repos/rules#get-a-repository-ruleset)）。Administration が Read-only のトークンで返るかは未確認
-- `repository.json` の `security_and_analysis` を、このトークンで読めるかは未確認
+- Contents の書き込みの権限があるため、このトークンではブランチやタグを push できる
+- ルールセットの `bypass_actors` は、Administration が Read-only のこのトークンでも返る。ドキュメントには、ルールセットへの書き込み権限がなければ返さないとある（[Get a repository ruleset](https://docs.github.com/en/rest/repos/rules#get-a-repository-ruleset)）
 
 ### GitHub Actions の設定
 
