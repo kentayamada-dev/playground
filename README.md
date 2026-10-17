@@ -161,7 +161,7 @@ Repository permissions は次の表のとおりに設定し、ほかは No acces
 | Issues | Read-only | ラベルの取得 |
 | Metadata | Read-only | 自動で付く（必須）。ルールセット・リポジトリの設定・脆弱性の非公開報告の取得 |
 
-権限の一覧は [API ごとの必要な権限](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens) に従っています。作成したトークンは、次のコマンドで secret に登録します。
+権限の一覧は [API ごとに必要な権限](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens) に従っています。作成したトークンは、次のコマンドで secret に登録します。
 
 ```bash
 gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
