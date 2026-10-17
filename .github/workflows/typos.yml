@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - test/typos-pass
 
 permissions:
   contents: read
