@@ -85,6 +85,10 @@
           {
             "context": "lychee",
             "integration_id": 15368
+          },
+          {
+            "context": "typos",
+            "integration_id": 15368
           }
         ]
       }

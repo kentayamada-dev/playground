@@ -24,6 +24,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`zizmor.yml`](.github/workflows/zizmor.yml) | PR・`main` への push | GitHub Actions のワークフローのセキュリティ上の問題。テンプレートインジェクション・広すぎる権限・checkout の資格情報の残留・フォークにしかないコミットへの固定などを、[zizmor](https://github.com/zizmorcore/zizmor) で検査する | `zizmor` |
 | [`ghalint.yml`](.github/workflows/ghalint.yml) | PR・`main` への push | GitHub Actions のワークフローが、すべてのジョブに `timeout-minutes` を書いているか、シークレットを必要なステップだけに渡しているかなど。[ghalint](https://github.com/suzuki-shunsuke/ghalint) で検査する | `ghalint` |
 | [`lychee.yml`](.github/workflows/lychee.yml) | PR・`main` への push・毎週 | git で管理するファイルに書いたリンクが切れていないか。[lychee](https://github.com/lycheeverse/lychee) で検査する。PR と `main` への push ではリポジトリ内のリンクだけ、毎週の実行では外部のリンクも検査する | `lychee`（リポジトリ内のリンクの検査だけ） |
+| [`typos.yml`](.github/workflows/typos.yml) | PR・`main` への push | git で管理するファイルの英単語の綴り。[typos](https://github.com/crate-ci/typos) で検査する。設定は [`.github/typos.toml`](.github/typos.toml) にある | `typos` |
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | 毎日・手動 | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 
 ### マージの条件
@@ -43,7 +44,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `editorconfig` | リポジトリ全体。`pnpm-lock.yaml` など、editorconfig-checker がデフォルトで除外するファイルは除く（[Default Excludes](https://github.com/editorconfig-checker/editorconfig-checker/blob/v4.0.2/README.md#default-excludes)） |
 | `actionlint`・`zizmor`・`ghalint` | すべてのワークフロー |
 | `renovate-config-validator` | [`.github/renovate.json5`](.github/renovate.json5) |
-| `lychee` | `git ls-files` のすべてのファイル |
+| `lychee`・`typos` | `git ls-files` のすべてのファイル |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
 
@@ -76,6 +77,11 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - ネットワークを使わず（`--offline`）、リポジトリ内のファイルへのリンクと見出しのアンカーだけを確認する。外部のサイトの障害やレート制限で、PR をマージできなくならないようにするため
 - ディレクトリを渡すと `.md`・`.html` などの拡張子のファイルしか読まない（[`--extensions`](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L456-L467)）。そのため、`git ls-files` の一覧を渡す
 - Markdown と HTML 以外のファイルからは URL だけを拾い、コメントに書いた相対パスは検査しない
+
+#### typos
+
+- ディレクトリを渡すと隠しファイルを読まず、`.github` と `.claude` を検査しない（[`files.ignore-hidden`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#filesignore-hidden)）。`--hidden` を付けると `.git` の中まで読むため、`git ls-files` の一覧を渡す
+- 誤検知は、[`.github/typos.toml`](.github/typos.toml) の `extend-ignore-re` に、その箇所だけに一致する正規表現を足して除外する（[`default.extend-ignore-re`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#defaultextend-ignore-re)）
 
 ### 外部リンクの定期検査
 
@@ -211,7 +217,7 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 
 ## 使うツール
 
-CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対象は actionlint・Betterleaks・editorconfig-checker・ShellCheck・shfmt・bats・jq・zizmor・ghalint・lychee です。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、mise-action の `working_directory` で読ませています。
+CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対象は actionlint・Betterleaks・editorconfig-checker・ShellCheck・shfmt・bats・jq・zizmor・ghalint・lychee・typos です。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、mise-action の `working_directory` で読ませています。
 
 ### `mise.lock` の更新
 
@@ -228,15 +234,16 @@ CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対�
 | --- | --- | --- |
 | Betterleaks | aqua | `checksums.txt` を cosign の署名で検証する（[aqua レジストリの定義](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/betterleaks/betterleaks/registry.yaml)） |
 | actionlint・jq・zizmor | aqua | GitHub の artifact attestations で検証する（aqua レジストリの定義: [actionlint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/rhysd/actionlint/registry.yaml)・[jq](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/jqlang/jq/registry.yaml)・[zizmor](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/zizmorcore/zizmor/registry.yaml)） |
-| editorconfig-checker・shfmt・ghalint | github | GitHub の artifact attestations で検証する（[github バックエンド](https://mise.jdx.dev/dev-tools/backends/github.html)） |
+| editorconfig-checker・shfmt・ghalint・typos | github | GitHub の artifact attestations で検証する（[github バックエンド](https://mise.jdx.dev/dev-tools/backends/github.html)） |
 | ShellCheck | aqua | リリースに署名もチェックサムのファイルもない。`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest を使う |
 | lychee | aqua | リリースに署名も GitHub の artifact attestations もない。aqua レジストリの定義にも検証の設定がない（[lycheeverse/lychee](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/lycheeverse/lychee/registry.yaml)）。`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest と同じ値になる |
 | bats | aqua | リリースにファイルがなく、タグのソースアーカイブを入れる。`mise lock` は sha256 を記録しないので、版（タグ）でだけ固定している |
 
 - editorconfig-checker は、mise のレジストリで github バックエンドが指定されている
-- shfmt と ghalint は、mise のレジストリでは aqua バックエンドになる。aqua レジストリの定義を mise が検証に使えないため、github バックエンドで入れている。`mise.toml` には `github:mvdan/sh`・`github:suzuki-shunsuke/ghalint` と書く
+- shfmt・ghalint・typos は、mise のレジストリでは aqua バックエンドになる。aqua レジストリの定義を mise が検証に使えないため、github バックエンドで入れている。`mise.toml` には `github:mvdan/sh`・`github:suzuki-shunsuke/ghalint`・`github:crate-ci/typos` と書く
   - shfmt は、aqua レジストリの定義に検証の設定がない（[mvdan/sh](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/mvdan/sh/registry.yaml)）
   - ghalint は、aqua レジストリの定義の検証を mise が使えない（[suzuki-shunsuke/ghalint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/suzuki-shunsuke/ghalint/registry.yaml)）。cosign は `opts` で渡す形で、mise がネイティブに検証するキーやバンドルの指定がない。SLSA provenance には、署名者の指定がない（[aqua バックエンドの実装](https://github.com/jdx/mise/blob/v2026.9.18/src/backend/aqua.rs#L1368-L1404)）
+  - typos は、aqua レジストリの定義に検証の設定がない（[crate-ci/typos](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/crate-ci/typos/registry.yaml)）。リリースのファイルに付く attestation は、タグとファイルを結び付けるリリースの attestation だけで、ビルドしたワークフローを含まない
 
 ## Renovate
 
