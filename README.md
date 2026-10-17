@@ -14,7 +14,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | ワークフロー | 実行のタイミング | 検査する内容 | 必須チェック |
 | --- | --- | --- | --- |
 | [`textlint.yml`](.github/workflows/textlint.yml) | PR・`main` への push | リポジトリのすべての `.md` の表記。ルールは [`.github/textlint`](.github/textlint) にある | `textlint` |
-| [`test.yml`](.github/workflows/test.yml) | PR・`main` への push | `.sh` と `.bats` を ShellCheck で検査し、[shfmt](https://github.com/mvdan/sh) の整形に沿っているかを確認し、bats のテストを実行する。Git で管理する `.json` は、値がちょうど 1 つの JSON として読めるかも確かめる。shfmt の整形の設定は [`.editorconfig`](.editorconfig) から読む | `test` |
+| [`test.yml`](.github/workflows/test.yml) | PR・`main` への push | `.sh` と `.bats` を ShellCheck で検査し、[shfmt](https://github.com/mvdan/sh) の整形に沿っているかを確認し、bats のテストを実行する。shfmt の整形の設定は [`.editorconfig`](.editorconfig) から読む | `test` |
 | [`pr-title.yml`](.github/workflows/pr-title.yml) | PR の作成・編集・push・再オープン | PR タイトルが Conventional Commits 形式に沿い、説明を日本語で書いているか。規約は [CONTRIBUTING.md](CONTRIBUTING.md#タイトルとコミットメッセージ) | `pr-title` |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | PR・`main` への push・毎日 | 依存関係の脆弱性とマルウェア。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) | `osv-scanner / osv-scan`（PR の検査だけ） |
 | [`betterleaks.yml`](.github/workflows/betterleaks.yml) | PR・`main` への push | コミットに含まれるシークレット。詳しくは [シークレットの検査](#シークレットの検査) | `betterleaks` |
@@ -24,6 +24,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`zizmor.yml`](.github/workflows/zizmor.yml) | PR・`main` への push | GitHub Actions のワークフローのセキュリティ上の問題。テンプレートインジェクション・広すぎる権限・checkout の資格情報の残留・フォークにしかないコミットへの固定などを、[zizmor](https://github.com/zizmorcore/zizmor) で検査する | `zizmor` |
 | [`ghalint.yml`](.github/workflows/ghalint.yml) | PR・`main` への push | GitHub Actions のワークフローが、すべてのジョブに `timeout-minutes` を書いているか、シークレットを必要なステップだけに渡しているかなど。[ghalint](https://github.com/suzuki-shunsuke/ghalint) で検査する | `ghalint` |
 | [`lychee.yml`](.github/workflows/lychee.yml) | PR・`main` への push・毎週 | git で管理するファイルに書いたリンクが切れていないか。[lychee](https://github.com/lycheeverse/lychee) で検査する。PR と `main` への push ではリポジトリ内のリンクだけ、毎週の実行では外部のリンクも検査する | `lychee`（リポジトリ内のリンクの検査だけ） |
+| [`json.yml`](.github/workflows/json.yml) | PR・`main` への push | git で管理する `.json` の構文。値がちょうど 1 つの JSON として読めるかを、[jq](https://github.com/jqlang/jq) で検査する | `json` |
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | 毎日・手動 | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 
 ### マージの条件
@@ -43,6 +44,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `actionlint`・`zizmor`・`ghalint` | すべてのワークフロー |
 | `renovate-config-validator` | [`.github/renovate.json5`](.github/renovate.json5) |
 | `lychee` | `git ls-files` のすべてのファイル |
+| `json` | `git ls-files` のすべての `.json`。JSON5 の [`.github/renovate.json5`](.github/renovate.json5) は対象にしない |
 
 - `on.pull_request.paths` で絞ると、実行されなかった PR の必須チェックが Pending のまま残る。そのため、`textlint` と `test` はステップを飛ばして成功にしている
 
