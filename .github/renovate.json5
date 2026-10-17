@@ -36,50 +36,9 @@
     {
       "matchPackageNames": ["renovate/renovate", "renovatebot/github-action"],
       "schedule": ["* 0-3 * * *"]
-    },
-    // ここから下はタイトルの日本語化。語順が「action topic extra」で固定なので、action を空にして動詞を extra に入れる。 https://github.com/renovatebot/renovate/blob/44.151.1/lib/config/options/index.ts#L2502-L2506
-    // datasource（Docker など）のデフォルトのメッセージより後に適用させるため packageRules に置く https://github.com/renovatebot/renovate/blob/44.151.1/lib/workers/repository/updates/flatten.ts#L143-L147
-    {
-      "matchPackageNames": ["*"],
-      "commitMessageAction": "",
-      // 同じブランチに複数バージョンが入ると extra が消されるので、動詞を補う https://github.com/renovatebot/renovate/blob/44.151.1/lib/workers/repository/updates/generate.ts#L332-L348
-      "commitMessageTopic": "{{{depName}}}{{#unless commitMessageExtra}} を更新{{/unless}}",
-      "commitMessageExtra": "を {{#if isMajor}}{{{prettyNewMajor}}}{{else}}{{#if isSingleVersion}}{{{prettyNewVersion}}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}} に更新"
-    },
-    {
-      "matchUpdateTypes": ["pin", "pinDigest"],
-      "commitMessageExtra": "を {{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{{newValue}}}{{/if}} に固定"
-    },
-    {
-      "matchUpdateTypes": ["digest"],
-      "commitMessageExtra": "のダイジェストを {{{newDigestShort}}} に更新"
-    },
-    {
-      "matchUpdateTypes": ["replacement"],
-      // replacement では newVersion が空になるため newValue を使う https://github.com/renovatebot/renovate/blob/44.151.1/lib/workers/repository/process/lookup/utils.ts#L24-L28
-      "commitMessageExtra": "を {{{newName}}} {{{newValue}}} に置き換え"
-    },
-    {
-      "matchUpdateTypes": ["rollback"],
-      "commitMessageExtra": "を {{{newValue}}} にロールバック"
     }
   ],
-  // グループの topic はブランチ生成時に packageRules より後で上書きされるため、別途日本語にする https://github.com/renovatebot/renovate/blob/44.151.1/lib/workers/repository/updates/generate.ts#L316-L318
-  "group": {
-    "commitMessageTopic": "{{{groupName}}}{{#unless commitMessageExtra}} を更新{{/unless}}"
-  },
-  "pin": {
-    "group": {
-      "commitMessageTopic": "依存関係を固定"
-    }
-  },
-  "pinDigest": {
-    "group": {
-      "commitMessageTopic": "依存関係を固定"
-    }
-  },
   "lockFileMaintenance": {
-    "commitMessageAction": "ロックファイルを更新",
     "automerge": true
   }
 }
