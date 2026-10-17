@@ -14,7 +14,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | ワークフロー | 実行のタイミング | 検査する内容 | 必須チェック |
 | --- | --- | --- | --- |
 | [`textlint.yml`](.github/workflows/textlint.yml) | PR・`main` への push | リポジトリのすべての `.md` の表記。ルールは [`.github/textlint`](.github/textlint) にある | `textlint` |
-| [`test.yml`](.github/workflows/test.yml) | PR・`main` への push | `.sh` と `.bats` を ShellCheck で検査し、[shfmt](https://github.com/mvdan/sh) の整形に沿っているかを確認し、bats のテストを実行する。shfmt の整形の設定は [`.editorconfig`](.editorconfig) から読む | `test` |
+| [`test.yml`](.github/workflows/test.yml) | PR・`main` への push | `.sh` と `.bats` を ShellCheck で検査し、[shfmt](https://github.com/mvdan/sh) の整形に沿っているかを確認し、bats のテストを実行する。Git で管理する `.json` は、値がちょうど 1 つの JSON として読めるかも確かめる。shfmt の整形の設定は [`.editorconfig`](.editorconfig) から読む | `test` |
 | [`pr-title.yml`](.github/workflows/pr-title.yml) | PR の作成・編集・push・再オープン | PR タイトルが Conventional Commits 形式に沿い、説明を日本語で書いているか。規約は [CONTRIBUTING.md](CONTRIBUTING.md#タイトルとコミットメッセージ) | `pr-title` |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | PR・`main` への push・毎日 | 依存関係の脆弱性とマルウェア。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) | `osv-scanner / osv-scan`（PR の検査だけ） |
 | [`betterleaks.yml`](.github/workflows/betterleaks.yml) | PR・`main` への push | コミットに含まれるシークレット。詳しくは [シークレットの検査](#シークレットの検査) | `betterleaks` |
