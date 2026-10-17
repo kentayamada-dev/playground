@@ -80,7 +80,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 #### typos
 
-- ディレクトリを渡すと隠しファイルを読まず、`.github` と `.claude` を検査しない（[`files.ignore-hidden`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#filesignore-hidden)）。`--hidden` を付けると `.git` の中まで読むため、`git ls-files` の一覧を渡す
+- ディレクトリを渡すと隠しファイルを読まず、`.github` と `.claude` を検査しない（[`files.ignore-hidden`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#filesignore-hidden)）。`--hidden` を付けると `.git` のなかまで読むため、`git ls-files` の一覧を渡す
 - 誤検知は、[`.github/typos.toml`](.github/typos.toml) の `extend-ignore-re` に、その箇所だけに一致する正規表現を足して除外する（[`default.extend-ignore-re`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#defaultextend-ignore-re)）
 
 ### 外部リンクの定期検査
@@ -217,7 +217,7 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 
 ## 使うツール
 
-CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対象は actionlint・Betterleaks・editorconfig-checker・ShellCheck・shfmt・bats・jq・zizmor・ghalint・lychee・typos です。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、mise-action の `working_directory` で読ませています。
+CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対象は、[ダウンロードするファイルの検証](#ダウンロードするファイルの検証) の表に並べたツールです。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、mise-action の `working_directory` で読ませています。
 
 ### `mise.lock` の更新
 
