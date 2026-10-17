@@ -8,8 +8,6 @@ on:
 
 permissions:
   contents: read
-  # dorny/paths-filter が PR の変更ファイルを API で取得するため https://github.com/dorny/paths-filter/blob/ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d/README.md?plain=1#L18-L23
-  pull-requests: read
 
 jobs:
   textlint:
@@ -17,25 +15,11 @@ jobs:
     # npm.flatt.tech に接続できないと pnpm install が止まり続け、デフォルトの 360 分までジョブが続くため https://github.com/kentayamada-dev/playground/pull/45
     timeout-minutes: 5
     steps:
-      # on.pull_request.paths で絞ると、実行されなかった PR で必須チェックが Pending のまま残りマージできないため、ステップを if で飛ばす
-      # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks
-      - id: changes
-        if: github.event_name == 'pull_request'
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
-        with:
-          # リポジトリ全体の .md を検査するので、ルール・依存・ワークフローの変更でも既存の文書の結果が変わる
-          filters: |
-            textlint:
-              - '**/*.md'
-              - '.github/textlint/**'
-              - '.github/workflows/textlint.yml'
-      - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
           persist-credentials: false
-      - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         # action は pnpm 本体を ~/setup-pnpm での npm ci と pnpm self-update で取得し pnpm-workspace.yaml を読まないため、取得元を環境変数で渡す（pnpm は v11 から npm_config_* を読まない）
         # https://github.com/pnpm/action-setup/blob/0977fd99725f1db4007ccb2928dbb4e90d06cc86/src/install-pnpm/run.ts https://pnpm.io/blog/releases/11.0
         env:
@@ -47,17 +31,14 @@ jobs:
           package_json_file: .github/textlint/package.json
           cache: true
           cache_dependency_path: .github/textlint/pnpm-lock.yaml
-      - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
-      - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
-        run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
         working-directory: .github/textlint
       # 相対パスだとルールの解決に失敗するため絶対パスで渡す（textlint は path.join した値をそのまま require.resolve する）
       # https://github.com/textlint/textlint/blob/v15.8.0/packages/@textlint/config-loader/src/textlint-module-resolver.ts#L66-L78 https://github.com/textlint/textlint/blob/v15.8.0/packages/@textlint/resolver/src/index.ts#L51-L66
-      - if: github.event_name == 'push' || steps.changes.outputs.textlint == 'true'
-        run: >-
+      - run: >-
           .github/textlint/node_modules/.bin/textlint
           --config "$GITHUB_WORKSPACE/.github/textlint/.textlintrc.json"
           --rules-base-directory "$GITHUB_WORKSPACE/.github/textlint/node_modules"
