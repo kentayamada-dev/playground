@@ -7,6 +7,45 @@
 - [セキュリティポリシー](SECURITY.md): 脆弱性を非公開で報告する手順
 - [ライセンス](LICENSE): MIT License
 
+## 開発環境
+
+web（Node.js）と api（Go）を、別々の Dev Container で開発します。構成は VS Code の [Connect to multiple containers](https://code.visualstudio.com/remote/advancedcontainers/connect-multiple-containers) にならっています。
+
+| コンテナ | 設定 | 開くディレクトリ | ベースイメージ |
+| --- | --- | --- | --- |
+| `web` | [`devcontainer.json`](.devcontainer/web/devcontainer.json)・[`Dockerfile`](.devcontainer/web/Dockerfile) | [`web`](web) | `node`（Node.js 26） |
+| `api` | [`devcontainer.json`](.devcontainer/api/devcontainer.json)・[`Dockerfile`](.devcontainer/api/Dockerfile) | [`api`](api) | `golang`（Go 1.27） |
+
+- 2 つのコンテナは、[`compose.yaml`](compose.yaml) のサービスとして動く。どちらにも、リポジトリのルートを `/workspace` としてマウントする。コンテナのなかでも git を使えるようにするため
+- イメージは、Docker Hub の公式イメージをもとに、コンテナごとの Dockerfile でビルドする。Dockerfile を変えたら、「Dev Containers: Rebuild Container」でコンテナを作り直す
+- どちらのコンテナも、UID・GID 1000 の一般ユーザー `dev` で動く。Linux のホストでは、マウントしたファイルがホストの UID・GID のまま見え、root で書くと root の所有のファイルができるため。macOS の Docker Desktop では起きない。作り方は VS Code の [Add a non-root user to a container](https://code.visualstudio.com/remote/advancedcontainers/add-nonroot-user) にならっている
+- ユーザー名と UID・GID は、`compose.yaml` の `x-dev-user` から両方のビルドに渡している。変えるときは、両方の `devcontainer.json` の `remoteUser` も合わせる
+- sudo は入れていない。root で作業するときは、手元のリポジトリのルートで `docker compose exec -u root api bash` のように実行する
+- web のパッケージマネージャーは pnpm。版は web の Dockerfile だけで管理し、Renovate が更新する。[`web/pnpm-workspace.yaml`](web/pnpm-workspace.yaml) の設定は、textlint の [`pnpm-workspace.yaml`](.github/textlint/pnpm-workspace.yaml) とそろえている
+- web は、Compose のサービス名を使った `http://api:8080` で api に接続する。接続先は、`compose.yaml` で環境変数 `API_URL` に渡している
+- ウィンドウを閉じても、コンテナは止めない（`shutdownAction: "none"`）。もう一方のコンテナで開いているウィンドウが切れないようにするため
+
+この節の手順とコマンドは、まだ動かして確認していません（未確認）。
+
+### コンテナを開く
+
+1. VS Code でリポジトリのルートを開く
+2. コマンドパレットで「Dev Containers: Reopen in Container」を実行し、`web` か `api` を選ぶ
+3. もう一方のコンテナに移るときは、「Dev Containers: Switch Container」を実行する。両方を同時に開くときは、「File > New Window」で開いた別のウィンドウでも同じ手順を実行する
+
+コンテナを止めるときは、手元のリポジトリのルートで `docker compose stop` を実行します。
+
+### サーバーを起動する
+
+コンテナを開いても、サーバーは起動しません。それぞれのコンテナのターミナルで、次のコマンドを実行します。
+
+| コンテナ | コマンド | 動作 |
+| --- | --- | --- |
+| `api` | `go run .` | `GET /hello` に `{"message":"hello from api"}` を返す |
+| `web` | `pnpm dev` | `GET /` で api の `/hello` を呼び、応答のメッセージを返す。ファイルを変えると再起動する |
+
+サーバーが待ち受けているポートは、VS Code が手元に自動で転送します（`remote.autoForwardPorts`）。両方を起動したら、手元のブラウザで `http://localhost:3000` を開きます。
+
 ## CI の検査
 
 GitHub Actions で、次のとおり検査します。必須チェックが通らない PR はマージできません。必須チェックは [`rulesets/main.json`](.github/settings/rulesets/main.json) に定義しています。
@@ -119,6 +158,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 - レート制限の `429` は、リンク切れとは限らないため成功として扱う
 - `mise.lock` と `uv.lock` の URL は、`mise lock` と `uv lock` が書くものなので、検査から除く
+- web と api のサーバーのアドレス（`http://localhost:3000` など）は、CI から接続できないため、[`.github/lychee.toml`](.github/lychee.toml) で検査から除く
 - 通らないリンクがあると、[`report-broken-links.sh`](.github/scripts/report-broken-links/report-broken-links.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える
 - リンクを直したら、issue は手動で閉じる
 

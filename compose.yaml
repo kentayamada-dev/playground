@@ -1,0 +1,27 @@
+# 両方のコンテナの一般ユーザー。変えるときは、両方の devcontainer.json の remoteUser も合わせる
+x-dev-user: &dev-user
+  USERNAME: dev
+  USER_UID: "1000"
+  USER_GID: "1000"
+
+services:
+  web:
+    build:
+      context: .devcontainer/web
+      args: *dev-user
+    volumes:
+      # コンテナのなかでも git を使えるよう、.git のあるリポジトリのルートをマウントする
+      # https://code.visualstudio.com/remote/advancedcontainers/connect-multiple-containers
+      - .:/workspace
+    # Compose では overrideCommand が既定で false で、イメージの CMD（web は node、api は bash）は端末がないとすぐ終了するため
+    # https://containers.dev/implementors/json_reference/
+    command: sleep infinity
+    environment:
+      API_URL: http://api:8080
+  api:
+    build:
+      context: .devcontainer/api
+      args: *dev-user
+    volumes:
+      - .:/workspace
+    command: sleep infinity

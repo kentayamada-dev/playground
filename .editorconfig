@@ -12,3 +12,8 @@ trim_trailing_whitespace = true
 # https://spec.commonmark.org/0.31.2/#list-items
 [*.md]
 indent_size = unset
+
+# gofmt はタブでインデントし、スペースに直しても次の整形でタブに戻るため
+# https://go.dev/doc/effective_go#formatting
+[*.go]
+indent_style = tab

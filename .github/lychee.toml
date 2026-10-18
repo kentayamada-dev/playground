@@ -1,0 +1,6 @@
+# web と api のサーバーがコンテナのなかで待ち受けるアドレスで、CI からは接続できないため
+# このファイルも検査の対象で、localhost の行からは http://localhost/ が拾われるため、ポートの有無によらず一致させる
+exclude = [
+  '^http://localhost\b',
+  '^http://api:8080\b',
+]

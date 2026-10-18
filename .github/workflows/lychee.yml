@@ -65,7 +65,7 @@ jobs:
       - id: lychee
         run: >-
           git ls-files ':!:.github/mise.lock' ':!:.github/yamllint/uv.lock'
-          | lychee --include-fragments --accept '100..=103,200..=299,429' --no-progress --format markdown --files-from -
+          | lychee --config .github/lychee.toml --include-fragments --accept '100..=103,200..=299,429' --no-progress --format markdown --files-from -
           | tee "$RUNNER_TEMP/lychee.md"
         shell: bash
         env:

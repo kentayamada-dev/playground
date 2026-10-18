@@ -1,0 +1,15 @@
+{
+  "name": "api",
+  "dockerComposeFile": ["../../compose.yaml"],
+  "service": "api",
+  // Compose の既定の stopCompose は、ウィンドウを閉じると web のコンテナも止め、web で開いているウィンドウが切れるため
+  // https://containers.dev/implementors/json_reference/
+  "shutdownAction": "none",
+  "workspaceFolder": "/workspace/api",
+  "remoteUser": "dev",
+  "customizations": {
+    "vscode": {
+      "extensions": ["golang.Go"]
+    }
+  }
+}

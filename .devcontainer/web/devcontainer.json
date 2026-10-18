@@ -1,0 +1,10 @@
+{
+  "name": "web",
+  "dockerComposeFile": ["../../compose.yaml"],
+  "service": "web",
+  // Compose の既定の stopCompose は、ウィンドウを閉じると api のコンテナも止め、api で開いているウィンドウが切れるため
+  // https://containers.dev/implementors/json_reference/
+  "shutdownAction": "none",
+  "workspaceFolder": "/workspace/web",
+  "remoteUser": "dev"
+}
