@@ -1,0 +1,8 @@
+{
+  "config": {
+    // 日本語の文は途中で改行せずに書き、80 文字の上限を超えることが多いため
+    "line-length": false,
+    // CLAUDE.md・SKILL.md・PR テンプレートなどは、見出し 1 を置かずに書き始めるため
+    "first-line-heading": false
+  }
+}

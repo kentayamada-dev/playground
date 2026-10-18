@@ -25,6 +25,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`ghalint.yml`](.github/workflows/ghalint.yml) | PR・`main` への push | GitHub Actions のワークフローが、すべてのジョブに `timeout-minutes` を書いているか、シークレットを必要なステップだけに渡しているかなど。[ghalint](https://github.com/suzuki-shunsuke/ghalint) で検査する | `ghalint` |
 | [`lychee.yml`](.github/workflows/lychee.yml) | PR・`main` への push・毎週 | git で管理するファイルに書いたリンクが切れていないか。[lychee](https://github.com/lycheeverse/lychee) で検査する。PR と `main` への push ではリポジトリ内のリンクだけ、毎週の実行では外部のリンクも検査する | `lychee`（リポジトリ内のリンクの検査だけ） |
 | [`typos.yml`](.github/workflows/typos.yml) | PR・`main` への push | git で管理するファイルの英単語の綴り。[typos](https://github.com/crate-ci/typos) で検査する。設定は [`.github/typos.toml`](.github/typos.toml) にある | `typos` |
+| [`markdownlint.yml`](.github/workflows/markdownlint.yml) | PR・`main` への push | すべての `.md` の書式。見出しのレベル・リストの記号・表の列数・空行・コードブロックの言語の指定など。[markdownlint](https://github.com/DavidAnson/markdownlint) で検査する。設定は [`.github/markdownlint-cli2.jsonc`](.github/markdownlint-cli2.jsonc) にある | `markdownlint` |
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | 毎日・手動 | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 
 ### マージの条件
@@ -39,7 +40,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 
 | チェック | 検査する範囲 |
 | --- | --- |
-| `textlint` | リポジトリのすべての `.md` |
+| `textlint`・`markdownlint` | リポジトリのすべての `.md` |
 | `test` | `git ls-files` のすべての `.sh`・`.bats` |
 | `editorconfig` | リポジトリ全体。`pnpm-lock.yaml` など、editorconfig-checker がデフォルトで除外するファイルは除く（[Default Excludes](https://github.com/editorconfig-checker/editorconfig-checker/blob/v4.0.2/README.md#default-excludes)） |
 | `actionlint`・`zizmor`・`ghalint` | すべてのワークフロー |
@@ -82,6 +83,12 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 - ディレクトリを渡すと隠しファイルを読まず、`.github` と `.claude` を検査しない（[`files.ignore-hidden`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#filesignore-hidden)）。`--hidden` を付けると `.git` のなかまで読むため、`git ls-files` の一覧を渡す
 - 誤検知は、[`.github/typos.toml`](.github/typos.toml) の `extend-ignore-re` に、その箇所だけに一致する正規表現を足して除外する（[`default.extend-ignore-re`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#defaultextend-ignore-re)）
+
+#### markdownlint
+
+- [markdownlint-cli2-action](https://github.com/DavidAnson/markdownlint-cli2-action) に同梱された markdownlint-cli2 で検査する。npm から依存関係を取得しないので、`package.json` とロックファイルはない。markdownlint-cli2 の版は、アクションの版で決まる
+- 行の長さと 1 行目の見出しのルールだけを無効にしている。editorconfig や lychee の検査と重なるルールも有効のままにしている
+- 指摘を無視するときは、該当する行の前に `<!-- markdownlint-disable-next-line <ルール名> -->` と書く（[Configuration](https://github.com/DavidAnson/markdownlint/blob/v0.41.1/README.md#configuration)）
 
 ### 外部リンクの定期検査
 
