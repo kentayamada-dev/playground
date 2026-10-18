@@ -8,10 +8,10 @@ setup() {
   repo="$BATS_TEST_TMPDIR/repo"
   mkdir -p "$repo"
   repo=$(cd "$repo" && pwd -P)
-  script="$repo/.github/scripts/sync-github-settings.sh"
+  script="$repo/.github/scripts/sync-github-settings/sync-github-settings.sh"
   settings="$repo/.github/settings"
-  real_settings="$BATS_TEST_DIRNAME/../settings"
-  mkdir -p "$repo/.github/scripts" "$settings/rulesets"
+  real_settings="$BATS_TEST_DIRNAME/../../settings"
+  mkdir -p "$repo/.github/scripts/sync-github-settings" "$settings/rulesets"
   cp "$BATS_TEST_DIRNAME/sync-github-settings.sh" "$script"
   echo '{}' >"$settings/repository.json"
   echo '{}' >"$settings/security.json"
@@ -922,7 +922,7 @@ path_without() {
   define_ruleset main.json '{"name": "main", "enforcement": "active"}'
   cd "$repo/.github"
 
-  run -0 scripts/sync-github-settings.sh
+  run -0 scripts/sync-github-settings/sync-github-settings.sh
 
   assert_github_rulesets '[{"id": 100, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
   [ "$(sort -u "$STUB_DIR/gh.pwd")" = "$repo" ]

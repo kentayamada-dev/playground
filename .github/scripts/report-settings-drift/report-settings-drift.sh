@@ -8,7 +8,7 @@ fi
 report=$1
 
 title='chore: 定期検査で見つかった GitHub の設定と定義のずれを直す'
-body="[GitHub の設定の定期検査]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) が失敗しました。定義を直すか、\`.github/scripts/sync-github-settings.sh\` で GitHub を定義に揃えてください。
+body="[GitHub の設定の定期検査]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) が失敗しました。定義を直すか、\`.github/scripts/sync-github-settings/sync-github-settings.sh\` で GitHub を定義に揃えてください。
 
 \`\`\`diff
 $(cat "$report")

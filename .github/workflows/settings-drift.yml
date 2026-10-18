@@ -31,7 +31,7 @@ jobs:
           install_args: jq
       # gh のエラーは標準エラー出力に出るため、issue の本文にも残す
       - id: check
-        run: .github/scripts/sync-github-settings.sh --check 2>&1 | tee "$RUNNER_TEMP/settings-drift.txt"
+        run: .github/scripts/sync-github-settings/sync-github-settings.sh --check 2>&1 | tee "$RUNNER_TEMP/settings-drift.txt"
         # 未指定時の bash -e {0} は pipefail がなく、tee の前の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
         shell: bash
         env:
@@ -39,7 +39,7 @@ jobs:
           # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions
           GH_TOKEN: ${{ secrets.SETTINGS_READ_TOKEN }}
       - if: failure() && steps.check.outcome == 'failure'
-        run: .github/scripts/report-settings-drift.sh "$RUNNER_TEMP/settings-drift.txt"
+        run: .github/scripts/report-settings-drift/report-settings-drift.sh "$RUNNER_TEMP/settings-drift.txt"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}

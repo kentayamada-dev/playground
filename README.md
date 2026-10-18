@@ -119,7 +119,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 - レート制限の `429` は、リンク切れとは限らないため成功として扱う
 - `mise.lock` と `uv.lock` の URL は、`mise lock` と `uv lock` が書くものなので、検査から除く
-- 通らないリンクがあると、[`report-broken-links.sh`](.github/scripts/report-broken-links.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える
+- 通らないリンクがあると、[`report-broken-links.sh`](.github/scripts/report-broken-links/report-broken-links.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える
 - リンクを直したら、issue は手動で閉じる
 
 ### CodeQL
@@ -134,7 +134,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し、次のコマンドで反映します。何度実行しても同じ状態になります。`gh` と `jq` が必要です。
 
 ```bash
-.github/scripts/sync-github-settings.sh
+.github/scripts/sync-github-settings/sync-github-settings.sh
 ```
 
 | 定義 | 対象 | 反映のしかた |
@@ -165,7 +165,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 `--check` を付けると、GitHub を変えずに、反映すると変わる箇所を定義とのずれとして示します。ずれがあれば、終了コード 1 で終わります。
 
 ```bash
-.github/scripts/sync-github-settings.sh --check
+.github/scripts/sync-github-settings/sync-github-settings.sh --check
 ```
 
 - ルールセットは、GitHub が付ける `id`・`node_id`・`created_at` などを除き、定義と完全に一致するかを比べる
