@@ -31,7 +31,7 @@ jobs:
       # ディレクトリを渡すと、uv sync が作る .venv など git で管理していないファイルまで読むため、ファイルを列挙して渡す
       # https://github.com/adrienverge/yamllint/blob/v1.38.0/yamllint/cli.py
       - run: >-
-          git ls-files -z '*.yml' '*.yaml'
+          git ls-files --no-such-option -z '*.yml' '*.yaml'
           | xargs -0 .github/yamllint/.venv/bin/yamllint --strict --format github --config-file .github/yamllint/.yamllint.yaml
         # 未指定時の bash -e {0} は pipefail がなく、git ls-files の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
         shell: bash
