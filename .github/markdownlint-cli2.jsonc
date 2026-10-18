@@ -1,0 +1,13 @@
+{
+  "config": {
+    // 日本語の文は途中で改行せずに書き、80 文字の上限を超えることが多いため
+    "line-length": false,
+    // CLAUDE.md・SKILL.md・PR テンプレートなどは、見出し 1 を置かずに書き始めるため
+    "first-line-heading": false,
+    // .editorconfig の trim_trailing_whitespace・insert_final_newline を editorconfig-checker が検査するため
+    "no-trailing-spaces": false,
+    "single-trailing-newline": false,
+    // 見出しのアンカーは lychee が --include-fragments で検査するため
+    "link-fragments": false
+  }
+}

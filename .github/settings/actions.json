@@ -11,6 +11,7 @@
       "pnpm/action-setup@*",
       "amannn/action-semantic-pull-request@*",
       "jdx/mise-action@*",
+      "DavidAnson/markdownlint-cli2-action@*",
       "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@*",
       "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@*"
     ]
