@@ -21,4 +21,4 @@ https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-
 ## CI の検査に通る書き方
 
 - `.md` はすべて CI で文章と書式を検査される
-- 1 文を 100 文字以内にし、表記は `.github/textlint/prh.yml` に合わせる。ひらがなで書く語もある（例: `クォートの中` ではなく `クォートのなか`）
+- 1 文を 100 文字以内にし、表記は `.github/textlint/prh.yml` に合わせる
