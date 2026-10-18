@@ -87,7 +87,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 #### markdownlint
 
 - [markdownlint-cli2-action](https://github.com/DavidAnson/markdownlint-cli2-action) に同梱された markdownlint-cli2 で検査する。npm から依存関係を取得しないので、`package.json` とロックファイルはない。markdownlint-cli2 の版は、アクションの版で決まる
-- 行の長さと 1 行目の見出しのルールは無効にしている。editorconfig と lychee が検査する末尾の空白・最後の改行・見出しのアンカーも、二重に指摘しないよう無効にしている
+- 行の長さと 1 行目の見出しのルールは無効にしている。editorconfig と lychee が検査する末尾の空白・最後の改行・見出しのアンカーのルールも、指摘が重ならないよう無効にしている
 - 指摘を無視するときは、該当する行の前に `<!-- markdownlint-disable-next-line <ルール名> -->` と書く（[Configuration](https://github.com/DavidAnson/markdownlint/blob/v0.41.1/README.md#configuration)）
 
 ### 外部リンクの定期検査
