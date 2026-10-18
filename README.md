@@ -27,6 +27,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`typos.yml`](.github/workflows/typos.yml) | PR・`main` への push | git で管理するファイルの英単語の綴り。[typos](https://github.com/crate-ci/typos) で検査する。設定は [`.github/typos.toml`](.github/typos.toml) にある | `typos` |
 | [`markdownlint.yml`](.github/workflows/markdownlint.yml) | PR・`main` への push | すべての `.md` の書式。見出しのレベル・リストの記号・表の列数・空行・コードブロックの言語の指定など。[markdownlint](https://github.com/DavidAnson/markdownlint) で検査する。設定は [`.github/markdownlint-cli2.jsonc`](.github/markdownlint-cli2.jsonc) にある | `markdownlint` |
 | [`yamllint.yml`](.github/workflows/yamllint.yml) | PR・`main` への push | `.yml`・`.yaml` の構文と書式。キーの重複・インデント・コメントの書き方など。[yamllint](https://github.com/adrienverge/yamllint) で検査する。設定は [`.github/yamllint/.yamllint.yaml`](.github/yamllint/.yamllint.yaml) にある | `yamllint` |
+| [`hadolint.yml`](.github/workflows/hadolint.yml) | PR・`main` への push | Dockerfile の書き方。ベースイメージのタグの指定・`apt-get install` の版の固定など。[hadolint](https://github.com/hadolint/hadolint) で検査し、`RUN` のスクリプトは hadolint に組み込まれた ShellCheck にかける | `hadolint` |
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | 毎日・手動 | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 
 ### マージの条件
@@ -48,6 +49,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `renovate-config-validator` | [`.github/renovate.json5`](.github/renovate.json5) |
 | `lychee`・`typos` | `git ls-files` のすべてのファイル |
 | `yamllint` | `git ls-files` のすべての `.yml`・`.yaml`。`pnpm-lock.yaml` は除く |
+| `hadolint` | `git ls-files` のうち、名前が `Dockerfile`・`Containerfile` のファイルと、`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*` に一致するファイル |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
 
@@ -102,6 +104,14 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - ディレクトリを渡すと、`uv sync` が作る `.venv` など、git で管理していないファイルまで読む。そのため、`git ls-files` の一覧を渡す
 - 指摘を無視するときは、該当する行に `# yamllint disable-line rule:<ルール名>` と書く（[Disable with comments](https://yamllint.readthedocs.io/en/stable/disable_with_comments.html#disabling-checks-for-a-specific-line)）
 - yamllint の入れ方は [yamllint の依存関係](#yamllint-の依存関係) にある
+
+#### hadolint
+
+- `--failure-threshold style` を付け、重大度が style の指摘でも失敗する。デフォルトの `info` のままだと、style の指摘で失敗しない（[CLI](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#cli)）
+- 対象のファイルが 1 つもなければ、hadolint を実行せずに成功する。hadolint は、ファイルを渡さないと失敗するため（[`app/Main.hs`](https://github.com/hadolint/hadolint/blob/v2.15.1/app/Main.hs#L58-L59)）
+- `RUN` のスクリプトは、hadolint にライブラリとして組み込まれた ShellCheck で検査する。mise で入れる ShellCheck は使わない（[`hadolint.cabal`](https://github.com/hadolint/hadolint/blob/v2.15.1/hadolint.cabal#L169)）
+- 設定ファイル（`.hadolint.yaml`）は置いていない。置いた設定ファイルを解釈できないと、hadolint はエラーを出すだけで、デフォルトの設定で検査を続ける（[`app/Main.hs`](https://github.com/hadolint/hadolint/blob/v2.15.1/app/Main.hs#L89-L93)）
+- 指摘を無視するときは、該当する命令の前の行に `# hadolint ignore=<ルール名>` と書く（[Inline ignores](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#inline-ignores)）
 
 ### 外部リンクの定期検査
 
@@ -254,7 +264,7 @@ CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対�
 | ツール | バックエンド | 検証の方法 |
 | --- | --- | --- |
 | Betterleaks | aqua | `checksums.txt` を cosign の署名で検証する（[aqua レジストリの定義](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/betterleaks/betterleaks/registry.yaml)） |
-| actionlint・jq・uv・zizmor | aqua | GitHub の artifact attestations で検証する（aqua レジストリの定義: [actionlint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/rhysd/actionlint/registry.yaml)・[jq](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/jqlang/jq/registry.yaml)・[uv](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/astral-sh/uv/registry.yaml)・[zizmor](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/zizmorcore/zizmor/registry.yaml)） |
+| actionlint・hadolint・jq・uv・zizmor | aqua | GitHub の artifact attestations で検証する（aqua レジストリの定義: [actionlint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/rhysd/actionlint/registry.yaml)・[hadolint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/hadolint/hadolint/registry.yaml)・[jq](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/jqlang/jq/registry.yaml)・[uv](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/astral-sh/uv/registry.yaml)・[zizmor](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/zizmorcore/zizmor/registry.yaml)） |
 | editorconfig-checker・shfmt・ghalint・typos | github | GitHub の artifact attestations で検証する（[github バックエンド](https://mise.jdx.dev/dev-tools/backends/github.html)） |
 | ShellCheck | aqua | リリースに署名もチェックサムのファイルもない。`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest を使う |
 | lychee | aqua | リリースに署名も GitHub の artifact attestations もない。aqua レジストリの定義にも検証の設定がない（[lycheeverse/lychee](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/lycheeverse/lychee/registry.yaml)）。`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest と同じ値になる |
