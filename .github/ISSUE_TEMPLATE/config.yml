@@ -1,3 +1,4 @@
+#先頭に空白がないコメント
 blank_issues_enabled: false
 contact_links:
   - name: 脆弱性の報告
