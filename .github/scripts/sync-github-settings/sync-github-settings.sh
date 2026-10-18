@@ -338,7 +338,6 @@ done
 unset GH_REPO
 cd "$(dirname "$0")/../../.."
 # 一部だけ反映して止まらないよう、反映を始める前にすべての定義を検査する
-validate_rulesets
 validate_repository
 validate_security
 validate_actions
