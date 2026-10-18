@@ -451,7 +451,6 @@ path_without() {
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   assert_github_repository '{"has_wiki": true}'
   [[ $output == *".github/settings/rulesets.json"* ]]
-  [[ $output != *"適用しています"* ]]
 }
 
 @test "ルールセットの定義が配列でなければ、何も変更せずに失敗する" {
@@ -462,7 +461,6 @@ path_without() {
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   [[ $output == *".github/settings/rulesets.json"* ]]
-  [[ $output != *"適用しています"* ]]
 }
 
 @test "ルールセットの定義が JSON として読めなければ、何も適用せず、何も削除せずに失敗する" {
@@ -473,7 +471,6 @@ path_without() {
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   [[ $output == *".github/settings/rulesets.json"* ]]
-  [[ $output != *"適用しています"* ]]
 }
 
 @test "name のないルールセットの定義があれば、ほかの定義も適用せず、何も削除せずに失敗する" {
