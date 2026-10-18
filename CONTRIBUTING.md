@@ -70,7 +70,7 @@ gh_api "$operation" -H 'Cache-Control: no-cache' "$@"
 - 外部の仕様で決まり、こちらの都合で変わらない値（API のパスなど）は、定数にせずそのまま書いてください。ドキュメントと照らし合わせられる形を保つため
 - テストの入力と期待値は、定数にせずそのまま書いてください。テストを単独で読めるようにし、期待値を実装の写しにしないため
 
-`.github/scripts/sync-github-settings/sync-github-settings.sh` と `.github/scripts/sync-github-settings/sync-github-settings.bats` から抜き出した例です。
+`.github/scripts/sync-github-settings` のスクリプトとテストから抜き出した例です。
 
 ```bash
 # パスは 1 つの定数にまとめる
