@@ -19,6 +19,7 @@ web（Node.js）と api（Go）を、別々の Dev Container で開発します�
 - 2 つのコンテナは、[`compose.yaml`](compose.yaml) のサービスとして動く。どちらにも、リポジトリのルートを `/workspace` としてマウントする。コンテナのなかでも git を使えるようにするため
 - イメージは、Docker Hub の公式イメージをもとに、コンテナごとの Dockerfile でビルドする。Dockerfile を変えたら、「Dev Containers: Rebuild Container」でコンテナを作り直す
 - どちらのコンテナも、一般ユーザー `dev` で動く。ユーザー名は、`compose.yaml` の `x-dev-user` から両方のビルドに渡している。変えるときは、両方の `devcontainer.json` の `remoteUser` も合わせる
+- ホスト名は、サービス名と同じ `web`・`api` にしている。端末のプロンプトで、どちらのコンテナかわかるようにするため
 - sudo は入れていない。root で作業するときは、手元のリポジトリのルートで `docker compose exec -u root api bash` のように実行する
 - web のパッケージマネージャーは pnpm。版は web の Dockerfile だけで管理し、Renovate が更新する。[`web/pnpm-workspace.yaml`](web/pnpm-workspace.yaml) の設定は、textlint の [`pnpm-workspace.yaml`](.github/textlint/pnpm-workspace.yaml) とそろえている
 - web は、Compose のサービス名を使った `http://api:8080` で api に接続する。接続先は、`compose.yaml` で環境変数 `API_URL` に渡している

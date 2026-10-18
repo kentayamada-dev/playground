@@ -7,6 +7,8 @@ services:
     build:
       context: .devcontainer/web
       args: *dev-user
+    # 既定のホスト名はコンテナ ID で、端末のプロンプトからどちらのコンテナかわからないため
+    hostname: web
     volumes:
       # コンテナのなかでも git を使えるよう、.git のあるリポジトリのルートをマウントする
       # https://code.visualstudio.com/remote/advancedcontainers/connect-multiple-containers
@@ -20,6 +22,7 @@ services:
     build:
       context: .devcontainer/api
       args: *dev-user
+    hostname: api
     volumes:
       - .:/workspace
     command: sleep infinity
