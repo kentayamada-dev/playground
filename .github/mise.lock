@@ -77,6 +77,17 @@ url = "https://github.com/suzuki-shunsuke/ghalint/releases/download/v1.5.6/ghali
 url_api = "https://api.github.com/repos/suzuki-shunsuke/ghalint/releases/assets/409631231"
 provenance = "github-attestations"
 
+[[tools.hadolint]]
+version = "2.15.1"
+backend = "aqua:hadolint/hadolint"
+specifiers = ["2.15.1"]
+
+[tools.hadolint."platforms.linux-arm64"]
+checksum = "sha256:f6198ef8090f404dbb771abfee086eb8c48ac177f30da7fd3510aca35b344b5d"
+url = "https://github.com/hadolint/hadolint/releases/download/v2.15.1/hadolint-linux-arm64"
+url_api = "https://api.github.com/repos/hadolint/hadolint/releases/assets/496546507"
+provenance = "github-attestations"
+
 [[tools.jq]]
 version = "1.8.2"
 backend = "aqua:jqlang/jq"

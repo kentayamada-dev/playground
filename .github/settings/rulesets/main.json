@@ -97,6 +97,10 @@
           {
             "context": "yamllint",
             "integration_id": 15368
+          },
+          {
+            "context": "hadolint",
+            "integration_id": 15368
           }
         ]
       }
