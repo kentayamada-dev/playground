@@ -14,6 +14,9 @@
   "dependencyDashboardTitle": "chore(deps): 依存関係の更新状況",
   // デフォルトでは PR にラベルを付けないため、.github/settings/labels.json の dependencies を付ける https://docs.renovatebot.com/configuration-options/#labels
   "labels": ["dependencies"],
+  // GitHub の依存グラフに textlint の依存が出ず、Dependabot alerts からは脆弱性修正 PR が作られないため、OSV のデータベースでも照会させる
+  // https://docs.renovatebot.com/configuration-options/#osvvulnerabilityalerts
+  "osvVulnerabilityAlerts": true,
   "packageRules": [
     {
       "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
