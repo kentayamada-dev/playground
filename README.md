@@ -20,6 +20,7 @@ web（Node.js）と api（Go）を、別々の Dev Container で開発します�
 - イメージは、Docker Hub の公式イメージをもとに、コンテナごとの Dockerfile でビルドする。Dockerfile を変えたら、「Dev Containers: Rebuild Container」でコンテナを作り直す
 - どちらのコンテナも、UID・GID 1000 の一般ユーザー `dev` で動く。Linux のホストでは、マウントしたファイルがホストの UID・GID のまま見え、root で書くと root の所有のファイルができるため。macOS の Docker Desktop では起きない。作り方は VS Code の [Add a non-root user to a container](https://code.visualstudio.com/remote/advancedcontainers/add-nonroot-user) にならっている
 - ユーザー名と UID・GID は、`compose.yaml` の `x-dev-user` から両方のビルドに渡している。変えるときは、両方の `devcontainer.json` の `remoteUser` も合わせる
+- 開いたコンテナだけを起動する（`runServices`）。Linux で UID を手元のユーザーに合わせる処理は、開いたコンテナにしかかからないため。web から api を呼ぶときは、api のコンテナも開いておく
 - sudo は入れていない。root で作業するときは、手元のリポジトリのルートで `docker compose exec -u root api bash` のように実行する
 - web のパッケージマネージャーは pnpm。版は web の Dockerfile だけで管理し、Renovate が更新する。[`web/pnpm-workspace.yaml`](web/pnpm-workspace.yaml) の設定は、textlint の [`pnpm-workspace.yaml`](.github/textlint/pnpm-workspace.yaml) とそろえている
 - web は、Compose のサービス名を使った `http://api:8080` で api に接続する。接続先は、`compose.yaml` で環境変数 `API_URL` に渡している
@@ -34,6 +35,14 @@ web（Node.js）と api（Go）を、別々の Dev Container で開発します�
 3. もう一方のコンテナに移るときは、「Dev Containers: Switch Container」を実行する。両方を同時に開くときは、「File > New Window」で開いた別のウィンドウでも同じ手順を実行する
 
 コンテナを止めるときは、手元のリポジトリのルートで `docker compose stop` を実行します。
+
+### ビルドが失敗するとき
+
+Buildx v0.37.2 以降では、コンテナのビルドが `additional privileges requested` というエラーで失敗します。Dev Containers が `/tmp` に作る Dockerfile を、Buildx が読ませないためです（[devcontainers/cli#1320](https://github.com/devcontainers/cli/issues/1320)）。修正されるまでは、VS Code をいったん終了し、環境変数 `BUILDX_BAKE_ENTITLEMENTS_FS=0` を付けて起動します。
+
+```bash
+BUILDX_BAKE_ENTITLEMENTS_FS=0 code .
+```
 
 ### サーバーを起動する
 
