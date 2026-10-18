@@ -72,6 +72,7 @@ validate_rulesets() {
 }
 
 sync_rulesets() {
+  validate_rulesets
   # includes_parents のデフォルトは true で、Organization のルールセットも返り、名前が同じだと誤って照合するため外す
   # https://docs.github.com/en/rest/repos/rules?apiVersion=2022-11-28#get-all-repository-rulesets
   local existing names duplicates
@@ -338,7 +339,6 @@ done
 unset GH_REPO
 cd "$(dirname "$0")/../../.."
 # 一部だけ反映して止まらないよう、反映を始める前にすべての定義を検査する
-validate_rulesets
 validate_repository
 validate_security
 validate_actions
