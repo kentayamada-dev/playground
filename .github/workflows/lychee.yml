@@ -61,11 +61,12 @@ jobs:
           install_args: lychee
       # mise.lock と uv.lock の URL は mise lock と uv lock が書くもので、手で直さないため除く
       # 429 はレート制限でリンク切れとは限らず、リンクが 1 件だけの www.gnu.org も返したため、成功として扱う https://github.com/kentayamada-dev/playground/pull/184
+      # 502〜504 は github.com がときどき返す一時的なエラーで、lychee 0.24.2 は --max-retries によらずリトライしないため、成功として扱う https://github.com/lycheeverse/lychee/issues/2319
       # --output に書くと標準出力に何も出ずログで結果を追えないため、tee で issue の本文用にも残す
       - id: lychee
         run: >-
           git ls-files ':!:.github/mise.lock' ':!:.github/yamllint/uv.lock'
-          | lychee --config .github/lychee.toml --include-fragments --accept '100..=103,200..=299,429' --no-progress --format markdown --files-from -
+          | lychee --config .github/lychee.toml --include-fragments --accept '100..=103,200..=299,429,502..=504' --no-progress --format markdown --files-from -
           | tee "$RUNNER_TEMP/lychee.md"
         shell: bash
         env:

@@ -157,6 +157,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 外部のリンクは、[`lychee.yml`](.github/workflows/lychee.yml) の `lychee-external` が毎週月曜と手動の実行（`workflow_dispatch`）で検査します。必須チェックではありません。
 
 - レート制限の `429` は、リンク切れとは限らないため成功として扱う
+- `502`・`503`・`504` も成功として扱う。github.com がときどき返す一時的なエラーで、lychee v0.24.2 は `--max-retries` によらずリトライしないため（[#2319](https://github.com/lycheeverse/lychee/issues/2319)）
 - `mise.lock` と `uv.lock` の URL は、`mise lock` と `uv lock` が書くものなので、検査から除く
 - web と api のサーバーのアドレス（`http://localhost:3000` など）は、CI から接続できないため、[`.github/lychee.toml`](.github/lychee.toml) で検査から除く
 - 通らないリンクがあると、[`report-broken-links.sh`](.github/scripts/report-broken-links/report-broken-links.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える
