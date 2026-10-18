@@ -7,7 +7,7 @@
 - ユーザーの意思決定が必要な場面では、その場ですぐ `AskUserQuestion` で選択肢を提示してユーザーに選ばせる。推測で決めて進めない
   - 対応方針が複数ある場合だけでなく、確認・承認・優先順位・スコープの判断など、ユーザーに決めてもらうべきことはすべて対象
   - ただしスキルが確認の要否を定めている場合は、スキルの記述に従う
-- `.github/mise.toml` のツール（bats・shellcheck・actionlint など）と textlint・markdownlint はローカルにない。
+- bats・shellcheck・actionlint など `.github/mise.toml` の検査ツールと、textlint・markdownlint はローカルにない。
   `mise` もサンドボックス内では `Operation not permitted` で失敗するので、検査とテストの結果は CI で確認する
 - 同じディレクトリで並行するセッションがブランチを切り替えることがある。ファイルを編集する前に `git branch --show-current` で確認する
 
