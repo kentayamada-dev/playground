@@ -1,8 +1,6 @@
 # 両方のコンテナの一般ユーザー。変えるときは、両方の devcontainer.json の remoteUser も合わせる
 x-dev-user: &dev-user
   USER_NAME: dev
-  USER_UID: "1000"
-  USER_GID: "1000"
 
 services:
   web:

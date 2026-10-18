@@ -6,9 +6,6 @@
   // https://containers.dev/implementors/json_reference/
   "shutdownAction": "none",
   "workspaceFolder": "/workspace/api",
-  // Linux で UID を手元のユーザーに合わせる処理は、開いたコンテナにしかかからず、一緒に起動したコンテナは 1000 のまま残るため
-  // https://github.com/kentayamada-dev/playground/pull/235
-  "runServices": ["api"],
   "remoteUser": "dev",
   "customizations": {
     "vscode": {
