@@ -2,4 +2,4 @@
 name = "yamllint-ci"
 version = "0.0.0"
 requires-python = ">=3.10"
-dependencies = ["yamllint==1.38.0"]
+dependencies = ["yamllint==1.37.1"]
