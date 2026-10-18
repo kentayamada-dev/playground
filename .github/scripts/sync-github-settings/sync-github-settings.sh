@@ -344,7 +344,7 @@ done
 # gh は GH_REPO があればそれを対象にするため外し、定義と同じリポジトリのルートで remote から決めさせる
 # https://github.com/cli/cli/blob/v2.102.0/pkg/cmdutil/repo_override.go
 unset GH_REPO
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/../../.."
 # ルールセットだけ反映して止まらないよう、ほかの定義はルールセットより先に検査する
 validate_repository
 validate_security
