@@ -100,7 +100,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
   - 真偽値の書き方（`truthy`）は、値だけを検査し、キーは検査しない
   - 行末のコメントの前の空白（`comments`）は、1 つでよい
 - ディレクトリを渡すと、`uv sync` が作る `.venv` など、git で管理していないファイルまで読む。そのため、`git ls-files` の一覧を渡す
-- 指摘を無視するときは、該当する行か 1 つ上の行に `# yamllint disable-line rule:<ルール名>` と書く（[Disabling checks for a specific line](https://yamllint.readthedocs.io/en/stable/disable_with_comments.html#disabling-checks-for-a-specific-line)）
+- 指摘を無視するときは、該当する行に `# yamllint disable-line rule:<ルール名>` と書く（[Disable with comments](https://yamllint.readthedocs.io/en/stable/disable_with_comments.html#disabling-checks-for-a-specific-line)）
 - yamllint の入れ方は [yamllint の依存関係](#yamllint-の依存関係) にある
 
 ### 外部リンクの定期検査
