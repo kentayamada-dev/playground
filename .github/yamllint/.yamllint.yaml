@@ -1,0 +1,19 @@
+extends: default
+
+# pnpm が書き出すファイルで、手で書式を直さないため
+ignore: |
+  pnpm-lock.yaml
+
+rules:
+  # コメントに理由と根拠の URL を書くと、80 文字の上限を超えることが多いため
+  line-length: disable
+  # どのファイルも `---` を書かずに始めているため
+  document-start: disable
+  truthy:
+    # ワークフローの `on:` は YAML 1.1 では真偽値になる綴りだが、GitHub Actions はキーとして読むため、キーは検査しない
+    # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#on
+    check-keys: false
+  comments:
+    # Renovate はアクションの SHA の後ろに `# v7` のようなコメントを空白 1 つで書くため
+    # https://github.com/kentayamada-dev/playground/pull/214
+    min-spaces-from-content: 1
