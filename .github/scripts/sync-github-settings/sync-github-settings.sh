@@ -56,65 +56,57 @@ report_defined_drift() {
 }
 
 settings_dir=.github/settings
+rulesets_definition="$settings_dir/rulesets.json"
 
-sync_rulesets() {
-  local files=("$settings_dir"/rulesets/*.json) has_definitions=false
-  # 一致するファイルがないとパターンが文字列のまま残る。macOS の bash 3.2 は空配列の展開を set -u でエラーにするため、配列は空にせず存在で判定する
-  # https://www.gnu.org/software/bash/manual/html_node/Filename-Expansion.html https://tiswww.case.edu/php/chet/bash/CHANGES の bash-4.4-rc2 3.a
-  if [ -e "${files[0]}" ]; then
-    has_definitions=true
-  fi
-
-  # 途中まで適用した状態で止まらないよう、作成・更新・削除の前にすべての定義と照合先を検査する
-  local file names='[]' duplicates
-  if $has_definitions; then
-    for file in "${files[@]}"; do
-      if ! jq -e '.name | type == "string" and length > 0' "$file" >/dev/null; then
-        echo "エラー: $file は name（空でない文字列）を持つ JSON オブジェクトではありません" >&2
-        return 1
-      fi
-    done
-    names=$(jq -cs 'map(.name)' "${files[@]}")
-  fi
-  duplicates=$(jq -r 'group_by(.) | map(select(length > 1) | .[0]) | .[]' <<<"$names")
-  if [ -n "$duplicates" ]; then
-    echo "エラー: 同じ name のルールセットが複数のファイルにあります: $duplicates" >&2
+validate_rulesets() {
+  if ! jq -e 'type == "array" and all(.[]; type == "object" and (.name | type == "string" and length > 0))' "$rulesets_definition" >/dev/null; then
+    echo "エラー: $rulesets_definition は、name（空でない文字列）を持つオブジェクトの配列ではありません" >&2
     return 1
   fi
+  local duplicates
+  duplicates=$(jq -r 'map(.name) | group_by(.) | map(select(length > 1) | .[0]) | .[]' "$rulesets_definition")
+  if [ -n "$duplicates" ]; then
+    echo "エラー: 同じ name のルールセットが $rulesets_definition に複数あります: $duplicates" >&2
+    return 1
+  fi
+}
 
+sync_rulesets() {
   # includes_parents のデフォルトは true で、Organization のルールセットも返り、名前が同じだと誤って照合するため外す
   # https://docs.github.com/en/rest/repos/rules?apiVersion=2022-11-28#get-all-repository-rulesets
-  local existing
+  local existing names duplicates
   existing=$(gh_get 'ルールセットの一覧の取得' --paginate --slurp 'repos/{owner}/{repo}/rulesets?includes_parents=false&per_page=100')
+  names=$(jq -c 'map(.name)' "$rulesets_definition")
+  # 途中まで適用した状態で止まらないよう、作成・更新・削除の前に照合先を検査する
   duplicates=$(jq -r --argjson names "$names" '[.[][] | .name | select(IN($names[]))] | group_by(.) | map(select(length > 1) | .[0]) | .[]' <<<"$existing")
   if [ -n "$duplicates" ]; then
     echo "エラー: GitHub に同じ名前のルールセットが複数あり、更新先を決められません: $duplicates" >&2
     return 1
   fi
 
-  local name id actual
-  if $has_definitions; then
-    for file in "${files[@]}"; do
-      name=$(jq -r '.name' "$file")
-      id=$(jq -r --arg name "$name" '.[][] | select(.name == $name) | .id' <<<"$existing")
-      if [ -z "$id" ]; then
-        if $check_only; then
-          drift "ルールセット $name ($file) が GitHub にありません"
-        else
-          gh_api "ルールセット $name の作成" --method POST 'repos/{owner}/{repo}/rulesets' --input "$file" --silent
-          echo "作成: ルールセット $name ($file)"
-        fi
-      elif $check_only; then
-        # 一覧の応答には rules や conditions が含まれないため、1 件ずつ取得する
-        # https://docs.github.com/en/rest/repos/rules?apiVersion=2022-11-28#get-all-repository-rulesets
-        actual=$(gh_get "ルールセット $name の取得" "repos/{owner}/{repo}/rulesets/$id")
-        report_drift "ルールセット $name ($file)" "$(cat "$file")" \
-          "$(jq 'del(.id, .source_type, .source, .node_id, .created_at, .updated_at, .current_user_can_bypass, ._links)' <<<"$actual")"
+  local count i ruleset name id actual
+  count=$(jq length "$rulesets_definition")
+  for ((i = 0; i < count; i++)); do
+    ruleset=$(jq -c ".[$i]" "$rulesets_definition")
+    name=$(jq -r '.name' <<<"$ruleset")
+    id=$(jq -r --arg name "$name" '.[][] | select(.name == $name) | .id' <<<"$existing")
+    if [ -z "$id" ]; then
+      if $check_only; then
+        drift "ルールセット $name が GitHub にありません"
       else
-        gh_api "ルールセット $name の反映" --method PUT "repos/{owner}/{repo}/rulesets/$id" --input "$file" --silent
+        gh_api "ルールセット $name の作成" --method POST 'repos/{owner}/{repo}/rulesets' --input - --silent <<<"$ruleset"
+        echo "作成: ルールセット $name"
       fi
-    done
-  fi
+    elif $check_only; then
+      # 一覧の応答には rules や conditions が含まれないため、1 件ずつ取得する
+      # https://docs.github.com/en/rest/repos/rules?apiVersion=2022-11-28#get-all-repository-rulesets
+      actual=$(gh_get "ルールセット $name の取得" "repos/{owner}/{repo}/rulesets/$id")
+      report_drift "ルールセット $name" "$ruleset" \
+        "$(jq 'del(.id, .source_type, .source, .node_id, .created_at, .updated_at, .current_user_can_bypass, ._links)' <<<"$actual")"
+    else
+      gh_api "ルールセット $name の反映" --method PUT "repos/{owner}/{repo}/rulesets/$id" --input - --silent <<<"$ruleset"
+    fi
+  done
 
   # 定義の name を変えたときに、古いルールセットを先に消して保護が途切れないよう、作成・更新のあとで削除する
   local stale
@@ -345,7 +337,8 @@ done
 # https://github.com/cli/cli/blob/v2.102.0/pkg/cmdutil/repo_override.go
 unset GH_REPO
 cd "$(dirname "$0")/../../.."
-# ルールセットだけ反映して止まらないよう、ほかの定義はルールセットより先に検査する
+# 一部だけ反映して止まらないよう、反映を始める前にすべての定義を検査する
+validate_rulesets
 validate_repository
 validate_security
 validate_actions

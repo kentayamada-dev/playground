@@ -9,7 +9,7 @@
 
 ## CI の検査
 
-GitHub Actions で、次のとおり検査します。必須チェックが通らない PR はマージできません。必須チェックは [`rulesets/main.json`](.github/settings/rulesets/main.json) に定義しています。
+GitHub Actions で、次のとおり検査します。必須チェックが通らない PR はマージできません。必須チェックは [`rulesets.json`](.github/settings/rulesets.json) に定義しています。
 
 | ワークフロー | 実行のタイミング | 検査する内容 | 必須チェック |
 | --- | --- | --- | --- |
@@ -139,7 +139,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 | 定義 | 対象 | 反映のしかた |
 | --- | --- | --- |
-| [`rulesets`](.github/settings/rulesets) | ルールセット | `name` が同じルールセットを更新し、なければ作成する。定義にないものは削除する |
+| [`rulesets.json`](.github/settings/rulesets.json) | ルールセット | `name` が同じルールセットを更新し、なければ作成する。定義にないものは削除する |
 | [`repository.json`](.github/settings/repository.json) | マージの方法・Wiki の有無・シークレットスキャン・プッシュ保護など | 定義に書いた項目だけを更新する |
 | [`security.json`](.github/settings/security.json) | Dependabot・CodeQL など | 定義に書いた項目だけを、`true` なら有効に、`false` なら無効にする |
 | [`actions.json`](.github/settings/actions.json) | GitHub Actions | 定義に書いた項目だけを更新する |

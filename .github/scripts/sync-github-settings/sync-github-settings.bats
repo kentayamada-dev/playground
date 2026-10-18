@@ -11,8 +11,9 @@ setup() {
   script="$repo/.github/scripts/sync-github-settings/sync-github-settings.sh"
   settings="$repo/.github/settings"
   real_settings="$BATS_TEST_DIRNAME/../../settings"
-  mkdir -p "$repo/.github/scripts/sync-github-settings" "$settings/rulesets"
+  mkdir -p "$repo/.github/scripts/sync-github-settings" "$settings"
   cp "$BATS_TEST_DIRNAME/sync-github-settings.sh" "$script"
+  echo '[]' >"$settings/rulesets.json"
   echo '{}' >"$settings/repository.json"
   echo '{}' >"$settings/security.json"
   echo '{}' >"$settings/actions.json"
@@ -313,8 +314,8 @@ assert_github_code_scanning() {
   fi
 }
 
-define_ruleset() {
-  echo "$2" >"$settings/rulesets/$1"
+define_rulesets() {
+  echo "$1" >"$settings/rulesets.json"
 }
 
 assert_github_rulesets() {
@@ -337,17 +338,17 @@ path_without() {
 }
 
 @test "同じ名前のルールセットが GitHub になければ作成する" {
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
 
   run -0 "$script"
 
   assert_github_rulesets '[{"id": 100, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
-  [[ $output == *"作成: ルールセット main (.github/settings/rulesets/main.json)"* ]]
+  [[ $output == *"作成: ルールセット main"* ]]
 }
 
-@test "ファイル名ではなく name が同じルールセットを、ID を変えずに定義の内容で置き換える" {
+@test "name が同じルールセットを、ID を変えずに定義の内容で置き換える" {
   given_github_rulesets '[{"id": 42, "source_type": "Repository", "name": "main", "enforcement": "disabled", "bypass_actors": [{"actor_id": 5}]}]'
-  define_ruleset default-branch.json '{"name": "main", "enforcement": "active", "bypass_actors": []}'
+  define_rulesets '[{"name": "main", "enforcement": "active", "bypass_actors": []}]'
 
   run -0 "$script"
 
@@ -361,8 +362,7 @@ path_without() {
   ]'
   given_github_repository '{"has_wiki": true, "allow_merge_commit": true}'
   given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}, {"name": "wontfix", "color": "ffffff", "description": "Will not be worked on"}]'
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
-  define_ruleset release.json '{"name": "release", "enforcement": "evaluate"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}, {"name": "release", "enforcement": "evaluate"}]'
   define_repository '{"has_wiki": false, "allow_merge_commit": false}'
   define_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}, {"name": "maintenance", "color": "fbca04", "description": "保守作業"}]'
   expected_labels='[{"name": "bug", "color": "d73a4a", "description": "不具合"}, {"name": "maintenance", "color": "fbca04", "description": "保守作業"}]'
@@ -384,7 +384,7 @@ path_without() {
 
 @test "Organization のルールセットと名前が同じでも、それを更新せずリポジトリに作成する" {
   given_github_rulesets '[{"id": 7, "source_type": "Organization", "name": "main", "enforcement": "evaluate"}]'
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
 
   run -0 "$script"
 
@@ -399,7 +399,7 @@ path_without() {
     {"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"},
     {"id": 2, "source_type": "Repository", "name": "legacy", "enforcement": "active"}
   ]'
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
 
   run -0 "$script"
 
@@ -409,7 +409,7 @@ path_without() {
 
 @test "定義の name を変えると、古い名前のルールセットを残さず新しい名前で作成する" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"}]'
-  define_ruleset main.json '{"name": "default-branch", "enforcement": "active"}'
+  define_rulesets '[{"name": "default-branch", "enforcement": "active"}]'
 
   run -0 "$script"
 
@@ -418,7 +418,7 @@ path_without() {
 
 @test "Organization のルールセットは、定義になくても削除しない" {
   given_github_rulesets '[{"id": 7, "source_type": "Organization", "name": "org-wide", "enforcement": "active"}]'
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
 
   run -0 "$script"
 
@@ -428,54 +428,77 @@ path_without() {
   ]'
 }
 
-@test "ルールセットの定義がなければ、リポジトリのルールセットをすべて削除する" {
+@test "ルールセットの定義が空の配列なら、リポジトリのルールセットをすべて削除する" {
   given_github_rulesets '[
     {"id": 1, "source_type": "Repository", "name": "main", "enforcement": "active"},
     {"id": 7, "source_type": "Organization", "name": "org-wide", "enforcement": "active"}
   ]'
+  define_rulesets '[]'
 
   run -0 "$script"
 
   assert_github_rulesets '[{"id": 7, "source_type": "Organization", "name": "org-wide", "enforcement": "active"}]'
 }
 
-@test "JSON として読めない定義があれば、ほかの定義も適用せず、何も削除せずに失敗する" {
+@test "ルールセットの定義がなければ、ほかの設定も含めて何も変更せずに失敗する" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
-  define_ruleset a.json '{"name": "a", "enforcement": "active"}'
-  define_ruleset b.json '{"name": "b",'
+  given_github_repository '{"has_wiki": true}'
+  define_repository '{"has_wiki": false}'
+  rm "$settings/rulesets.json"
 
   run -1 "$script"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
-  [[ $output == *".github/settings/rulesets/b.json"* ]]
+  assert_github_repository '{"has_wiki": true}'
+  [[ $output == *".github/settings/rulesets.json"* ]]
+  [[ $output != *"適用しています"* ]]
 }
 
-@test "name のない定義があれば、ほかの定義も適用せず、何も削除せずに失敗する" {
+@test "ルールセットの定義が配列でなければ、何も変更せずに失敗する" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
-  define_ruleset a.json '{"name": "a", "enforcement": "active"}'
-  define_ruleset b.json '{"enforcement": "active"}'
+  define_rulesets '{"name": "main", "enforcement": "active"}'
 
   run -1 "$script"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
-  [[ $output == *".github/settings/rulesets/b.json"* ]]
+  [[ $output == *".github/settings/rulesets.json"* ]]
+  [[ $output != *"適用しています"* ]]
 }
 
-@test "name が空の定義があれば、ほかの定義も適用せず、何も削除せずに失敗する" {
+@test "ルールセットの定義が JSON として読めなければ、何も適用せず、何も削除せずに失敗する" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
-  define_ruleset a.json '{"name": "a", "enforcement": "active"}'
-  define_ruleset b.json '{"name": "", "enforcement": "active"}'
+  define_rulesets '[{"name": "a", "enforcement": "active"}, {"name": "b",'
 
   run -1 "$script"
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
-  [[ $output == *".github/settings/rulesets/b.json"* ]]
+  [[ $output == *".github/settings/rulesets.json"* ]]
+  [[ $output != *"適用しています"* ]]
 }
 
-@test "name が同じ定義が複数あれば、どれも適用せず、何も削除せずに失敗する" {
+@test "name のないルールセットの定義があれば、ほかの定義も適用せず、何も削除せずに失敗する" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
-  define_ruleset a.json '{"name": "main", "enforcement": "active"}'
-  define_ruleset b.json '{"name": "main", "enforcement": "disabled"}'
+  define_rulesets '[{"name": "a", "enforcement": "active"}, {"enforcement": "active"}]'
+
+  run -1 "$script"
+
+  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  [[ $output == *".github/settings/rulesets.json"* ]]
+}
+
+@test "name が空のルールセットの定義があれば、ほかの定義も適用せず、何も削除せずに失敗する" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  define_rulesets '[{"name": "a", "enforcement": "active"}, {"name": "", "enforcement": "active"}]'
+
+  run -1 "$script"
+
+  assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  [[ $output == *".github/settings/rulesets.json"* ]]
+}
+
+@test "name が同じルールセットの定義が複数あれば、どれも適用せず、何も削除せずに失敗する" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
+  define_rulesets '[{"name": "main", "enforcement": "active"}, {"name": "main", "enforcement": "disabled"}]'
 
   run -1 "$script"
 
@@ -490,8 +513,7 @@ path_without() {
     {"id": 3, "source_type": "Repository", "name": "legacy", "enforcement": "active"}
   ]'
   given_github_rulesets "$rulesets"
-  define_ruleset a.json '{"name": "a", "enforcement": "active"}'
-  define_ruleset main.json '{"name": "main", "enforcement": "disabled"}'
+  define_rulesets '[{"name": "a", "enforcement": "active"}, {"name": "main", "enforcement": "disabled"}]'
 
   run -1 "$script"
 
@@ -505,7 +527,7 @@ path_without() {
     {"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"},
     {"id": 2, "source_type": "Repository", "name": "legacy", "enforcement": "active"}
   ]'
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
 
   run -0 "$script"
 
@@ -524,7 +546,7 @@ path_without() {
 @test "リポジトリの設定の定義が JSON として読めなければ、ルールセットも含めて何も変更せずに失敗する" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
   given_github_repository '{"has_wiki": true}'
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
   define_repository '{"has_wiki": false,'
 
   run -1 "$script"
@@ -547,7 +569,7 @@ path_without() {
 
 @test "リポジトリの設定の定義がなければ、ルールセットも含めて何も変更せずに失敗する" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
   rm "$settings/repository.json"
 
   run -1 "$script"
@@ -558,7 +580,7 @@ path_without() {
 
 @test "ルールセットの定義に不備があれば、リポジトリの設定も変更せずに失敗する" {
   given_github_repository '{"has_wiki": true}'
-  define_ruleset main.json '{"enforcement": "active"}'
+  define_rulesets '[{"enforcement": "active"}]'
   define_repository '{"has_wiki": false}'
 
   run -1 "$script"
@@ -766,7 +788,7 @@ path_without() {
 @test "ルールセットの一覧のキャッシュが古くても、今の一覧をもとに更新し、重複して作成しない" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
   echo '[]' >"$STUB_DIR/rulesets.stale.json"
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
 
   run -0 "$script"
 
@@ -785,7 +807,7 @@ path_without() {
 
 @test "ルールセットの一覧を取得できなければ、作成せずに失敗する" {
   export STUB_FAIL="GET *"
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
 
   run -1 "$script"
 
@@ -796,7 +818,7 @@ path_without() {
 @test "ルールセットの更新に失敗したら失敗する" {
   export STUB_FAIL="PUT repos/{owner}/{repo}/rulesets/*"
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
 
   run -1 "$script"
 
@@ -807,7 +829,7 @@ path_without() {
 @test "ルールセットの削除に失敗したら失敗する" {
   export STUB_FAIL="DELETE repos/{owner}/{repo}/rulesets/*"
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "legacy", "enforcement": "active"}]'
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
 
   run -1 "$script"
 
@@ -885,17 +907,17 @@ path_without() {
 }
 
 @test "jq がなければ、定義の不備とは示さず、jq が見つからないと示して失敗する" {
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
 
   run -1 env PATH="$(path_without jq)" "$script"
 
   [[ $output == *"jq が見つかりません"* ]]
-  [[ $output != *"main.json"* ]]
+  [[ $output != *".github/settings/"* ]]
   assert_github_rulesets '[]'
 }
 
 @test "gh がなければ、gh が見つからないと示して失敗する" {
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
 
   run -1 env PATH="$(path_without gh)" "$script"
 
@@ -906,7 +928,7 @@ path_without() {
   other='[{"id": 1, "source_type": "Repository", "name": "other", "enforcement": "active"}]'
   echo "$other" >"$STUB_DIR/other-repo-rulesets.json"
   echo '{"has_wiki": true}' >"$STUB_DIR/other-repo-repository.json"
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
   define_repository '{"has_wiki": false}'
   export GH_REPO=someone/other
 
@@ -919,7 +941,7 @@ path_without() {
 }
 
 @test "どのディレクトリから実行しても、リポジトリのルートで定義を読み gh を実行する" {
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
   cd "$repo/.github"
 
   run -0 scripts/sync-github-settings/sync-github-settings.sh
@@ -932,7 +954,7 @@ path_without() {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
   given_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"]}'
   given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}]'
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
   define_repository '{"has_wiki": false}'
   define_security '{"vulnerability_alerts": true, "automated_security_fixes": false, "code_scanning_default_setup": {"state": "configured"}}'
   define_actions '{"workflow_permissions": {"default_workflow_permissions": "read"}}'
@@ -945,11 +967,11 @@ GitHub に定義を適用しました' ]
 }
 
 @test "リポジトリにあるルールセットの定義を、すべて GitHub に作成できる" {
-  cp "$real_settings"/rulesets/*.json "$settings/rulesets/"
+  cp "$real_settings/rulesets.json" "$settings/rulesets.json"
 
   run -0 "$script"
 
-  [ "$(jq -c 'map(.name) | sort' "$STUB_DIR/rulesets.json")" = "$(jq -cs 'map(.name) | sort' "$settings"/rulesets/*.json)" ]
+  [ "$(jq -c 'map(.name) | sort' "$STUB_DIR/rulesets.json")" = "$(jq -c 'map(.name) | sort' "$settings/rulesets.json")" ]
 }
 
 @test "リポジトリにあるリポジトリの設定の定義を、そのまま GitHub に反映できる" {
@@ -992,8 +1014,7 @@ GitHub に定義を適用しました' ]
 }
 
 @test "--check は、リポジトリにある定義を同期した直後なら、ずれとせず何も変えずに成功する" {
-  cp "$real_settings"/rulesets/*.json "$settings/rulesets/"
-  cp "$real_settings"/{repository,security,actions,labels}.json "$settings/"
+  cp "$real_settings"/{rulesets,repository,security,actions,labels}.json "$settings/"
   run -0 "$script"
   cat "$STUB_DIR"/*.json >"$BATS_TEST_TMPDIR/github-before"
 
@@ -1006,7 +1027,7 @@ GitHub の設定は定義と一致しています' ]
 
 @test "--check は、GitHub が付ける ID や日時などの項目を、ルールセットのずれとしない" {
   given_github_rulesets '[{"id": 42, "source_type": "Repository", "source": "owner/repo", "node_id": "RRS_1", "created_at": "2026-10-01T00:00:00+09:00", "updated_at": "2026-10-02T00:00:00+09:00", "current_user_can_bypass": "never", "_links": {"self": {"href": "https://example.com/rulesets/42"}}, "name": "main", "enforcement": "active"}]'
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
 
   run -0 "$script" --check
 }
@@ -1021,24 +1042,24 @@ GitHub の設定は定義と一致しています' ]
 
 @test "--check は、ルールセットが定義と違えば、差分を示し、更新せずに失敗する" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
 
   run -1 "$script" --check
 
   assert_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
-  [[ $output == *"ずれ: ルールセット main (.github/settings/rulesets/main.json)"* ]]
+  [[ $output == *"ずれ: ルールセット main"* ]]
   [[ $output == *'-  "enforcement": "active",'* ]]
   [[ $output == *'+  "enforcement": "disabled",'* ]]
   [[ $output == *"GitHub の設定に、定義と違う箇所が 1 件あります"* ]]
 }
 
 @test "--check は、定義にあるルールセットが GitHub になければ、作成せずに失敗する" {
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
 
   run -1 "$script" --check
 
   assert_github_rulesets '[]'
-  [[ $output == *"ずれ: ルールセット main (.github/settings/rulesets/main.json) が GitHub にありません"* ]]
+  [[ $output == *"ずれ: ルールセット main が GitHub にありません"* ]]
 }
 
 @test "--check は、定義にないルールセットが GitHub にあれば、削除せずに失敗する" {
@@ -1135,7 +1156,7 @@ GitHub の設定は定義と一致しています' ]
 
 @test "--check は、ずれを見つけても途中で止まらず、ほかの設定も比べてすべて示す" {
   given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}]'
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
   define_labels '[{"name": "bug", "color": "d73a4a"}]'
 
   run -1 "$script" --check
@@ -1152,7 +1173,7 @@ GitHub の設定は定義と一致しています' ]
   echo '{"has_wiki": true}' >"$STUB_DIR/repository.stale.json"
   given_github_code_scanning '{"state": "configured", "query_suite": "default", "languages": ["actions"]}'
   echo '{"state": "not-configured", "query_suite": "default", "languages": ["actions"]}' >"$STUB_DIR/code-scanning.stale.json"
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
   define_repository '{"has_wiki": false}'
   define_security '{"code_scanning_default_setup": {"state": "configured"}}'
 
@@ -1169,7 +1190,7 @@ GitHub の設定は定義と一致しています' ]
 }
 
 @test "--check 以外の引数を渡すと、GitHub を変えずに使い方を示して失敗する" {
-  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_rulesets '[{"name": "main", "enforcement": "active"}]'
 
   run -1 "$script" --chek
 

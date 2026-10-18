@@ -75,13 +75,13 @@ gh_api "$operation" -H 'Cache-Control: no-cache' "$@"
 ```bash
 # パスは 1 つの定数にまとめる
 settings_dir=.github/settings
-local files=("$settings_dir"/rulesets/*.json)
+rulesets_definition="$settings_dir/rulesets.json"
 
 # API のパスは定数にせず、そのまま書く
 gh_api "ルールセット $name の削除" --method DELETE "repos/{owner}/{repo}/rulesets/$id" --silent
 
 # テストの期待値は、実装の settings_dir を使わずにそのまま書く
-[[ $output == *"作成: ルールセット main (.github/settings/rulesets/main.json)"* ]]
+[[ $output == *".github/settings/rulesets.json"* ]]
 ```
 
 ### テスト
