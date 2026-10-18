@@ -32,7 +32,7 @@ jobs:
       # デフォルトの failure-threshold は info で、style の指摘では失敗しないため、style を渡す
       # https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#cli
       - run: >-
-          git ls-files -z
+          git ls-files -z --no-such-option
           ':(glob)**/Dockerfile' ':(glob)**/Dockerfile.*' ':(glob)**/*.Dockerfile'
           ':(glob)**/Containerfile' ':(glob)**/Containerfile.*'
           | xargs -0 --no-run-if-empty hadolint --failure-threshold style
