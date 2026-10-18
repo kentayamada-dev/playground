@@ -26,6 +26,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`lychee.yml`](.github/workflows/lychee.yml) | PR・`main` への push・毎週 | git で管理するファイルに書いたリンクが切れていないか。[lychee](https://github.com/lycheeverse/lychee) で検査する。PR と `main` への push ではリポジトリ内のリンクだけ、毎週の実行では外部のリンクも検査する | `lychee`（リポジトリ内のリンクの検査だけ） |
 | [`typos.yml`](.github/workflows/typos.yml) | PR・`main` への push | git で管理するファイルの英単語の綴り。[typos](https://github.com/crate-ci/typos) で検査する。設定は [`.github/typos.toml`](.github/typos.toml) にある | `typos` |
 | [`markdownlint.yml`](.github/workflows/markdownlint.yml) | PR・`main` への push | すべての `.md` の書式。見出しのレベル・リストの記号・表の列数・空行・コードブロックの言語の指定など。[markdownlint](https://github.com/DavidAnson/markdownlint) で検査する。設定は [`.github/markdownlint-cli2.jsonc`](.github/markdownlint-cli2.jsonc) にある | `markdownlint` |
+| [`yamllint.yml`](.github/workflows/yamllint.yml) | PR・`main` への push | `.yml`・`.yaml` の構文と書式。キーの重複・インデント・コメントの書き方など。[yamllint](https://github.com/adrienverge/yamllint) で検査する。設定は [`.github/yamllint/.yamllint.yaml`](.github/yamllint/.yamllint.yaml) にある | `yamllint` |
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | 毎日・手動 | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 
 ### マージの条件
@@ -46,6 +47,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `actionlint`・`zizmor`・`ghalint` | すべてのワークフロー |
 | `renovate-config-validator` | [`.github/renovate.json5`](.github/renovate.json5) |
 | `lychee`・`typos` | `git ls-files` のすべてのファイル |
+| `yamllint` | `git ls-files` のすべての `.yml`・`.yaml`。`pnpm-lock.yaml` は除く |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
 
@@ -90,12 +92,23 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - 行の長さと 1 行目の見出しのルールだけを無効にしている。editorconfig や lychee の検査と重なるルールも有効のままにしている
 - 指摘を無視するときは、該当する行の前に `<!-- markdownlint-disable-next-line <ルール名> -->` と書く（[Configuration](https://github.com/DavidAnson/markdownlint/blob/v0.41.1/README.md#configuration)）
 
+#### yamllint
+
+- `--strict` を付け、warning の指摘でも失敗する（[Errors and warnings](https://yamllint.readthedocs.io/en/stable/configuration.html#errors-and-warnings)）
+- デフォルトの設定から、次の 4 つを変えている。理由は [`.yamllint.yaml`](.github/yamllint/.yamllint.yaml) のコメントに書いている
+  - 行の長さ（`line-length`）と、ファイルの先頭の `---`（`document-start`）を検査しない
+  - 真偽値の書き方（`truthy`）は、値だけを検査し、キーは検査しない
+  - 行末のコメントの前の空白（`comments`）は、1 つでよい
+- ディレクトリを渡すと、`uv sync` が作る `.venv` など、git で管理していないファイルまで読む。そのため、`git ls-files` の一覧を渡す
+- 指摘を無視するときは、該当する行か 1 つ上の行に `# yamllint disable-line rule:<ルール名>` と書く（[Disabling checks for a specific line](https://yamllint.readthedocs.io/en/stable/disable_with_comments.html#disabling-checks-for-a-specific-line)）
+- yamllint の入れ方は [yamllint の依存関係](#yamllint-の依存関係) にある
+
 ### 外部リンクの定期検査
 
 外部のリンクは、[`lychee.yml`](.github/workflows/lychee.yml) の `lychee-external` が毎週月曜と手動の実行（`workflow_dispatch`）で検査します。必須チェックではありません。
 
 - レート制限の `429` は、リンク切れとは限らないため成功として扱う
-- `mise.lock` の URL は `mise lock` が書くものなので、検査から除く
+- `mise.lock` と `uv.lock` の URL は、`mise lock` と `uv lock` が書くものなので、検査から除く
 - 通らないリンクがあると、[`report-broken-links.sh`](.github/scripts/report-broken-links.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える
 - リンクを直したら、issue は手動で閉じる
 
@@ -204,9 +217,10 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-full` | `main` への push と毎日 | 見つかったものを Code scanning に出し、1 件でもあれば失敗する |
 | Dependabot アラート | アドバイザリが公開されたときと、依存関係を変えて push したとき | 脆弱性を Dependabot のアラートに出す |
 
-- 間接的な依存関係を検査しているのは OSV-Scanner だけ。GitHub の依存関係グラフに載るのは、textlint の `package.json` にある直接の依存関係と pnpm 本体だけのため
+- 間接的な依存関係を検査しているのは OSV-Scanner だけ。GitHub の依存関係グラフは、どちらのロックファイルからも間接的な依存関係を読まないため
   - 依存関係グラフは、`pnpm-lock.yaml` の 1 つ目の文書しか読まない（文書の順番を入れ替えて確認した）
   - pnpm 12 は、1 つ目の文書に pnpm 本体の版を書く。依存関係があるのは 2 つ目の文書（[Reading pnpm-lock.yaml](https://pnpm.io/lockfile)）
+  - yamllint の `uv.lock` は、依存関係グラフが読むファイルの一覧にない（[Dependency graph supported package ecosystems](https://docs.github.com/en/code-security/reference/supply-chain-security/dependency-graph-supported-package-ecosystems)）
 - Dependabot のマルウェアアラートは有効にしていない。Dependabot が読むパッケージは、すべて OSV-Scanner でも検査しているため
 - Actions のアクションは SHA で固定しているため、Dependabot のアラートは出ない（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner もデフォルトでは Actions を検査しない
 - 修正版がなく影響もない脆弱性は、ロックファイルと同じディレクトリの `osv-scanner.toml` に、理由と期限（`ignoreUntil`）を付けて除外する（例: [`.github/textlint/osv-scanner.toml`](.github/textlint/osv-scanner.toml)）。設定はそのディレクトリのロックファイルにだけ効く（[Configuration](https://google.github.io/osv-scanner/configuration/)）
@@ -240,7 +254,7 @@ CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対�
 | ツール | バックエンド | 検証の方法 |
 | --- | --- | --- |
 | Betterleaks | aqua | `checksums.txt` を cosign の署名で検証する（[aqua レジストリの定義](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/betterleaks/betterleaks/registry.yaml)） |
-| actionlint・jq・zizmor | aqua | GitHub の artifact attestations で検証する（aqua レジストリの定義: [actionlint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/rhysd/actionlint/registry.yaml)・[jq](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/jqlang/jq/registry.yaml)・[zizmor](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/zizmorcore/zizmor/registry.yaml)） |
+| actionlint・jq・uv・zizmor | aqua | GitHub の artifact attestations で検証する（aqua レジストリの定義: [actionlint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/rhysd/actionlint/registry.yaml)・[jq](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/jqlang/jq/registry.yaml)・[uv](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/astral-sh/uv/registry.yaml)・[zizmor](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/zizmorcore/zizmor/registry.yaml)） |
 | editorconfig-checker・shfmt・ghalint・typos | github | GitHub の artifact attestations で検証する（[github バックエンド](https://mise.jdx.dev/dev-tools/backends/github.html)） |
 | ShellCheck | aqua | リリースに署名もチェックサムのファイルもない。`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest を使う |
 | lychee | aqua | リリースに署名も GitHub の artifact attestations もない。aqua レジストリの定義にも検証の設定がない（[lycheeverse/lychee](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/lycheeverse/lychee/registry.yaml)）。`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest と同じ値になる |
@@ -251,6 +265,14 @@ CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対�
   - shfmt は、aqua レジストリの定義に検証の設定がない（[mvdan/sh](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/mvdan/sh/registry.yaml)）
   - ghalint は、aqua レジストリの定義の検証を mise が使えない（[suzuki-shunsuke/ghalint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/suzuki-shunsuke/ghalint/registry.yaml)）。cosign は `opts` で渡す形で、mise がネイティブに検証するキーやバンドルの指定がない。SLSA provenance には、署名者の指定がない（[aqua バックエンドの実装](https://github.com/jdx/mise/blob/v2026.9.18/src/backend/aqua.rs#L1368-L1404)）
   - typos は、aqua レジストリの定義に検証の設定がない（[crate-ci/typos](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/crate-ci/typos/registry.yaml)）。リリースのファイルに付く attestation は、タグとファイルを結び付けるリリースの attestation だけで、ビルドしたワークフローを含まない
+
+### yamllint の依存関係
+
+yamllint は Python のパッケージで、PyYAML と pathspec に依存します（[PyPI](https://pypi.org/project/yamllint/)）。依存関係まで版と sha256 を固定するため、mise ではなく uv で入れています。uv 本体は mise で入れます。
+
+- [`.github/yamllint`](.github/yamllint) の `pyproject.toml` で yamllint の版を、`uv.lock` で依存関係を含むすべての版と sha256 を固定する
+- `pyproject.toml` を書き換えたら、`.github/yamllint` で `uv lock` を実行して `uv.lock` も更新する。CI は `uv sync --locked` で入れるため、`uv.lock` が古いと失敗する（[`uv sync`](https://docs.astral.sh/uv/reference/cli/#uv-sync)）
+- `pyproject.toml` と `uv.lock` は、Renovate の pep621 マネージャーが更新する（[pep621](https://docs.renovatebot.com/modules/manager/pep621/)）
 
 ## Renovate
 

@@ -93,6 +93,10 @@
           {
             "context": "markdownlint",
             "integration_id": 15368
+          },
+          {
+            "context": "yamllint",
+            "integration_id": 15368
           }
         ]
       }
