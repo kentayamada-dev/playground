@@ -17,7 +17,7 @@ jobs:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
           persist-credentials: false
