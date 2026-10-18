@@ -33,5 +33,6 @@ jobs:
       - run: >-
           git ls-files -z '*.yml' '*.yaml'
           | xargs -0 .github/yamllint/.venv/bin/yamllint --strict --format github --config-file .github/yamllint/.yamllint.yaml
-        # 未指定時の bash -e {0} は pipefail がなく、git ls-files の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
+        # 未指定時の bash -e {0} は pipefail がなく、git ls-files が途中で失敗すると、出力済みのファイルだけを検査して成功するため
+        # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
         shell: bash
