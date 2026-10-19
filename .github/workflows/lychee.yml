@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - test/lychee-glob-pass
   # 外部のリンクは、こちらが何も変えなくても移動や削除で切れるため、定期的に検査する
   schedule:
     - cron: '37 0 * * 1'
@@ -39,6 +40,15 @@ jobs:
       # https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee-lib/src/types/input/resolver.rs#L140-L144
       # 隠しファイルを読み、.git を除く設定は .github/lychee.toml にある
       - run: lychee --config .github/lychee.toml --offline --include-fragments --no-progress '**/*'
+      # 検証用: lychee が読むファイルを git ls-files と比べる
+      - run: |
+          lychee --config .github/lychee.toml --dump-inputs '**/*' | sed 's|^\./||' | sort > "$RUNNER_TEMP/lychee.txt"
+          git ls-files ':!:.github/mise.lock' ':!:.github/yamllint/uv.lock' | sort > "$RUNNER_TEMP/git.txt"
+          wc -l "$RUNNER_TEMP/lychee.txt" "$RUNNER_TEMP/git.txt"
+          grep -E '^(\.devcontainer/web/Dockerfile|LICENSE|\.editorconfig|\.github/pull_request_template\.md)$' "$RUNNER_TEMP/lychee.txt"
+          echo "--- .git の件数: $(grep -c '^\.git/' "$RUNNER_TEMP/lychee.txt" || true)"
+          diff "$RUNNER_TEMP/git.txt" "$RUNNER_TEMP/lychee.txt"
+        shell: bash
   lychee-external:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-26.04-arm
