@@ -1,3 +1,11 @@
+[files]
+# デフォルトでは、ディレクトリを走査するときに .github・.devcontainer など . で始まるファイルとディレクトリを読まないため
+# https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#filesignore-hidden
+ignore-hidden = false
+# 隠しファイルを読むと、.git のなかまで読むため
+# https://github.com/kentayamada-dev/playground/pull/207
+extend-exclude = [".git"]
+
 [default]
 extend-ignore-re = [
   # prh.yml の正規表現の [Rr]equest のような文字クラスは、閉じ括弧で識別子が区切られて equest が残り、誤綴りと判定されるため

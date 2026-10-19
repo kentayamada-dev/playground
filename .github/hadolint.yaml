@@ -1,0 +1,3 @@
+# デフォルトの failure-threshold は info で、style の指摘では失敗しないため
+# https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#cli
+failure-threshold: style
