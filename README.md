@@ -52,7 +52,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`zizmor.yml`](.github/workflows/zizmor.yml) | GitHub Actions のワークフローのセキュリティ上の問題。テンプレートインジェクション・広すぎる権限・checkout の資格情報の残留・フォークにしかないコミットへの固定などを、[zizmor](https://github.com/zizmorcore/zizmor) で検査する | `zizmor` |
 | [`ghalint.yml`](.github/workflows/ghalint.yml) | GitHub Actions のワークフローが、すべてのジョブに `timeout-minutes` を書いているか、シークレットを必要なステップだけに渡しているかなど。[ghalint](https://github.com/suzuki-shunsuke/ghalint) で検査する | `ghalint` |
 | [`lychee.yml`](.github/workflows/lychee.yml) | git で管理するファイルに書いたリンクが切れていないか。[lychee](https://github.com/lycheeverse/lychee) で検査する。PR と `main` への push ではリポジトリ内のリンクだけ、毎週の実行では外部のリンクも検査する | `lychee`（リポジトリ内のリンクの検査だけ） |
-| [`typos.yml`](.github/workflows/typos.yml) | git で管理するファイルの英単語の綴り。[typos](https://github.com/crate-ci/typos) で検査する。設定は [`.github/typos.toml`](.github/typos.toml) にある | `typos` |
+| [`typos.yml`](.github/workflows/typos.yml) | リポジトリのすべてのファイルの英単語の綴り。[typos](https://github.com/crate-ci/typos) で検査する。設定は [`.github/typos.toml`](.github/typos.toml) にある | `typos` |
 | [`markdownlint.yml`](.github/workflows/markdownlint.yml) | すべての `.md` の書式。見出しのレベル・リストの記号・表の列数・空行・コードブロックの言語の指定など。[markdownlint](https://github.com/DavidAnson/markdownlint) で検査する。設定は [`.github/markdownlint-cli2.jsonc`](.github/markdownlint-cli2.jsonc) にある | `markdownlint` |
 | [`yamllint.yml`](.github/workflows/yamllint.yml) | `.yml`・`.yaml` の構文と書式。キーの重複・インデント・コメントの書き方など。[yamllint](https://github.com/adrienverge/yamllint) で検査する。設定は [`.github/yamllint/.yamllint.yaml`](.github/yamllint/.yamllint.yaml) にある | `yamllint` |
 | [`hadolint.yml`](.github/workflows/hadolint.yml) | Dockerfile の書き方。ベースイメージのタグの指定・`apt-get install` の版の固定など。[hadolint](https://github.com/hadolint/hadolint) で検査し、`RUN` のスクリプトは hadolint に組み込まれた ShellCheck にかける | `hadolint` |
@@ -81,15 +81,16 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `editorconfig` | リポジトリ全体。`pnpm-lock.yaml` など、editorconfig-checker がデフォルトで除外するファイルは除く（[Default Excludes](https://github.com/editorconfig-checker/editorconfig-checker/blob/v4.0.2/README.md#default-excludes)） |
 | `actionlint`・`zizmor`・`ghalint` | すべてのワークフロー |
 | `renovate-config-validator` | [`.github/renovate.json5`](.github/renovate.json5) |
-| `lychee`・`typos` | `git ls-files` のすべてのファイル |
+| `lychee` | `git ls-files` のすべてのファイル |
+| `typos` | リポジトリ全体。`.git` は除く |
 | `yamllint` | `git ls-files` のすべての `.yml`・`.yaml`。`pnpm-lock.yaml` は除く |
 | `hadolint` | `git ls-files` のうち、名前が `Dockerfile`・`Containerfile` のファイルと、`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*` に一致するファイル |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
-- lychee・typos・yamllint には、ディレクトリではなく `git ls-files` の一覧を渡す。ディレクトリを渡すと、読むファイルが次のようにずれるため
+- lychee・yamllint には、ディレクトリではなく `git ls-files` の一覧を渡す。ディレクトリを渡すと、読むファイルが次のようにずれるため
   - lychee は、`.md`・`.html` などの拡張子のファイルしか読まない（[`--extensions`](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L456-L467)）
-  - typos は、`.` で始まるファイルとディレクトリ（`.github`・`.devcontainer`・`.editorconfig` など）を読まない（[`files.ignore-hidden`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#filesignore-hidden)）。`--hidden` を付けると `.git` のなかまで読む
   - yamllint は、`uv sync` が作る `.venv` など、git で管理していないファイルまで読む
+- typos は、デフォルトでは `.github`・`.devcontainer` など `.` で始まるファイルとディレクトリを読まない（[`files.ignore-hidden`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#filesignore-hidden)）。そのため、[`.github/typos.toml`](.github/typos.toml) で隠しファイルも読ませ、`.git` を除いている
 
 ### ツールごとの補足
 
