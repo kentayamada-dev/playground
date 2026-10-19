@@ -77,7 +77,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | チェック | 検査する範囲 |
 | --- | --- |
 | `textlint`・`markdownlint` | リポジトリのすべての `.md` |
-| `test` | `git ls-files` のすべての `.sh`・`.bats` |
+| `test` | リポジトリ全体の `.sh`・`.bats`。`.git` は除く |
 | `editorconfig` | リポジトリ全体。`pnpm-lock.yaml` など、editorconfig-checker がデフォルトで除外するファイルは除く（[Default Excludes](https://github.com/editorconfig-checker/editorconfig-checker/blob/v4.0.2/README.md#default-excludes)） |
 | `actionlint`・`zizmor`・`ghalint` | すべてのワークフロー |
 | `renovate-config-validator` | [`.github/renovate.json5`](.github/renovate.json5) |

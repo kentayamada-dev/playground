@@ -27,13 +27,17 @@ jobs:
           working_directory: .github
           # bats のテストは gh をスタブに置き換えるが、スクリプトとスタブが使う jq は本物なので入れる
           install_args: shellcheck github:mvdan/sh bats jq
-      - run: git ls-files -z '*.sh' '*.bats' | xargs -0 shellcheck
-        # 未指定時の bash -e {0} は pipefail がなく、git ls-files の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
-        shell: bash
-      - run: git ls-files -z '*.sh' '*.bats' | xargs -0 shfmt --diff
-        shell: bash
-      - run: git ls-files -z '*.bats' | xargs -0 bats
-        shell: bash
+      # shellcheck は渡したファイルしか検査せず、shfmt はディレクトリを渡すと拡張子のない shebang のファイルまで対象にするため、find で同じファイルを渡す
+      # https://github.com/koalaman/shellcheck/blob/v0.11.0/shellcheck.1.md https://github.com/mvdan/sh/blob/v3.14.1/fileutil/file.go#L67-L84
+      # 検査の失敗が find の終了コードに伝わるのは -exec の + の形だけのため、; の形にしない https://github.com/kentayamada-dev/playground/pull/235
+      - run: >-
+          find . -path ./.git -prune -o -type f \( -name '*.sh' -o -name '*.bats' \)
+          -exec shellcheck {} +
+      - run: >-
+          find . -path ./.git -prune -o -type f \( -name '*.sh' -o -name '*.bats' \)
+          -exec shfmt --diff {} +
+      # -r は . で始まるディレクトリも含めて、サブディレクトリの .bats を集める https://github.com/bats-core/bats-core/blob/v1.14.0/libexec/bats-core/bats#L501-L504
+      - run: bats -r .
         env:
           # v1.14.0 は UTF-8 ロケールだと日本語のテスト名の一部を実行しない https://github.com/bats-core/bats-core/issues/1233
           LC_ALL: C
