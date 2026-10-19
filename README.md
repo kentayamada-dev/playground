@@ -55,7 +55,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`typos.yml`](.github/workflows/typos.yml) | リポジトリのすべてのファイルの英単語の綴り。[typos](https://github.com/crate-ci/typos) で検査する。設定は [`.github/typos.toml`](.github/typos.toml) にある | `typos` |
 | [`markdownlint.yml`](.github/workflows/markdownlint.yml) | すべての `.md` の書式。見出しのレベル・リストの記号・表の列数・空行・コードブロックの言語の指定など。[markdownlint](https://github.com/DavidAnson/markdownlint) で検査する。設定は [`.github/markdownlint-cli2.jsonc`](.github/markdownlint-cli2.jsonc) にある | `markdownlint` |
 | [`yamllint.yml`](.github/workflows/yamllint.yml) | `.yml`・`.yaml` の構文と書式。キーの重複・インデント・コメントの書き方など。[yamllint](https://github.com/adrienverge/yamllint) で検査する。設定は [`.github/yamllint/.yamllint.yaml`](.github/yamllint/.yamllint.yaml) にある | `yamllint` |
-| [`hadolint.yml`](.github/workflows/hadolint.yml) | Dockerfile の書き方。ベースイメージのタグの指定・`apt-get install` の版の固定など。[hadolint](https://github.com/hadolint/hadolint) で検査し、`RUN` のスクリプトは hadolint に組み込まれた ShellCheck にかける | `hadolint` |
+| [`hadolint.yml`](.github/workflows/hadolint.yml) | Dockerfile の書き方。ベースイメージのタグの指定・`apt-get install` の版の固定など。[hadolint](https://github.com/hadolint/hadolint) で検査し、`RUN` のスクリプトは hadolint に組み込まれた ShellCheck にかける。設定は [`.github/hadolint.yaml`](.github/hadolint.yaml) にある | `hadolint` |
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 
 どのワークフローも、PR と `main` への push で動きます。動くタイミングが違うのは、次の 4 つです。
@@ -103,7 +103,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | renovate-config-validator | エラーだけでなく警告でも失敗する。`--strict` を付けていないので、設定の移行が必要なだけでは失敗しない（[renovate-config-validator の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L101-L120)） |
 | zizmor | 指摘が 1 件でもあると失敗する。PR の注釈は最初の 10 件までで、残りはジョブのログにだけ出る（[Output formats](https://docs.zizmor.sh/usage/#output-formats)） |
 | yamllint | `--strict` を付け、warning の指摘でも失敗する（[Errors and warnings](https://yamllint.readthedocs.io/en/stable/configuration.html#errors-and-warnings)） |
-| hadolint | `--failure-threshold style` を付け、重大度が style の指摘でも失敗する。デフォルトの `info` のままだと、style の指摘で失敗しない（[CLI](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#cli)） |
+| hadolint | [`.github/hadolint.yaml`](.github/hadolint.yaml) の `failure-threshold: style` で、重大度が style の指摘でも失敗する。デフォルトの `info` のままだと、style の指摘で失敗しない（[CLI](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#cli)） |
 
 #### 指摘を無視する方法
 
@@ -157,7 +157,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 - 対象のファイルが 1 つもなければ、hadolint を実行せずに成功する。hadolint は、ファイルを渡さないと失敗するため（[`app/Main.hs`](https://github.com/hadolint/hadolint/blob/v2.15.1/app/Main.hs#L58-L59)）
 - `RUN` のスクリプトは、hadolint にライブラリとして組み込まれた ShellCheck で検査する。mise で入れる ShellCheck は使わない（[`hadolint.cabal`](https://github.com/hadolint/hadolint/blob/v2.15.1/hadolint.cabal#L169)）
-- 設定ファイル（`.hadolint.yaml`）は置いていない。置いた設定ファイルを解釈できないと、hadolint はエラーを出すだけで、デフォルトの設定で検査を続ける（[`app/Main.hs`](https://github.com/hadolint/hadolint/blob/v2.15.1/app/Main.hs#L89-L93)）
+- 設定は [`.github/hadolint.yaml`](.github/hadolint.yaml) に書き、`--config` で渡す。設定ファイルを解釈できないと、hadolint はエラーを出すだけで、デフォルトの設定で検査を続ける（[`app/Main.hs`](https://github.com/hadolint/hadolint/blob/v2.15.1/app/Main.hs#L89-L93)）。そのため、style の指摘だけが出る Dockerfile を標準入力から渡し、失敗することを先に確認する
 
 ### 外部リンクの定期検査
 
