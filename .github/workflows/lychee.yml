@@ -34,11 +34,11 @@ jobs:
           # ローカルでは使わないので、mise.toml と mise.lock はルートではなく .github に置いている
           working_directory: .github
           install_args: lychee
-      # ディレクトリを渡すと .md・.html などの拡張子のファイルしか読まず、ワークフローや設定のコメントにある URL を見落とすため、ファイルを列挙して渡す
+      # ディレクトリを渡すと .md・.html などの拡張子のファイルしか読まず、ワークフローや設定のコメントにある URL を見落とすため、拡張子で絞らないグロブで渡す
       # https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L456-L467
-      - run: git ls-files | lychee --offline --include-fragments --no-progress --files-from -
-        # 未指定時の bash -e {0} は pipefail がなく、git ls-files の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
-        shell: bash
+      # https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee-lib/src/types/input/resolver.rs#L140-L144
+      # 隠しファイルを読み、.git を除く設定は .github/lychee.toml にある
+      - run: lychee --config .github/lychee.toml --offline --include-fragments --no-progress '**/*'
   lychee-external:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-26.04-arm
@@ -59,15 +59,14 @@ jobs:
           # ローカルでは使わないので、mise.toml と mise.lock はルートではなく .github に置いている
           working_directory: .github
           install_args: lychee
-      # mise.lock と uv.lock の URL は mise lock と uv lock が書くもので、手で直さないため除く
       # 429 はレート制限でリンク切れとは限らず、リンクが 1 件だけの www.gnu.org も返したため、成功として扱う https://github.com/kentayamada-dev/playground/pull/184
       # 502〜504 は github.com がときどき返す一時的なエラーで、lychee 0.24.2 は --max-retries によらずリトライしないため、成功として扱う https://github.com/lycheeverse/lychee/issues/2319
       # --output に書くと標準出力に何も出ずログで結果を追えないため、tee で issue の本文用にも残す
       - id: lychee
         run: >-
-          git ls-files ':!:.github/mise.lock' ':!:.github/yamllint/uv.lock'
-          | lychee --config .github/lychee.toml --include-fragments --accept '100..=103,200..=299,429,502..=504' --no-progress --format markdown --files-from -
+          lychee --config .github/lychee.toml --include-fragments --accept '100..=103,200..=299,429,502..=504' --no-progress --format markdown '**/*'
           | tee "$RUNNER_TEMP/lychee.md"
+        # 未指定時の bash -e {0} は pipefail がなく、lychee が失敗しても tee の成功で素通りするため https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
         shell: bash
         env:
           # github.com のリンクでレート制限にかからないようにする https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L509-L512
