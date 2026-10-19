@@ -26,5 +26,7 @@ jobs:
           # ローカルでは使わないので、mise.toml と mise.lock はルートではなく .github に置いている
           working_directory: .github
           install_args: github:crate-ci/typos
+      # 検証用: .git のなかに誤字のあるファイルを置く
+      - run: echo teh > .git/typos-verify.txt
       # 隠しファイルを読み、.git を除く設定は .github/typos.toml にある
       - run: typos --config .github/typos.toml
