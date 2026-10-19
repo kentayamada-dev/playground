@@ -35,4 +35,4 @@ jobs:
           find . -path ./.git -prune -o -type f
           \( -name Dockerfile -o -name 'Dockerfile.*' -o -name '*.Dockerfile'
           -o -name Containerfile -o -name 'Containerfile.*' \)
-          -exec hadolint --failure-threshold style {} +
+          -exec hadolint --failure-threshold style {} \;
