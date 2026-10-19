@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - test/hadolint-find-pass
 
 permissions:
   contents: read
@@ -26,6 +27,13 @@ jobs:
           # ローカルでは使わないので、mise.toml と mise.lock はルートではなく .github に置いている
           working_directory: .github
           install_args: hadolint
+      # 検証用: find が一致するファイルを、git ls-files の指定と比べる
+      - run: |
+          find . -path ./.git -prune -o -type f \( -name Dockerfile -o -name 'Dockerfile.*' -o -name '*.Dockerfile' -o -name Containerfile -o -name 'Containerfile.*' \) -print | sed 's|^\./||' | sort > "$RUNNER_TEMP/find.txt"
+          git ls-files ':(glob)**/Dockerfile' ':(glob)**/Dockerfile.*' ':(glob)**/*.Dockerfile' ':(glob)**/Containerfile' ':(glob)**/Containerfile.*' | sort > "$RUNNER_TEMP/git.txt"
+          cat "$RUNNER_TEMP/find.txt"
+          diff "$RUNNER_TEMP/git.txt" "$RUNNER_TEMP/find.txt"
+        shell: bash
       # hadolint はファイルを渡さないと「Please provide a Dockerfile」で失敗するが、-exec の + の形は一致するファイルがなければ実行しない
       # https://github.com/hadolint/hadolint/blob/v2.15.1/app/Main.hs#L58-L59
       # hadolint の失敗が find の終了コードに伝わるのは + の形だけのため、; の形にしない https://man7.org/linux/man-pages/man1/find.1.html
