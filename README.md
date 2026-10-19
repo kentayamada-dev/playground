@@ -39,24 +39,30 @@ web（Node.js）と api（Go）を、別々の Dev Container で開発します�
 
 GitHub Actions で、次のとおり検査します。必須チェックが通らない PR はマージできません。必須チェックは [`rulesets/main.json`](.github/settings/rulesets/main.json) に定義しています。
 
-| ワークフロー | 実行のタイミング | 検査する内容 | 必須チェック |
-| --- | --- | --- | --- |
-| [`textlint.yml`](.github/workflows/textlint.yml) | PR・`main` への push | リポジトリのすべての `.md` の表記。ルールは [`.github/textlint`](.github/textlint) にある | `textlint` |
-| [`test.yml`](.github/workflows/test.yml) | PR・`main` への push | `.sh` と `.bats` を ShellCheck で検査し、[shfmt](https://github.com/mvdan/sh) の整形に沿っているかを確認し、bats のテストを実行する。shfmt の整形の設定は [`.editorconfig`](.editorconfig) から読む | `test` |
-| [`pr-title.yml`](.github/workflows/pr-title.yml) | PR の作成・編集・push・再オープン | PR タイトルが Conventional Commits 形式に沿い、説明を日本語で書いているか。規約は [CONTRIBUTING.md](CONTRIBUTING.md#タイトルとコミットメッセージ) | `pr-title` |
-| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | PR・`main` への push・毎日 | 依存関係の脆弱性とマルウェア。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) | `osv-scanner / osv-scan`（PR の検査だけ） |
-| [`betterleaks.yml`](.github/workflows/betterleaks.yml) | PR・`main` への push | コミットに含まれるシークレット。詳しくは [シークレットの検査](#シークレットの検査) | `betterleaks` |
-| [`editorconfig.yml`](.github/workflows/editorconfig.yml) | PR・`main` への push | git で管理するファイルが [`.editorconfig`](.editorconfig) の文字コード・改行・インデント・末尾の空白に沿っているか。[editorconfig-checker](https://github.com/editorconfig-checker/editorconfig-checker) で検査する | `editorconfig` |
-| [`actionlint.yml`](.github/workflows/actionlint.yml) | PR・`main` への push | GitHub Actions のワークフローのキー・式・`run:` のスクリプト。[actionlint](https://github.com/rhysd/actionlint) で検査し、`run:` のスクリプトは actionlint から ShellCheck にかける。設定は [`.github/actionlint.yaml`](.github/actionlint.yaml) にある | `actionlint` |
-| [`renovate-config-validator.yml`](.github/workflows/renovate-config-validator.yml) | PR・`main` への push | [`.github/renovate.json5`](.github/renovate.json5) の構文と、オプションの名前・値。Renovate の [renovate-config-validator](https://docs.renovatebot.com/config-validation/) で検査する | `renovate-config-validator` |
-| [`zizmor.yml`](.github/workflows/zizmor.yml) | PR・`main` への push | GitHub Actions のワークフローのセキュリティ上の問題。テンプレートインジェクション・広すぎる権限・checkout の資格情報の残留・フォークにしかないコミットへの固定などを、[zizmor](https://github.com/zizmorcore/zizmor) で検査する | `zizmor` |
-| [`ghalint.yml`](.github/workflows/ghalint.yml) | PR・`main` への push | GitHub Actions のワークフローが、すべてのジョブに `timeout-minutes` を書いているか、シークレットを必要なステップだけに渡しているかなど。[ghalint](https://github.com/suzuki-shunsuke/ghalint) で検査する | `ghalint` |
-| [`lychee.yml`](.github/workflows/lychee.yml) | PR・`main` への push・毎週 | git で管理するファイルに書いたリンクが切れていないか。[lychee](https://github.com/lycheeverse/lychee) で検査する。PR と `main` への push ではリポジトリ内のリンクだけ、毎週の実行では外部のリンクも検査する | `lychee`（リポジトリ内のリンクの検査だけ） |
-| [`typos.yml`](.github/workflows/typos.yml) | PR・`main` への push | git で管理するファイルの英単語の綴り。[typos](https://github.com/crate-ci/typos) で検査する。設定は [`.github/typos.toml`](.github/typos.toml) にある | `typos` |
-| [`markdownlint.yml`](.github/workflows/markdownlint.yml) | PR・`main` への push | すべての `.md` の書式。見出しのレベル・リストの記号・表の列数・空行・コードブロックの言語の指定など。[markdownlint](https://github.com/DavidAnson/markdownlint) で検査する。設定は [`.github/markdownlint-cli2.jsonc`](.github/markdownlint-cli2.jsonc) にある | `markdownlint` |
-| [`yamllint.yml`](.github/workflows/yamllint.yml) | PR・`main` への push | `.yml`・`.yaml` の構文と書式。キーの重複・インデント・コメントの書き方など。[yamllint](https://github.com/adrienverge/yamllint) で検査する。設定は [`.github/yamllint/.yamllint.yaml`](.github/yamllint/.yamllint.yaml) にある | `yamllint` |
-| [`hadolint.yml`](.github/workflows/hadolint.yml) | PR・`main` への push | Dockerfile の書き方。ベースイメージのタグの指定・`apt-get install` の版の固定など。[hadolint](https://github.com/hadolint/hadolint) で検査し、`RUN` のスクリプトは hadolint に組み込まれた ShellCheck にかける | `hadolint` |
-| [`settings-drift.yml`](.github/workflows/settings-drift.yml) | 毎日・手動 | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
+| ワークフロー | 検査する内容 | 必須チェック |
+| --- | --- | --- |
+| [`textlint.yml`](.github/workflows/textlint.yml) | リポジトリのすべての `.md` の表記。ルールは [`.github/textlint`](.github/textlint) にある | `textlint` |
+| [`test.yml`](.github/workflows/test.yml) | `.sh` と `.bats` を ShellCheck で検査し、[shfmt](https://github.com/mvdan/sh) の整形に沿っているかを確認し、bats のテストを実行する。shfmt の整形の設定は [`.editorconfig`](.editorconfig) から読む | `test` |
+| [`pr-title.yml`](.github/workflows/pr-title.yml) | PR タイトルが Conventional Commits 形式に沿い、説明を日本語で書いているか。規約は [CONTRIBUTING.md](CONTRIBUTING.md#タイトルとコミットメッセージ) | `pr-title` |
+| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | 依存関係の脆弱性とマルウェア。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) | `osv-scanner / osv-scan`（PR の検査だけ） |
+| [`betterleaks.yml`](.github/workflows/betterleaks.yml) | コミットに含まれるシークレット。詳しくは [シークレットの検査](#シークレットの検査) | `betterleaks` |
+| [`editorconfig.yml`](.github/workflows/editorconfig.yml) | git で管理するファイルが [`.editorconfig`](.editorconfig) の文字コード・改行・インデント・末尾の空白に沿っているか。[editorconfig-checker](https://github.com/editorconfig-checker/editorconfig-checker) で検査する | `editorconfig` |
+| [`actionlint.yml`](.github/workflows/actionlint.yml) | GitHub Actions のワークフローのキー・式・`run:` のスクリプト。[actionlint](https://github.com/rhysd/actionlint) で検査し、`run:` のスクリプトは actionlint から ShellCheck にかける。設定は [`.github/actionlint.yaml`](.github/actionlint.yaml) にある | `actionlint` |
+| [`renovate-config-validator.yml`](.github/workflows/renovate-config-validator.yml) | [`.github/renovate.json5`](.github/renovate.json5) の構文と、オプションの名前・値。Renovate の [renovate-config-validator](https://docs.renovatebot.com/config-validation/) で検査する | `renovate-config-validator` |
+| [`zizmor.yml`](.github/workflows/zizmor.yml) | GitHub Actions のワークフローのセキュリティ上の問題。テンプレートインジェクション・広すぎる権限・checkout の資格情報の残留・フォークにしかないコミットへの固定などを、[zizmor](https://github.com/zizmorcore/zizmor) で検査する | `zizmor` |
+| [`ghalint.yml`](.github/workflows/ghalint.yml) | GitHub Actions のワークフローが、すべてのジョブに `timeout-minutes` を書いているか、シークレットを必要なステップだけに渡しているかなど。[ghalint](https://github.com/suzuki-shunsuke/ghalint) で検査する | `ghalint` |
+| [`lychee.yml`](.github/workflows/lychee.yml) | git で管理するファイルに書いたリンクが切れていないか。[lychee](https://github.com/lycheeverse/lychee) で検査する。PR と `main` への push ではリポジトリ内のリンクだけ、毎週の実行では外部のリンクも検査する | `lychee`（リポジトリ内のリンクの検査だけ） |
+| [`typos.yml`](.github/workflows/typos.yml) | git で管理するファイルの英単語の綴り。[typos](https://github.com/crate-ci/typos) で検査する。設定は [`.github/typos.toml`](.github/typos.toml) にある | `typos` |
+| [`markdownlint.yml`](.github/workflows/markdownlint.yml) | すべての `.md` の書式。見出しのレベル・リストの記号・表の列数・空行・コードブロックの言語の指定など。[markdownlint](https://github.com/DavidAnson/markdownlint) で検査する。設定は [`.github/markdownlint-cli2.jsonc`](.github/markdownlint-cli2.jsonc) にある | `markdownlint` |
+| [`yamllint.yml`](.github/workflows/yamllint.yml) | `.yml`・`.yaml` の構文と書式。キーの重複・インデント・コメントの書き方など。[yamllint](https://github.com/adrienverge/yamllint) で検査する。設定は [`.github/yamllint/.yamllint.yaml`](.github/yamllint/.yamllint.yaml) にある | `yamllint` |
+| [`hadolint.yml`](.github/workflows/hadolint.yml) | Dockerfile の書き方。ベースイメージのタグの指定・`apt-get install` の版の固定など。[hadolint](https://github.com/hadolint/hadolint) で検査し、`RUN` のスクリプトは hadolint に組み込まれた ShellCheck にかける | `hadolint` |
+| [`settings-drift.yml`](.github/workflows/settings-drift.yml) | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
+
+どのワークフローも、PR と `main` への push で動きます。動くタイミングが違うのは、次の 4 つです。
+
+- `pr-title.yml` は、PR の作成・編集・push・再オープンで動く
+- `osv-scanner.yml` は毎日、`lychee.yml` は毎週も動く
+- `settings-drift.yml` は、毎日と手動の実行でだけ動く
 
 ### マージの条件
 
@@ -80,8 +86,34 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `hadolint` | `git ls-files` のうち、名前が `Dockerfile`・`Containerfile` のファイルと、`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*` に一致するファイル |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
+- lychee・typos・yamllint には、ディレクトリではなく `git ls-files` の一覧を渡す。ディレクトリを渡すと、読むファイルが次のようにずれるため
+  - lychee は、`.md`・`.html` などの拡張子のファイルしか読まない（[`--extensions`](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L456-L467)）
+  - typos は隠しファイルを読まず、`.github` と `.claude` を検査しない（[`files.ignore-hidden`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#filesignore-hidden)）。`--hidden` を付けると `.git` のなかまで読む
+  - yamllint は、`uv sync` が作る `.venv` など、git で管理していないファイルまで読む
 
 ### ツールごとの補足
+
+#### 失敗する条件
+
+次のツールは、軽い指摘でも失敗するように実行しています。
+
+| ツール | 失敗する条件 |
+| --- | --- |
+| renovate-config-validator | エラーだけでなく警告でも失敗する。`--strict` を付けていないので、設定の移行が必要なだけでは失敗しない（[renovate-config-validator の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L101-L120)） |
+| zizmor | 指摘が 1 件でもあると失敗する。PR の注釈は最初の 10 件までで、残りはジョブのログにだけ出る（[Output formats](https://docs.zizmor.sh/usage/#output-formats)） |
+| yamllint | `--strict` を付け、warning の指摘でも失敗する（[Errors and warnings](https://yamllint.readthedocs.io/en/stable/configuration.html#errors-and-warnings)） |
+| hadolint | `--failure-threshold style` を付け、重大度が style の指摘でも失敗する。デフォルトの `info` のままだと、style の指摘で失敗しない（[CLI](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#cli)） |
+
+#### 指摘を無視する方法
+
+| ツール | 無視する方法 |
+| --- | --- |
+| zizmor | YAML の該当する行に `# zizmor: ignore[<監査名>]` と書く（[Ignoring results](https://docs.zizmor.sh/usage/#ignoring-results)） |
+| typos | 誤検知は、[`.github/typos.toml`](.github/typos.toml) の `extend-ignore-re` に、その箇所だけに一致する正規表現を足して除外する（[`default.extend-ignore-re`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#defaultextend-ignore-re)） |
+| markdownlint | 該当する行の前に `<!-- markdownlint-disable-next-line <ルール名> -->` と書く（[Configuration](https://github.com/DavidAnson/markdownlint/blob/v0.41.1/README.md#configuration)） |
+| yamllint | 該当する行に `# yamllint disable-line rule:<ルール名>` と書く（[Disable with comments](https://yamllint.readthedocs.io/en/stable/disable_with_comments.html#disabling-checks-for-a-specific-line)） |
+| hadolint | 該当する命令の前の行に `# hadolint ignore=<ルール名>` と書く（[Inline ignores](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#inline-ignores)） |
+| Betterleaks | その行のコメントに `betterleaks:allow` と書く。書けないときは、[シークレットの検査](#シークレットの検査) のとおり `.betterleaksignore` を使う |
 
 #### actionlint
 
@@ -90,13 +122,10 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 #### renovate-config-validator
 
 - [`renovate.yml`](.github/workflows/renovate.yml) で動かす Renovate と同じ版の Docker イメージを、ジョブのコンテナにして使う
-- エラーだけでなく警告でも失敗する。`--strict` を付けていないので、設定の移行が必要なだけでは失敗しない（[renovate-config-validator の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L101-L120)）
 
 #### zizmor
 
-- 指摘が 1 件でもあると失敗する。PR の注釈は最初の 10 件までで、残りはジョブのログにだけ出る（[Output formats](https://docs.zizmor.sh/usage/#output-formats)）
 - `GITHUB_TOKEN` を渡し、GitHub API で調べる監査も動かす（[Operating modes](https://docs.zizmor.sh/usage/#operating-modes)）。対象は `impostor-commit`・`known-vulnerable-actions`・`ref-confusion` の 3 つ
-- 指摘を無視するときは、YAML の該当する行に `# zizmor: ignore[<監査名>]` と書く（[Ignoring results](https://docs.zizmor.sh/usage/#ignoring-results)）
 
 #### ghalint
 
@@ -108,45 +137,32 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 #### lychee
 
 - ネットワークを使わず（`--offline`）、リポジトリ内のファイルへのリンクと見出しのアンカーだけを確認する。外部のサイトの障害やレート制限で、PR をマージできなくならないようにするため
-- ディレクトリを渡すと `.md`・`.html` などの拡張子のファイルしか読まない（[`--extensions`](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L456-L467)）。そのため、`git ls-files` の一覧を渡す
 - Markdown と HTML 以外のファイルからは URL だけを拾い、コメントに書いた相対パスは検査しない
-
-#### typos
-
-- ディレクトリを渡すと隠しファイルを読まず、`.github` と `.claude` を検査しない（[`files.ignore-hidden`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#filesignore-hidden)）。`--hidden` を付けると `.git` のなかまで読むため、`git ls-files` の一覧を渡す
-- 誤検知は、[`.github/typos.toml`](.github/typos.toml) の `extend-ignore-re` に、その箇所だけに一致する正規表現を足して除外する（[`default.extend-ignore-re`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#defaultextend-ignore-re)）
 
 #### markdownlint
 
 - [markdownlint-cli2-action](https://github.com/DavidAnson/markdownlint-cli2-action) に同梱された markdownlint-cli2 で検査する。npm から依存関係を取得しないので、`package.json` とロックファイルはない。markdownlint-cli2 の版は、アクションの版で決まる
 - 行の長さと 1 行目の見出しのルールだけを無効にしている。editorconfig や lychee の検査と重なるルールも有効のままにしている
-- 指摘を無視するときは、該当する行の前に `<!-- markdownlint-disable-next-line <ルール名> -->` と書く（[Configuration](https://github.com/DavidAnson/markdownlint/blob/v0.41.1/README.md#configuration)）
 
 #### yamllint
 
-- `--strict` を付け、warning の指摘でも失敗する（[Errors and warnings](https://yamllint.readthedocs.io/en/stable/configuration.html#errors-and-warnings)）
 - デフォルトの設定から、次の 4 つを変えている。理由は [`.yamllint.yaml`](.github/yamllint/.yamllint.yaml) のコメントに書いている
   - 行の長さ（`line-length`）と、ファイルの先頭の `---`（`document-start`）を検査しない
   - 真偽値の書き方（`truthy`）は、値だけを検査し、キーは検査しない
   - 行末のコメントの前の空白（`comments`）は、1 つでよい
-- ディレクトリを渡すと、`uv sync` が作る `.venv` など、git で管理していないファイルまで読む。そのため、`git ls-files` の一覧を渡す
-- 指摘を無視するときは、該当する行に `# yamllint disable-line rule:<ルール名>` と書く（[Disable with comments](https://yamllint.readthedocs.io/en/stable/disable_with_comments.html#disabling-checks-for-a-specific-line)）
 - yamllint の入れ方は [yamllint の依存関係](#yamllint-の依存関係) にある
 
 #### hadolint
 
-- `--failure-threshold style` を付け、重大度が style の指摘でも失敗する。デフォルトの `info` のままだと、style の指摘で失敗しない（[CLI](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#cli)）
 - 対象のファイルが 1 つもなければ、hadolint を実行せずに成功する。hadolint は、ファイルを渡さないと失敗するため（[`app/Main.hs`](https://github.com/hadolint/hadolint/blob/v2.15.1/app/Main.hs#L58-L59)）
 - `RUN` のスクリプトは、hadolint にライブラリとして組み込まれた ShellCheck で検査する。mise で入れる ShellCheck は使わない（[`hadolint.cabal`](https://github.com/hadolint/hadolint/blob/v2.15.1/hadolint.cabal#L169)）
 - 設定ファイル（`.hadolint.yaml`）は置いていない。置いた設定ファイルを解釈できないと、hadolint はエラーを出すだけで、デフォルトの設定で検査を続ける（[`app/Main.hs`](https://github.com/hadolint/hadolint/blob/v2.15.1/app/Main.hs#L89-L93)）
-- 指摘を無視するときは、該当する命令の前の行に `# hadolint ignore=<ルール名>` と書く（[Inline ignores](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#inline-ignores)）
 
 ### 外部リンクの定期検査
 
 外部のリンクは、[`lychee.yml`](.github/workflows/lychee.yml) の `lychee-external` が毎週月曜と手動の実行（`workflow_dispatch`）で検査します。必須チェックではありません。
 
-- レート制限の `429` は、リンク切れとは限らないため成功として扱う
-- `502`・`503`・`504` も成功として扱う。github.com がときどき返す一時的なエラーで、lychee v0.24.2 は `--max-retries` によらずリトライしないため（[#2319](https://github.com/lycheeverse/lychee/issues/2319)）
+- `429`・`502`・`503`・`504` は成功として扱う。レート制限の `429` は、リンク切れとは限らないため。`502`〜`504` は github.com がときどき返す一時的なエラーで、lychee v0.24.2 は `--max-retries` によらずリトライしないため（[#2319](https://github.com/lycheeverse/lychee/issues/2319)）
 - `mise.lock` と `uv.lock` の URL は、`mise lock` と `uv lock` が書くものなので、検査から除く
 - web と api のサーバーのアドレス（`http://localhost:3000` など）は、CI から接続できないため、[`.github/lychee.toml`](.github/lychee.toml) で検査から除く
 - 通らないリンクがあると、[`report-broken-links.sh`](.github/scripts/report-broken-links/report-broken-links.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える
@@ -210,17 +226,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 Actions の権限などを読むには Administration の権限が必要ですが、`GITHUB_TOKEN` には与えられません（[`permissions` のキー](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions)）。そのため、リポジトリの secret `SETTINGS_READ_TOKEN` に登録した Fine-grained personal access token で読みます。issue の作成には、ワークフローの `GITHUB_TOKEN` を使います。
 
-トークンは [作成画面](https://github.com/settings/personal-access-tokens/new) で次のように設定します。
-
-| 項目 | 設定する値 |
-| --- | --- |
-| Token name | 任意（例: `settings-read-playground`） |
-| Description | 任意 |
-| Resource owner | `kentayamada-dev` |
-| Expiration | 任意。期限が切れると検査が失敗し、issue が作られる |
-| Repository access | Only select repositories で `kentayamada-dev/playground` を選ぶ |
-
-Repository permissions は次の表のとおりに設定し、ほかは No access のままにします。Account permissions もすべて No access のままにします。
+トークンは [トークンの作り方](#トークンの作り方) のとおりに作り、Repository permissions を次の表のとおりに設定します。
 
 | Permission | Access | 用途 |
 | --- | --- | --- |
@@ -273,7 +279,7 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 
 - 見つかった値を実行ログに出さない（`--redact`）
 - プロバイダーの API に問い合わせて、見つかったシークレットが有効かどうかは確認しない（`--validation` を付けていない）
-- 誤検知は、その行のコメントに `betterleaks:allow` と書いて除外する
+- 誤検知の除外のしかたは、[指摘を無視する方法](#指摘を無視する方法) の表にまとめている
 - 行にコメントを書けないときは、ルートの `.betterleaksignore` に fingerprint を 1 行ずつ書いて除外する。fingerprint の形式は `<コミット>:<パス>:<ルール ID>:<行番号>` で、`--report-format json` のレポートでは `Fingerprint` に出る
 
 ## 使うツール
@@ -330,24 +336,14 @@ yamllint は Python のパッケージで、PyYAML と pathspec に依存しま�
 | major など、上記以外の更新 | 自動ではマージしない。内容を確認して手動でマージする |
 
 - 自動マージには GitHub の自動マージを使い、必須チェックがすべて通るとマージされる（[Renovate の自動マージ](https://docs.renovatebot.com/key-concepts/automerge/)・[GitHub の自動マージ](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request)）
-- 必須チェックは `main` の最新を取り込んだ状態で通す必要があるため、同じ実行で作った PR の 2 件目以降は、次の実行まで自動マージされない
+- [マージの条件](#マージの条件) のとおり `main` の最新を取り込む必要があるため、同じ実行で作った PR の 2 件目以降は、次の実行まで自動マージされない
 - 脆弱性アラートから作る PR は、公開後 14 日を待たずに作られる。minor・patch の更新なら、そのまま自動でマージされる（[Minimum Release Age](https://docs.renovatebot.com/key-concepts/minimum-release-age/)）。このとき Renovate は、`pnpm-workspace.yaml` の `minimumReleaseAgeExclude` に修正版を書き足す
   - 検証用ブランチで OSV の脆弱性情報から作らせた PR（[#141](https://github.com/kentayamada-dev/playground/pull/141)）で確認した
 - 更新の状況は、Dependency Dashboard の issue「chore(deps): 依存関係の更新状況」にまとまる
 
 ### トークンの準備
 
-Renovate は、リポジトリの secret `RENOVATE_TOKEN` に登録した Fine-grained personal access token で操作します。トークンは [作成画面](https://github.com/settings/personal-access-tokens/new) で次のように設定します。
-
-| 項目 | 設定する値 |
-| --- | --- |
-| Token name | 任意（例: `renovate-playground`） |
-| Description | 任意 |
-| Resource owner | `kentayamada-dev` |
-| Expiration | 任意。期限が切れると Renovate の実行が失敗する |
-| Repository access | Only select repositories で `kentayamada-dev/playground` を選ぶ |
-
-Repository permissions は次の表のとおりに設定し、ほかは No access のままにします。Account permissions もすべて No access のままにします。
+Renovate は、リポジトリの secret `RENOVATE_TOKEN` に登録した Fine-grained personal access token で操作します。トークンは [トークンの作り方](#トークンの作り方) のとおりに作り、Repository permissions を次の表のとおりに設定します。
 
 | Permission | Access | 用途 |
 | --- | --- | --- |
@@ -364,3 +360,17 @@ Repository permissions は次の表のとおりに設定し、ほかは No acces
 ```bash
 gh secret set RENOVATE_TOKEN --repo kentayamada-dev/playground
 ```
+
+## トークンの作り方
+
+[定義とのずれの検査](#検査に使うトークン) と [Renovate](#トークンの準備) が使う Fine-grained personal access token は、[作成画面](https://github.com/settings/personal-access-tokens/new) で次のように作ります。
+
+| 項目 | 設定する値 |
+| --- | --- |
+| Token name | 任意（例: `settings-read-playground`・`renovate-playground`） |
+| Description | 任意 |
+| Resource owner | `kentayamada-dev` |
+| Expiration | 任意。期限が切れると、定義とのずれの検査は失敗して issue が作られ、Renovate は実行が失敗する |
+| Repository access | Only select repositories で `kentayamada-dev/playground` を選ぶ |
+| Repository permissions | それぞれの節の表のとおりに設定し、ほかは No access のままにする |
+| Account permissions | すべて No access のままにする |
