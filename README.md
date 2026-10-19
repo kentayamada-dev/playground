@@ -88,7 +88,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
 - lychee・typos・yamllint には、ディレクトリではなく `git ls-files` の一覧を渡す。ディレクトリを渡すと、読むファイルが次のようにずれるため
   - lychee は、`.md`・`.html` などの拡張子のファイルしか読まない（[`--extensions`](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L456-L467)）
-  - typos は隠しファイルを読まず、`.github` と `.claude` を検査しない（[`files.ignore-hidden`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#filesignore-hidden)）。`--hidden` を付けると `.git` のなかまで読む
+  - typos は、`.` で始まるファイルとディレクトリ（`.github`・`.devcontainer`・`.editorconfig` など）を読まない（[`files.ignore-hidden`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#filesignore-hidden)）。`--hidden` を付けると `.git` のなかまで読む
   - yamllint は、`uv sync` が作る `.venv` など、git で管理していないファイルまで読む
 
 ### ツールごとの補足
