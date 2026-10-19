@@ -19,12 +19,14 @@ web（Node.js）と api（Go）を、別々の Dev Container で開発します�
 - macOS 以外のホストでは、コンテナを作る前にエラーで止める。両方の `devcontainer.json` の `initializeCommand` が、ホストで [`check-host-os.sh`](.devcontainer/check-host-os/check-host-os.sh) を実行する
 - 2 つのコンテナは、[`compose.yaml`](compose.yaml) のサービスとして動く。どちらにも、リポジトリのルートを `/workspace` としてマウントする。コンテナのなかでも git を使えるようにするため
 - イメージは、Docker Hub の公式イメージをもとに、コンテナごとの Dockerfile でビルドする。Dockerfile を変えたら、「Dev Containers: Rebuild Container」でコンテナを作り直す
-- どちらのコンテナも、一般ユーザー `dev` で動く。ユーザー名は、`compose.yaml` の `x-dev-user` から両方のビルドに渡している。変えるときは、両方の `devcontainer.json` の `remoteUser` も合わせる
+- どちらのコンテナも、一般ユーザー `dev` で動く。ユーザー名は、`compose.yaml` の `x-build-args` から両方のビルドに渡している。変えるときは、両方の `devcontainer.json` の `remoteUser` も合わせる
 - ホスト名は、サービス名と同じ `web`・`api` にしている。端末のプロンプトで、どちらのコンテナかわかるようにするため
 - sudo は入れていない。root で作業するときは、手元のリポジトリのルートで `docker compose exec -u root api bash` のように実行する
-- web のパッケージマネージャーは pnpm。版は web の Dockerfile だけで管理し、Renovate が更新する。[`web/pnpm-workspace.yaml`](web/pnpm-workspace.yaml) の設定は、textlint の [`pnpm-workspace.yaml`](.github/textlint/pnpm-workspace.yaml) とそろえている
+- web のパッケージマネージャーは pnpm。版は web の Dockerfile だけで管理し、Renovate が更新する。[`web/pnpm-workspace.yaml`](web/pnpm-workspace.yaml) の設定は、`storeDir` のほかは textlint の [`pnpm-workspace.yaml`](.github/textlint/pnpm-workspace.yaml) とそろえている
 - web は、Compose のサービス名を使った `http://api:8080` で api に接続する。接続先は、`compose.yaml` で環境変数 `API_URL` に渡している
 - ウィンドウを閉じても、コンテナは止めない（`shutdownAction: "none"`）。もう一方のコンテナで開いているウィンドウが切れないようにするため
+- bash の履歴は、コンテナごとの名前付きボリュームに書く。コンテナを作り直しても履歴を残すため
+- web の `node_modules` と pnpm のストアは、名前付きボリュームに置く。macOS のバインドマウントは、インストールのように書き込みの多い処理が遅いため。手元の `web/node_modules` は空のディレクトリになる
 
 この節の手順とコマンドは、まだ動かして確認していません（未確認）。
 
