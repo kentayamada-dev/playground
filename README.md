@@ -44,7 +44,7 @@ web（Node.js）と api（Go）を、別々の Dev Container で開発します�
 
 ### ビルドが失敗するとき
 
-Buildx v0.37.2 以降では、Dev Containers 拡張機能がコンテナのイメージをビルドするときに失敗します。エラーは `additional privileges requested` です。拡張機能は、ビルドのたびに一時フォルダーに `Dockerfile-with-features` を作ります。これはビルドコンテキストの外にあり、Buildx が読み取りを拒否します（[devcontainers/cli#1320](https://github.com/devcontainers/cli/issues/1320)）。
+Buildx v0.37.2 以降では、Dev Containers 拡張機能がコンテナのイメージをビルドするときに失敗します。エラーは `additional privileges requested` です。拡張機能は、ビルドのたびに `Dockerfile-with-features` を一時フォルダーへ作ります。これはビルドコンテキストの外にあり、Buildx が読み取りを拒否します（[devcontainers/cli#1320](https://github.com/devcontainers/cli/issues/1320)）。
 
 環境変数 `BUILDX_BAKE_ENTITLEMENTS_FS=0` が要るのは、拡張機能がビルドするときだけです。初めてコンテナを開くときや、「Dev Containers: Rebuild Container」で作り直すときなどです。そのときは、VS Code をいったん終了し、この変数を付けて起動し直します。
 
