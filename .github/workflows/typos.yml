@@ -29,10 +29,16 @@ jobs:
           install_args: github:crate-ci/typos
       # 隠しファイルを読み、.git を除く設定は .github/typos.toml にある
       - run: typos --config .github/typos.toml
-      # 検証用: typos が読むファイルと git で管理するファイルを比べる
+      # 検証用: ディレクトリを渡す方式と、変更前の一覧を渡す方式（[files] のない設定）で、読むファイルを比べる
       - run: |
-          typos --config .github/typos.toml --files | sed 's|^\./||' | sort > "$RUNNER_TEMP/typos-files.txt"
-          git ls-files | sort > "$RUNNER_TEMP/git-files.txt"
-          wc -l "$RUNNER_TEMP/typos-files.txt" "$RUNNER_TEMP/git-files.txt"
-          diff "$RUNNER_TEMP/git-files.txt" "$RUNNER_TEMP/typos-files.txt"
+          sed '/^\[files\]/,/^$/d' .github/typos.toml > "$RUNNER_TEMP/old-typos.toml"
+          cat "$RUNNER_TEMP/old-typos.toml"
+          typos --config .github/typos.toml --files | sed 's|^\./||' | sort > "$RUNNER_TEMP/dir.txt"
+          git ls-files | typos --config "$RUNNER_TEMP/old-typos.toml" --file-list - --files | sed 's|^\./||' | sort > "$RUNNER_TEMP/list.txt"
+          git ls-files | sort > "$RUNNER_TEMP/git.txt"
+          wc -l "$RUNNER_TEMP/dir.txt" "$RUNNER_TEMP/list.txt" "$RUNNER_TEMP/git.txt"
+          echo '--- git ls-files と、一覧を渡す方式の差'
+          diff "$RUNNER_TEMP/git.txt" "$RUNNER_TEMP/list.txt" || true
+          echo '--- 一覧を渡す方式と、ディレクトリを渡す方式の差'
+          diff "$RUNNER_TEMP/list.txt" "$RUNNER_TEMP/dir.txt"
         shell: bash
