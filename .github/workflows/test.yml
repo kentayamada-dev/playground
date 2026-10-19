@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - test/test-find-pass
 
 permissions:
   contents: read
@@ -27,6 +28,15 @@ jobs:
           working_directory: .github
           # bats のテストは gh をスタブに置き換えるが、スクリプトとスタブが使う jq は本物なので入れる
           install_args: shellcheck github:mvdan/sh bats jq
+      # 検証用: find が一致するファイルと bats -r が集めるファイルを、git ls-files と比べる
+      - run: |
+          find . -path ./.git -prune -o -type f \( -name '*.sh' -o -name '*.bats' \) -print | sed 's|^\./||' | sort > "$RUNNER_TEMP/find.txt"
+          git ls-files '*.sh' '*.bats' | sort > "$RUNNER_TEMP/git.txt"
+          cat "$RUNNER_TEMP/find.txt"
+          diff "$RUNNER_TEMP/git.txt" "$RUNNER_TEMP/find.txt"
+          find -L . -type f -name '*.bats' | sed 's|^\./||' | sort > "$RUNNER_TEMP/bats.txt"
+          git ls-files '*.bats' | sort | diff - "$RUNNER_TEMP/bats.txt"
+        shell: bash
       # shellcheck は渡したファイルしか検査せず、shfmt はディレクトリを渡すと拡張子のない shebang のファイルまで対象にするため、find で同じファイルを渡す
       # https://github.com/koalaman/shellcheck/blob/v0.11.0/shellcheck.1.md https://github.com/mvdan/sh/blob/v3.14.1/fileutil/file.go#L67-L84
       # 検査の失敗が find の終了コードに伝わるのは -exec の + の形だけのため、; の形にしない https://github.com/kentayamada-dev/playground/pull/235
