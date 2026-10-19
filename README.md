@@ -29,33 +29,6 @@ web（Node.js）と api（Go）を、別々の Dev Container で開発します�
 - bash の履歴は、コンテナごとの名前付きボリュームに書く。コンテナを作り直しても履歴を残すため
 - web の `node_modules` と pnpm のストアは、名前付きボリュームに置く。macOS のバインドマウントは、インストールのように書き込みの多い処理が遅いため。手元の `web/node_modules` は空のディレクトリになる
 
-この節の次の手順とコマンドは、まだ動かして確認していません（未確認）。
-
-- 「Dev Containers: Rebuild Container」での作り直しと、`docker compose exec -u root api bash`
-- 「コンテナを開く」「サーバーを起動する」の手順とコマンド
-
-### コンテナを開く
-
-1. VS Code でリポジトリのルートを開く
-2. コマンドパレットで「Dev Containers: Reopen in Container」を実行し、`web` か `api` を選ぶ
-3. もう一方のコンテナに移るときは、「Dev Containers: Switch Container」を実行する。両方を同時に開くときは、「File > New Window」で開いた別のウィンドウでも同じ手順を実行する
-
-コンテナを止めるときは、手元のリポジトリのルートで `docker compose stop` を実行します。
-
-### ビルドが失敗するとき
-
-Buildx v0.37.2 以降では、Dev Containers 拡張機能がコンテナのイメージをビルドするときに失敗します。エラーは `additional privileges requested` です。拡張機能は、ビルドのたびに `Dockerfile-with-features` を一時フォルダーへ作ります。これはビルドコンテキストの外にあり、Buildx が読み取りを拒否します（[devcontainers/cli#1320](https://github.com/devcontainers/cli/issues/1320)）。
-
-環境変数 `BUILDX_BAKE_ENTITLEMENTS_FS=0` が要るのは、拡張機能がビルドするときだけです。初めてコンテナを開くときや、「Dev Containers: Rebuild Container」で作り直すときなどです。そのときは、VS Code をいったん終了し、この変数を付けて起動し直します。
-
-```bash
-BUILDX_BAKE_ENTITLEMENTS_FS=0 code .
-```
-
-この変数は、Buildx がファイルの読み取りを確認する検査を、このファイルに限らずすべて止めます。そのため、シェルの設定ファイルなどで常に設定することはしません。コンテナのなかでの開発や、手元で実行する `docker compose` のビルドには要りません。
-
-手元の macOS で、拡張機能 0.469.0 に同梱の CLI のビルドが、この変数なしでは失敗し、付けると成功することを確認しました。Buildx は v0.37.2、Compose は v5.6.0 です。`code .` で起動し直して拡張機能に変数を渡す手順は、まだ動かして確認していません（未確認）。
-
 ### サーバーを起動する
 
 コンテナを開いても、サーバーは起動しません。それぞれのコンテナのターミナルで、次のコマンドを実行します。
