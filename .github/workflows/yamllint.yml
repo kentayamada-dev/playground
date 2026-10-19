@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - test/yamllint-dir-pass
 
 permissions:
   contents: read
@@ -31,3 +32,15 @@ jobs:
       # .venv など、git で管理していないファイルを除く設定は .github/yamllint/.yamllint.yaml にある
       - run: >-
           .github/yamllint/.venv/bin/yamllint --strict --format github --config-file .github/yamllint/.yamllint.yaml .
+      # 検証用: yamllint が読むファイルを git ls-files と比べ、.venv を除かない設定でも数える
+      - run: |
+          .github/yamllint/.venv/bin/yamllint --list-files --config-file .github/yamllint/.yamllint.yaml . | sed 's|^\./||' | sort > "$RUNNER_TEMP/yamllint.txt"
+          git ls-files '*.yml' '*.yaml' | grep -Ev '(^|/)pnpm-lock\.yaml$' | sort > "$RUNNER_TEMP/git.txt"
+          wc -l "$RUNNER_TEMP/yamllint.txt" "$RUNNER_TEMP/git.txt"
+          grep -E '^\.' "$RUNNER_TEMP/yamllint.txt"
+          diff "$RUNNER_TEMP/git.txt" "$RUNNER_TEMP/yamllint.txt"
+          grep -v '^  - \.venv/$' .github/yamllint/.yamllint.yaml > "$RUNNER_TEMP/no-venv.yaml"
+          .github/yamllint/.venv/bin/yamllint --list-files --config-file "$RUNNER_TEMP/no-venv.yaml" . > "$RUNNER_TEMP/no-venv.txt"
+          echo "--- .venv/ を除かないときに読む .venv の下のファイル: $(grep -c '/\.venv/' "$RUNNER_TEMP/no-venv.txt")"
+          grep -m 5 '/\.venv/' "$RUNNER_TEMP/no-venv.txt"
+        shell: bash
