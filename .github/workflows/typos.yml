@@ -26,8 +26,5 @@ jobs:
           # ローカルでは使わないので、mise.toml と mise.lock はルートではなく .github に置いている
           working_directory: .github
           install_args: github:crate-ci/typos
-      # ディレクトリを渡すと . で始まるファイルとディレクトリ（.github・.devcontainer など）を読まず、--hidden を付けると .git のなかまで読むため、ファイルを列挙して渡す
-      # https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#filesignore-hidden
-      - run: git ls-files | typos --config .github/typos.toml --file-list -
-        # 未指定時の bash -e {0} は pipefail がなく、git ls-files の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
-        shell: bash
+      # 隠しファイルを読み、.git を除く設定は .github/typos.toml にある
+      - run: typos --config .github/typos.toml
