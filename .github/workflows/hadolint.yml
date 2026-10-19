@@ -26,16 +26,13 @@ jobs:
           # ローカルでは使わないので、mise.toml と mise.lock はルートではなく .github に置いている
           working_directory: .github
           install_args: hadolint
-      # :(glob) がないと、**/ がルートの Dockerfile に一致しない https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-glob
-      # hadolint はファイルを渡さないと「Please provide a Dockerfile」で失敗するため、1 つもなければ実行しない
+      # hadolint はファイルを渡さないと「Please provide a Dockerfile」で失敗するが、-exec の + の形は一致するファイルがなければ実行しない
       # https://github.com/hadolint/hadolint/blob/v2.15.1/app/Main.hs#L58-L59
+      # hadolint の失敗が find の終了コードに伝わるのは + の形だけのため、; の形にしない https://man7.org/linux/man-pages/man1/find.1.html
       # デフォルトの failure-threshold は info で、style の指摘では失敗しないため、style を渡す
       # https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#cli
       - run: >-
-          git ls-files -z
-          ':(glob)**/Dockerfile' ':(glob)**/Dockerfile.*' ':(glob)**/*.Dockerfile'
-          ':(glob)**/Containerfile' ':(glob)**/Containerfile.*'
-          | xargs -0 --no-run-if-empty hadolint --failure-threshold style
-        # 未指定時の bash -e {0} は pipefail がなく、git ls-files が失敗して何も出力しないと、検査せずに成功するため
-        # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
-        shell: bash
+          find . -path ./.git -prune -o -type f
+          \( -name Dockerfile -o -name 'Dockerfile.*' -o -name '*.Dockerfile'
+          -o -name Containerfile -o -name 'Containerfile.*' \)
+          -exec hadolint --failure-threshold style {} +
