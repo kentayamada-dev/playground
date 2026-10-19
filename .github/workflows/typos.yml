@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - test/typos-hidden-pass
 
 permissions:
   contents: read
@@ -28,3 +29,10 @@ jobs:
           install_args: github:crate-ci/typos
       # 隠しファイルを読み、.git を除く設定は .github/typos.toml にある
       - run: typos --config .github/typos.toml
+      # 検証用: typos が読むファイルと git で管理するファイルを比べる
+      - run: |
+          typos --config .github/typos.toml --files | sed 's|^\./||' | sort > "$RUNNER_TEMP/typos-files.txt"
+          git ls-files | sort > "$RUNNER_TEMP/git-files.txt"
+          wc -l "$RUNNER_TEMP/typos-files.txt" "$RUNNER_TEMP/git-files.txt"
+          diff "$RUNNER_TEMP/git-files.txt" "$RUNNER_TEMP/typos-files.txt"
+        shell: bash
