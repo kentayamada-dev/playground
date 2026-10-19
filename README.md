@@ -84,7 +84,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `lychee` | `git ls-files` のすべてのファイル |
 | `typos` | リポジトリ全体。`.git` と、`typos.toml`・`pyproject.toml` など typos の設定ファイルと同じ名前のファイルは除く |
 | `yamllint` | `git ls-files` のすべての `.yml`・`.yaml`。`pnpm-lock.yaml` は除く |
-| `hadolint` | `git ls-files` のうち、名前が `Dockerfile`・`Containerfile` のファイルと、`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*` に一致するファイル |
+| `hadolint` | リポジトリ全体のうち、名前が `Dockerfile`・`Containerfile` のファイルと、`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*` に一致するファイル。`.git` は除く |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
 - lychee・yamllint には、ディレクトリではなく `git ls-files` の一覧を渡す。ディレクトリを渡すと、読むファイルが次のようにずれるため
