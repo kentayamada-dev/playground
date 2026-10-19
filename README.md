@@ -17,6 +17,7 @@ web（Node.js）と api（Go）を、別々の Dev Container で開発します�
 | `api` | [`devcontainer.json`](.devcontainer/api/devcontainer.json)・[`Dockerfile`](.devcontainer/api/Dockerfile) | [`api`](api) | `golang`（Go 1.27） |
 
 - macOS 以外のホストでは、コンテナを作る前にエラーで止める。両方の `devcontainer.json` の `initializeCommand` が、ホストで [`check-host-os.sh`](.devcontainer/check-host-os/check-host-os.sh) を実行する
+- 止まると、ダイアログ「An error occurred setting up the container.」が出る。理由はダイアログには出ず、コマンドパレットの「Dev Containers: Show Container Log」で開くログの末尾近くに出る
 - 2 つのコンテナは、[`compose.yaml`](compose.yaml) のサービスとして動く。どちらにも、リポジトリのルートを `/workspace` としてマウントする。コンテナのなかでも git を使えるようにするため
 - イメージは、Docker Hub の公式イメージをもとに、コンテナごとの Dockerfile でビルドする。Dockerfile を変えたら、「Dev Containers: Rebuild Container」でコンテナを作り直す
 - どちらのコンテナも、一般ユーザー `dev` で動く。ユーザー名は、`compose.yaml` の `x-build-args` から両方のビルドに渡している。変えるときは、両方の `devcontainer.json` の `remoteUser` も合わせる
