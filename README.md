@@ -83,11 +83,11 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `renovate-config-validator` | [`.github/renovate.json5`](.github/renovate.json5) |
 | `lychee` | リポジトリ全体。`.git` と、`.github/mise.lock`・`.github/yamllint/uv.lock` は除く |
 | `typos` | リポジトリ全体。`.git` と、`typos.toml`・`pyproject.toml` など typos の設定ファイルと同じ名前のファイルは除く |
-| `yamllint` | `git ls-files` のすべての `.yml`・`.yaml`。`pnpm-lock.yaml` は除く |
+| `yamllint` | リポジトリ全体の `.yml`・`.yaml`。`pnpm-lock.yaml` と、`.venv`・`node_modules` の下は除く |
 | `hadolint` | リポジトリ全体のうち、名前が `Dockerfile`・`Containerfile` のファイルと、`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*` に一致するファイル。`.git` は除く |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
-- yamllint には、ディレクトリではなく `git ls-files` の一覧を渡す。ディレクトリを渡すと、`uv sync` が作る `.venv` など、git で管理していないファイルまで読むため
+- yamllint にはディレクトリを渡す。ディレクトリを渡すと、`uv sync` が作る `.venv` など、git で管理していないファイルまで読む（[`cli.py`](https://github.com/adrienverge/yamllint/blob/v1.38.0/yamllint/cli.py#L27-L37)）。そのため、[`.yamllint.yaml`](.github/yamllint/.yamllint.yaml) の `ignore` で `.venv` と `node_modules` を除いている
 - lychee には、ディレクトリではなくグロブ `**/*` を渡す。ディレクトリを渡すと、`.md`・`.html` などの拡張子のファイルしか読まない（[`--extensions`](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L456-L467)）。グロブに一致したファイルは、拡張子によらず読む（[`resolver.rs`](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee-lib/src/types/input/resolver.rs#L140-L144)）。[`.github/lychee.toml`](.github/lychee.toml) で隠しファイルも読ませ、`.git` を除いている
 - typos は、デフォルトでは `.github`・`.devcontainer` など `.` で始まるファイルとディレクトリを読まない（[`files.ignore-hidden`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#filesignore-hidden)）。そのため、[`.github/typos.toml`](.github/typos.toml) で隠しファイルも読ませ、`.git` を除いている
 - typos は、`typos.toml`・`Cargo.toml`・`pyproject.toml` など設定ファイルと同じ名前のファイルを、渡し方によらず読まない（[`file.rs`](https://github.com/crate-ci/typos/blob/v1.51.1/crates/typos-cli/src/file.rs#L942-L951)）。そのため、[`.github/typos.toml`](.github/typos.toml) と [`.github/yamllint/pyproject.toml`](.github/yamllint/pyproject.toml) は検査しない

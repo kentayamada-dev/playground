@@ -1,8 +1,12 @@
 extends: default
 
-# pnpm が書き出すファイルで、手で書式を直さないため
-ignore: |
-  pnpm-lock.yaml
+ignore:
+  # pnpm が書き出すファイルで、手で書式を直さないため
+  - pnpm-lock.yaml
+  # ディレクトリを渡すと、uv sync や pnpm install が作る、git で管理していないファイルまで読むため
+  # https://github.com/adrienverge/yamllint/blob/v1.38.0/yamllint/cli.py#L27-L37
+  - .venv/
+  - node_modules/
 
 rules:
   # コメントに理由と根拠の URL を書くと、80 文字の上限を超えることが多いため
