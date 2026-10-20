@@ -6,7 +6,7 @@ set -euo pipefail
 gh_get() {
   local operation=$1
   shift
-  gh_api "$operation" -H 'Cache-Control: no-cache' "$@"
+  gh_api "${operation}" -H 'Cache-Control: no-cache' "$@"
 }
 
 # gh のエラーには失敗したエンドポイントが含まれず、途中で止まるとどこまで反映したかわからないため、何の操作で失敗したかを示す
@@ -15,7 +15,7 @@ gh_api() {
   local operation=$1
   shift
   if ! gh api "$@"; then
-    if $check_only; then
+    if ${check_only}; then
       echo "エラー: ${operation}で失敗しました" >&2
     else
       echo "エラー: ${operation}で失敗しました。それより前の設定は反映済みです" >&2
@@ -36,49 +36,49 @@ report_drift() {
   # GitHub は配列を定義と違う順で返すことがある（selected-actions の patterns_allowed で確認）。定義の配列はどれも順序で意味が変わらないとみなし、並べ替えて比べる
   desired=$(jq -S 'walk(if type == "array" then sort else . end)' <<<"$2")
   actual=$(jq -S 'walk(if type == "array" then sort else . end)' <<<"$3")
-  if [ "$desired" != "$actual" ]; then
-    drift "$subject"
-    diff -u --label 定義 --label GitHub <(echo "$desired") <(echo "$actual") || [ $? -eq 1 ]
+  if [[ "${desired}" != "${actual}" ]]; then
+    drift "${subject}"
+    diff -u --label 定義 --label GitHub <(echo "${desired}") <(echo "${actual}") || [[ $? -eq 1 ]]
   fi
 }
 
 # 定義に書いた項目だけを反映する設定は、GitHub 上の値から定義にある項目だけを取り出して比べる
 report_defined_drift() {
   local subject=$1 desired=$2 actual
-  actual=$(jq --argjson desired "$desired" '
+  actual=$(jq --argjson desired "${desired}" '
     def defined_only($desired):
       if ($desired | type) == "object" and type == "object" then
         . as $actual | reduce ($desired | keys[]) as $key ({}; .[$key] = ($actual[$key] | defined_only($desired[$key])))
       else . end;
     defined_only($desired)
   ' <<<"$3")
-  report_drift "$subject" "$desired" "$actual"
+  report_drift "${subject}" "${desired}" "${actual}"
 }
 
 settings_dir=.github/settings
 
 sync_rulesets() {
-  local files=("$settings_dir"/rulesets/*.json) has_definitions=false
+  local files=("${settings_dir}"/rulesets/*.json) has_definitions=false
   # 一致するファイルがないとパターンが文字列のまま残る。macOS の bash 3.2 は空配列の展開を set -u でエラーにするため、配列は空にせず存在で判定する
   # https://www.gnu.org/software/bash/manual/html_node/Filename-Expansion.html https://tiswww.case.edu/php/chet/bash/CHANGES の bash-4.4-rc2 3.a
-  if [ -e "${files[0]}" ]; then
+  if [[ -e "${files[0]}" ]]; then
     has_definitions=true
   fi
 
   # 途中まで適用した状態で止まらないよう、作成・更新・削除の前にすべての定義と照合先を検査する
   local file names='[]' duplicates
-  if $has_definitions; then
+  if ${has_definitions}; then
     for file in "${files[@]}"; do
-      if ! jq -e '.name | type == "string" and length > 0' "$file" >/dev/null; then
-        echo "エラー: $file は name（空でない文字列）を持つ JSON オブジェクトではありません" >&2
+      if ! jq -e '.name | type == "string" and length > 0' "${file}" >/dev/null; then
+        echo "エラー: ${file} は name（空でない文字列）を持つ JSON オブジェクトではありません" >&2
         return 1
       fi
     done
     names=$(jq -cs 'map(.name)' "${files[@]}")
   fi
-  duplicates=$(jq -r 'group_by(.) | map(select(length > 1) | .[0]) | .[]' <<<"$names")
-  if [ -n "$duplicates" ]; then
-    echo "エラー: 同じ name のルールセットが複数のファイルにあります: $duplicates" >&2
+  duplicates=$(jq -r 'group_by(.) | map(select(length > 1) | .[0]) | .[]' <<<"${names}")
+  if [[ -n "${duplicates}" ]]; then
+    echo "エラー: 同じ name のルールセットが複数のファイルにあります: ${duplicates}" >&2
     return 1
   fi
 
@@ -86,142 +86,146 @@ sync_rulesets() {
   # https://docs.github.com/en/rest/repos/rules?apiVersion=2022-11-28#get-all-repository-rulesets
   local existing
   existing=$(gh_get 'ルールセットの一覧の取得' --paginate --slurp 'repos/{owner}/{repo}/rulesets?includes_parents=false&per_page=100')
-  duplicates=$(jq -r --argjson names "$names" '[.[][] | .name | select(IN($names[]))] | group_by(.) | map(select(length > 1) | .[0]) | .[]' <<<"$existing")
-  if [ -n "$duplicates" ]; then
-    echo "エラー: GitHub に同じ名前のルールセットが複数あり、更新先を決められません: $duplicates" >&2
+  duplicates=$(jq -r --argjson names "${names}" '[.[][] | .name | select(IN($names[]))] | group_by(.) | map(select(length > 1) | .[0]) | .[]' <<<"${existing}")
+  if [[ -n "${duplicates}" ]]; then
+    echo "エラー: GitHub に同じ名前のルールセットが複数あり、更新先を決められません: ${duplicates}" >&2
     return 1
   fi
 
-  local name id actual
-  if $has_definitions; then
+  local name id actual desired
+  if ${has_definitions}; then
     for file in "${files[@]}"; do
-      name=$(jq -r '.name' "$file")
-      id=$(jq -r --arg name "$name" '.[][] | select(.name == $name) | .id' <<<"$existing")
-      if [ -z "$id" ]; then
-        if $check_only; then
-          drift "ルールセット $name ($file) が GitHub にありません"
+      name=$(jq -r '.name' "${file}")
+      id=$(jq -r --arg name "${name}" '.[][] | select(.name == $name) | .id' <<<"${existing}")
+      if [[ -z "${id}" ]]; then
+        if ${check_only}; then
+          drift "ルールセット ${name} (${file}) が GitHub にありません"
         else
-          gh_api "ルールセット $name の作成" --method POST 'repos/{owner}/{repo}/rulesets' --input "$file" --silent
-          echo "作成: ルールセット $name ($file)"
+          gh_api "ルールセット ${name} の作成" --method POST 'repos/{owner}/{repo}/rulesets' --input "${file}" --silent
+          echo "作成: ルールセット ${name} (${file})"
         fi
-      elif $check_only; then
+      elif ${check_only}; then
         # 一覧の応答には rules や conditions が含まれないため、1 件ずつ取得する
         # https://docs.github.com/en/rest/repos/rules?apiVersion=2022-11-28#get-all-repository-rulesets
-        actual=$(gh_get "ルールセット $name の取得" "repos/{owner}/{repo}/rulesets/$id")
-        report_drift "ルールセット $name ($file)" "$(cat "$file")" \
-          "$(jq 'del(.id, .source_type, .source, .node_id, .created_at, .updated_at, .current_user_can_bypass, ._links)' <<<"$actual")"
+        actual=$(gh_get "ルールセット ${name} の取得" "repos/{owner}/{repo}/rulesets/${id}")
+        desired=$(cat "${file}")
+        actual=$(jq 'del(.id, .source_type, .source, .node_id, .created_at, .updated_at, .current_user_can_bypass, ._links)' <<<"${actual}")
+        report_drift "ルールセット ${name} (${file})" "${desired}" "${actual}"
       else
-        gh_api "ルールセット $name の反映" --method PUT "repos/{owner}/{repo}/rulesets/$id" --input "$file" --silent
+        gh_api "ルールセット ${name} の反映" --method PUT "repos/{owner}/{repo}/rulesets/${id}" --input "${file}" --silent
       fi
     done
   fi
 
   # 定義の name を変えたときに、古いルールセットを先に消して保護が途切れないよう、作成・更新のあとで削除する
   local stale
-  stale=$(jq -r --argjson names "$names" '.[][] | select(.name | IN($names[]) | not) | .id' <<<"$existing")
-  for id in $stale; do
-    name=$(jq -r --argjson id "$id" '.[][] | select(.id == $id) | .name' <<<"$existing")
-    if $check_only; then
-      drift "定義にないルールセット $name が GitHub にあります"
+  stale=$(jq -r --argjson names "${names}" '.[][] | select(.name | IN($names[]) | not) | .id' <<<"${existing}")
+  for id in ${stale}; do
+    name=$(jq -r --argjson id "${id}" '.[][] | select(.id == $id) | .name' <<<"${existing}")
+    if ${check_only}; then
+      drift "定義にないルールセット ${name} が GitHub にあります"
     else
-      gh_api "ルールセット $name の削除" --method DELETE "repos/{owner}/{repo}/rulesets/$id" --silent
-      echo "削除: ルールセット $name"
+      gh_api "ルールセット ${name} の削除" --method DELETE "repos/{owner}/{repo}/rulesets/${id}" --silent
+      echo "削除: ルールセット ${name}"
     fi
   done
 }
 
-repository_definition="$settings_dir/repository.json"
+repository_definition="${settings_dir}/repository.json"
 
 validate_repository() {
-  if ! jq -e 'type == "object"' "$repository_definition" >/dev/null; then
-    echo "エラー: $repository_definition を JSON オブジェクトとして読めません" >&2
+  if ! jq -e 'type == "object"' "${repository_definition}" >/dev/null; then
+    echo "エラー: ${repository_definition} を JSON オブジェクトとして読めません" >&2
     return 1
   fi
 }
 
 sync_repository() {
-  if $check_only; then
-    local actual
+  if ${check_only}; then
+    local actual desired
     actual=$(gh_get 'リポジトリの設定の取得' 'repos/{owner}/{repo}')
-    report_defined_drift 'リポジトリの設定' "$(cat "$repository_definition")" "$actual"
+    desired=$(cat "${repository_definition}")
+    report_defined_drift 'リポジトリの設定' "${desired}" "${actual}"
     return 0
   fi
   # has_discussions は API のドキュメントの項目にないが、gh repo edit も同じ API に送っている
   # https://github.com/cli/cli/blob/v2.102.0/pkg/cmd/repo/edit/edit.go
-  gh_api 'リポジトリの設定の反映' --method PATCH 'repos/{owner}/{repo}' --input "$repository_definition" --silent
+  gh_api 'リポジトリの設定の反映' --method PATCH 'repos/{owner}/{repo}' --input "${repository_definition}" --silent
 }
 
-security_definition="$settings_dir/security.json"
+security_definition="${settings_dir}/security.json"
 # true なら PUT、false なら DELETE で切り替える項目。_ を - にすると API のパスになる
 security_features='vulnerability_alerts automated_security_fixes private_vulnerability_reporting immutable_releases'
 
 validate_security() {
-  if ! jq -e --arg features "$security_features" '
+  if ! jq -e --arg features "${security_features}" '
     ($features | split(" ")) as $features
     | type == "object"
     and (keys - $features - ["code_scanning_default_setup"] | length == 0)
     and ([.[$features[]] | select(. != null) | type == "boolean"] | all)
     and ((has("code_scanning_default_setup") | not) or (.code_scanning_default_setup | type == "object"))
-  ' "$security_definition" >/dev/null; then
-    echo "エラー: $security_definition は、項目が $security_features code_scanning_default_setup のどれかで、有効・無効が true か false、code_scanning_default_setup が JSON オブジェクトの定義ではありません" >&2
+  ' "${security_definition}" >/dev/null; then
+    echo "エラー: ${security_definition} は、項目が ${security_features} code_scanning_default_setup のどれかで、有効・無効が true か false、code_scanning_default_setup が JSON オブジェクトの定義ではありません" >&2
     return 1
   fi
 }
 
 security_feature_enabled() {
   local feature=$1 response
-  if [ "$feature" != vulnerability_alerts ]; then
-    response=$(gh_get "$feature の取得" "repos/{owner}/{repo}/${feature//_/-}") || return 1
-    jq -r .enabled <<<"$response"
+  if [[ "${feature}" != vulnerability_alerts ]]; then
+    # コマンド置換のなかで呼ばれて set -e が効かないため、失敗を明示的に返す。gh_get は失敗を自分で返すので、そのなかで set -e が効かなくても困らない
+    # shellcheck disable=SC2310
+    response=$(gh_get "${feature} の取得" "repos/{owner}/{repo}/${feature//_/-}") || return 1
+    jq -r .enabled <<<"${response}"
     return 0
   fi
   # 脆弱性アラートは、無効なら 404 を返す。gh はそれを (HTTP 404) と示して失敗するため、ほかの失敗と見分ける
   # https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#check-if-vulnerability-alerts-are-enabled-for-a-repository
   if response=$(gh api -H 'Cache-Control: no-cache' 'repos/{owner}/{repo}/vulnerability-alerts' 2>&1); then
     echo true
-  elif [[ $response == *'(HTTP 404)'* ]]; then
+  elif [[ ${response} == *'(HTTP 404)'* ]]; then
     echo false
   else
-    echo "$response" >&2
-    echo "エラー: $feature の取得で失敗しました" >&2
+    echo "${response}" >&2
+    echo "エラー: ${feature} の取得で失敗しました" >&2
     return 1
   fi
 }
 
 sync_security() {
   local feature enabled current
-  for feature in $security_features; do
-    enabled=$(jq -r --arg feature "$feature" 'if has($feature) then .[$feature] else empty end' "$security_definition")
-    if [ -z "$enabled" ]; then
+  for feature in ${security_features}; do
+    enabled=$(jq -r --arg feature "${feature}" 'if has($feature) then .[$feature] else empty end' "${security_definition}")
+    if [[ -z "${enabled}" ]]; then
       continue
-    elif $check_only; then
-      current=$(security_feature_enabled "$feature")
-      if [ "$current" != "$enabled" ]; then
-        drift "$feature が定義では $enabled、GitHub では $current"
+    elif ${check_only}; then
+      current=$(security_feature_enabled "${feature}")
+      if [[ "${current}" != "${enabled}" ]]; then
+        drift "${feature} が定義では ${enabled}、GitHub では ${current}"
       fi
-    elif [ "$enabled" = true ]; then
-      gh_api "$feature の反映" --method PUT "repos/{owner}/{repo}/${feature//_/-}" --silent
+    elif [[ "${enabled}" = true ]]; then
+      gh_api "${feature} の反映" --method PUT "repos/{owner}/{repo}/${feature//_/-}" --silent
     else
-      gh_api "$feature の反映" --method DELETE "repos/{owner}/{repo}/${feature//_/-}" --silent
+      gh_api "${feature} の反映" --method DELETE "repos/{owner}/{repo}/${feature//_/-}" --silent
     fi
   done
 
   local desired
-  desired=$(jq -c 'if has("code_scanning_default_setup") then .code_scanning_default_setup else empty end' "$security_definition")
-  if [ -z "$desired" ]; then
+  desired=$(jq -c 'if has("code_scanning_default_setup") then .code_scanning_default_setup else empty end' "${security_definition}")
+  if [[ -z "${desired}" ]]; then
     return 0
   fi
-  if $check_only; then
+  if ${check_only}; then
     current=$(gh_get 'CodeQL のデフォルトセットアップの取得' 'repos/{owner}/{repo}/code-scanning/default-setup')
-    report_defined_drift 'CodeQL のデフォルトセットアップ' "$desired" "$current"
+    report_defined_drift 'CodeQL のデフォルトセットアップ' "${desired}" "${current}"
     return 0
   fi
   # 同じ設定を送っても新しい解析は始まらない（202 で前回の run_id が返る）ため、ほかの設定と同じく比べずに送る
   # https://github.com/kentayamada-dev/playground/pull/190
-  gh_api 'CodeQL のデフォルトセットアップの反映' --method PATCH 'repos/{owner}/{repo}/code-scanning/default-setup' --input - --silent <<<"$desired"
+  gh_api 'CodeQL のデフォルトセットアップの反映' --method PATCH 'repos/{owner}/{repo}/code-scanning/default-setup' --input - --silent <<<"${desired}"
 }
 
-actions_definition="$settings_dir/actions.json"
+actions_definition="${settings_dir}/actions.json"
 
 validate_actions() {
   if ! jq -e '
@@ -230,23 +234,23 @@ validate_actions() {
     and ([.[]] | all(type == "object"))
     and ((has("permissions") | not) or (.permissions.enabled | type == "boolean"))
     and ((has("selected_actions") | not) or .permissions.allowed_actions == "selected")
-  ' "$actions_definition" >/dev/null; then
-    echo "エラー: $actions_definition は、項目が permissions・selected_actions・fork_pr_contributor_approval・workflow_permissions のどれかで、どれも JSON オブジェクト、permissions の enabled が true か false、selected_actions を書くなら permissions の allowed_actions が selected の定義ではありません" >&2
+  ' "${actions_definition}" >/dev/null; then
+    echo "エラー: ${actions_definition} は、項目が permissions・selected_actions・fork_pr_contributor_approval・workflow_permissions のどれかで、どれも JSON オブジェクト、permissions の enabled が true か false、selected_actions を書くなら permissions の allowed_actions が selected の定義ではありません" >&2
     return 1
   fi
 }
 
 sync_actions_setting() {
   local subject=$1 key=$2 endpoint=$3 body actual
-  body=$(jq -c --arg key "$key" 'if has($key) then .[$key] else empty end' "$actions_definition")
-  if [ -z "$body" ]; then
+  body=$(jq -c --arg key "${key}" 'if has($key) then .[$key] else empty end' "${actions_definition}")
+  if [[ -z "${body}" ]]; then
     return 0
   fi
-  if $check_only; then
-    actual=$(gh_get "${subject}の取得" "$endpoint")
-    report_defined_drift "$subject" "$body" "$actual"
+  if ${check_only}; then
+    actual=$(gh_get "${subject}の取得" "${endpoint}")
+    report_defined_drift "${subject}" "${body}" "${actual}"
   else
-    gh_api "${subject}の反映" --method PUT "$endpoint" --input - --silent <<<"$body"
+    gh_api "${subject}の反映" --method PUT "${endpoint}" --input - --silent <<<"${body}"
   fi
 }
 
@@ -259,7 +263,7 @@ sync_actions() {
   sync_actions_setting 'GITHUB_TOKEN の既定の権限' workflow_permissions 'repos/{owner}/{repo}/actions/permissions/workflow'
 }
 
-labels_definition="$settings_dir/labels.json"
+labels_definition="${settings_dir}/labels.json"
 
 validate_labels() {
   if ! jq -e '
@@ -270,14 +274,14 @@ validate_labels() {
       and (.name | type == "string" and length > 0)
       and (.color | type == "string" and test("^[0-9a-fA-F]{6}$"))
       and ((has("description") | not) or (.description | type == "string")))
-  ' "$labels_definition" >/dev/null; then
-    echo "エラー: $labels_definition は、name（空でない文字列）・color（6 桁の 16 進数）・description（文字列。省略可）だけを持つオブジェクトの配列ではありません" >&2
+  ' "${labels_definition}" >/dev/null; then
+    echo "エラー: ${labels_definition} は、name（空でない文字列）・color（6 桁の 16 進数）・description（文字列。省略可）だけを持つオブジェクトの配列ではありません" >&2
     return 1
   fi
   local duplicates
-  duplicates=$(jq -r 'map(.name) | group_by(.) | map(select(length > 1) | .[0]) | .[]' "$labels_definition")
-  if [ -n "$duplicates" ]; then
-    echo "エラー: 同じ名前のラベルが $labels_definition に複数あります: $duplicates" >&2
+  duplicates=$(jq -r 'map(.name) | group_by(.) | map(select(length > 1) | .[0]) | .[]' "${labels_definition}")
+  if [[ -n "${duplicates}" ]]; then
+    echo "エラー: 同じ名前のラベルが ${labels_definition} に複数あります: ${duplicates}" >&2
     return 1
   fi
 }
@@ -291,52 +295,56 @@ sync_labels() {
   local existing
   existing=$(gh_get 'ラベルの一覧の取得' --paginate --slurp 'repos/{owner}/{repo}/labels?per_page=100')
 
-  local count i label name
-  count=$(jq length "$labels_definition")
+  local count i label name actual encoded body
+  count=$(jq length "${labels_definition}")
   for ((i = 0; i < count; i++)); do
-    label=$(jq -c ".[$i]" "$labels_definition")
-    name=$(jq -r '.name' <<<"$label")
-    if ! jq -e --arg name "$name" 'any(.[][]; .name == $name)' <<<"$existing" >/dev/null; then
-      if $check_only; then
-        drift "ラベル $name が GitHub にありません"
+    label=$(jq -c ".[${i}]" "${labels_definition}")
+    name=$(jq -r '.name' <<<"${label}")
+    if ! jq -e --arg name "${name}" 'any(.[][]; .name == $name)' <<<"${existing}" >/dev/null; then
+      if ${check_only}; then
+        drift "ラベル ${name} が GitHub にありません"
       else
-        gh_api "ラベル $name の作成" --method POST 'repos/{owner}/{repo}/labels' --input - --silent <<<"$label"
-        echo "作成: ラベル $name"
+        gh_api "ラベル ${name} の作成" --method POST 'repos/{owner}/{repo}/labels' --input - --silent <<<"${label}"
+        echo "作成: ラベル ${name}"
       fi
-    elif $check_only; then
-      report_defined_drift "ラベル $name" "$label" "$(jq -c --arg name "$name" 'first(.[][] | select(.name == $name))' <<<"$existing")"
+    elif ${check_only}; then
+      actual=$(jq -c --arg name "${name}" 'first(.[][] | select(.name == $name))' <<<"${existing}")
+      report_defined_drift "ラベル ${name}" "${label}" "${actual}"
     else
-      gh_api "ラベル $name の反映" --method PATCH "repos/{owner}/{repo}/labels/$(uri_encode "$name")" --input - --silent <<<"$(jq -c 'del(.name)' <<<"$label")"
+      encoded=$(uri_encode "${name}")
+      body=$(jq -c 'del(.name)' <<<"${label}")
+      gh_api "ラベル ${name} の反映" --method PATCH "repos/{owner}/{repo}/labels/${encoded}" --input - --silent <<<"${body}"
     fi
   done
 
   local stale
-  stale=$(jq -r --slurpfile defined "$labels_definition" '.[][] | .name | select(IN($defined[0][].name) | not)' <<<"$existing")
+  stale=$(jq -r --slurpfile defined "${labels_definition}" '.[][] | .name | select(IN($defined[0][].name) | not)' <<<"${existing}")
   while IFS= read -r name; do
-    if [ -z "$name" ]; then
+    if [[ -z "${name}" ]]; then
       continue
-    elif $check_only; then
-      drift "定義にないラベル $name が GitHub にあります"
+    elif ${check_only}; then
+      drift "定義にないラベル ${name} が GitHub にあります"
     else
-      gh_api "ラベル $name の削除" --method DELETE "repos/{owner}/{repo}/labels/$(uri_encode "$name")" --silent
-      echo "削除: ラベル $name"
+      encoded=$(uri_encode "${name}")
+      gh_api "ラベル ${name} の削除" --method DELETE "repos/{owner}/{repo}/labels/${encoded}" --silent
+      echo "削除: ラベル ${name}"
     fi
-  done <<<"$stale"
+  done <<<"${stale}"
 }
 
 # --check では GitHub を変えず、反映すると変わる箇所をずれとして示す
 check_only=false
-if [ $# -eq 1 ] && [ "$1" = --check ]; then
+if [[ $# -eq 1 ]] && [[ "$1" = --check ]]; then
   check_only=true
-elif [ $# -ne 0 ]; then
+elif [[ $# -ne 0 ]]; then
   echo "使い方: $0 [--check]" >&2
   exit 1
 fi
 
 # jq がないと定義の検査（if ! jq）が失敗し、定義の不備と誤って示すため、先に確かめる
 for command in gh jq; do
-  if ! command -v "$command" >/dev/null; then
-    echo "エラー: $command が見つかりません。インストールしてから実行してください" >&2
+  if ! command -v "${command}" >/dev/null; then
+    echo "エラー: ${command} が見つかりません。インストールしてから実行してください" >&2
     exit 1
   fi
 done
@@ -350,7 +358,7 @@ validate_repository
 validate_security
 validate_actions
 validate_labels
-if $check_only; then
+if ${check_only}; then
   echo "GitHub の設定を定義と比べています..."
 else
   echo "GitHub に定義を適用しています..."
@@ -360,11 +368,11 @@ sync_repository
 sync_security
 sync_actions
 sync_labels
-if ! $check_only; then
+if ! ${check_only}; then
   echo "GitHub に定義を適用しました"
-elif [ "$drift_count" -eq 0 ]; then
+elif [[ "${drift_count}" -eq 0 ]]; then
   echo "GitHub の設定は定義と一致しています"
 else
-  echo "GitHub の設定に、定義と違う箇所が $drift_count 件あります"
+  echo "GitHub の設定に、定義と違う箇所が ${drift_count} 件あります"
   exit 1
 fi

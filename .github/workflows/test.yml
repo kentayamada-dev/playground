@@ -31,22 +31,24 @@ jobs:
       # https://github.com/koalaman/shellcheck/blob/v0.11.0/shellcheck.1.md https://github.com/mvdan/sh/blob/v3.14.1/fileutil/file.go#L67-L84
       # 検査の失敗が find の終了コードに伝わるのは -exec の + の形だけのため、; の形にしない https://github.com/kentayamada-dev/playground/pull/235
       - run: |
-          find . -path ./.git -prune -o -type f \( -name '*.sh' -o -name '*.bats' \) -exec shellcheck --enable=all -f diff {} + >"$RUNNER_TEMP/sc.diff" || true
-          wc -l "$RUNNER_TEMP/sc.diff"
           find . -path ./.git -prune -o -type f \( -name '*.sh' -o -name '*.bats' \) -exec shellcheck --enable=all -f json1 {} + >"$RUNNER_TEMP/sc.json" || true
-          echo "=== auto-fixable by code"
-          jq -r '.comments[] | select(.fix != null) | "SC\(.code)"' "$RUNNER_TEMP/sc.json" | sort | uniq -c
-          echo "=== not auto-fixable"
-          jq -r '.comments[] | select(.fix == null) | "\(.file):\(.line):\(.column): SC\(.code) \(.level): \(.message)"' "$RUNNER_TEMP/sc.json"
+          echo "=== total before shfmt"
+          jq -s '[.[].comments[]] | length' "$RUNNER_TEMP/sc.json"
+          jq -r '.comments[] | "\(.file):\(.line):\(.column): SC\(.code) \(.level): \(.message)"' "$RUNNER_TEMP/sc.json"
+      - run: |
+          find . -path ./.git -prune -o -type f \( -name '*.sh' -o -name '*.bats' \) -exec shfmt -w {} +
           mkdir -p "$RUNNER_TEMP/out"
-          cp "$RUNNER_TEMP/sc.diff" "$RUNNER_TEMP/out/"
+          git diff >"$RUNNER_TEMP/out/shfmt.diff"
+          git diff --stat
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: shellcheck-diff
-          path: ${{ runner.temp }}/out/sc.diff
-      - run: >-
-          find . -path ./.git -prune -o -type f \( -name '*.sh' -o -name '*.bats' \)
-          -exec shfmt --diff {} + || true
+          name: shfmt-diff
+          path: ${{ runner.temp }}/out/shfmt.diff
+      - run: |
+          find . -path ./.git -prune -o -type f \( -name '*.sh' -o -name '*.bats' \) -exec shellcheck --enable=all -f json1 {} + >"$RUNNER_TEMP/sc2.json" || true
+          echo "=== total after shfmt"
+          jq -s '[.[].comments[]] | length' "$RUNNER_TEMP/sc2.json"
+          jq -r '.comments[] | "\(.file):\(.line):\(.column): SC\(.code) \(.level): \(.message)"' "$RUNNER_TEMP/sc2.json"
       # -r は . で始まるディレクトリも含めて、サブディレクトリの .bats を集める https://github.com/bats-core/bats-core/blob/v1.14.0/libexec/bats-core/bats#L501-L504
       - run: bats -r .
         env:
