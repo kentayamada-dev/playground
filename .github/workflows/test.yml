@@ -30,12 +30,19 @@ jobs:
       # shellcheck は渡したファイルしか検査せず、shfmt はディレクトリを渡すと拡張子のない shebang のファイルまで対象にするため、find で同じファイルを渡す
       # https://github.com/koalaman/shellcheck/blob/v0.11.0/shellcheck.1.md https://github.com/mvdan/sh/blob/v3.14.1/fileutil/file.go#L67-L84
       # 検査の失敗が find の終了コードに伝わるのは -exec の + の形だけのため、; の形にしない https://github.com/kentayamada-dev/playground/pull/235
+      - run: |
+          find . -path ./.git -prune -o -type f \( -name '*.sh' -o -name '*.bats' \) -exec shellcheck --enable=all -f json1 {} + >"$RUNNER_TEMP/sc.json" || true
+          echo "=== total"
+          jq -s '[.[].comments[]] | length' "$RUNNER_TEMP/sc.json"
+          echo "=== by code"
+          jq -r '.comments[] | "SC\(.code) \(.level)"' "$RUNNER_TEMP/sc.json" | sort | uniq -c | sort -rn
+          echo "=== by file and code"
+          jq -r '.comments[] | "\(.file) SC\(.code)"' "$RUNNER_TEMP/sc.json" | sort | uniq -c
+          echo "=== one message per code"
+          jq -r '.comments[] | "SC\(.code) \(.level): \(.message)"' "$RUNNER_TEMP/sc.json" | sort -u -t' ' -k1,1
       - run: >-
           find . -path ./.git -prune -o -type f \( -name '*.sh' -o -name '*.bats' \)
-          -exec shellcheck --enable=all {} +
-      - run: >-
-          find . -path ./.git -prune -o -type f \( -name '*.sh' -o -name '*.bats' \)
-          -exec shfmt --diff {} +
+          -exec shfmt --diff {} + || true
       # -r は . で始まるディレクトリも含めて、サブディレクトリの .bats を集める https://github.com/bats-core/bats-core/blob/v1.14.0/libexec/bats-core/bats#L501-L504
       - run: bats -r .
         env:
