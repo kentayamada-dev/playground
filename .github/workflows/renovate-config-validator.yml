@@ -26,4 +26,4 @@ jobs:
           persist-credentials: false
       # ファイルを渡すとセルフホストの全体設定として検査されるため、--no-global でリポジトリの設定として検査する
       # https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L142
-      - run: renovate-config-validator --no-global .github/renovate.json5
+      - run: renovate-config-validator --strict --no-global .github/renovate.json5
