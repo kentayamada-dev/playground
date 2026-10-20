@@ -102,7 +102,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | --- | --- |
 | renovate-config-validator | `--strict` を付け、エラーと警告に加えて、設定の移行が必要なだけのときも失敗する（[renovate-config-validator の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L101-L120)） |
 | zizmor | 指摘が 1 件でもあると失敗する。`--strict-collection` を付け、入力のファイルを解析できないときも失敗する（[Input collection](https://docs.zizmor.sh/usage/#input-collection)）。`--persona=pedantic` を付け、すぐには攻撃に使えないコードの臭いも指摘させる（[Using personas](https://docs.zizmor.sh/usage/#using-personas)）。PR の注釈は最初の 10 件までで、残りはジョブのログにだけ出る（[Output formats](https://docs.zizmor.sh/usage/#output-formats)） |
-| ShellCheck | `--enable=all` を付け、既定では無効の任意のチェックもすべて有効にする（[shellcheck.1.md](https://github.com/koalaman/shellcheck/blob/v0.11.0/shellcheck.1.md)） |
+| ShellCheck | `--enable=all` を付け、デフォルトでは無効の任意のチェックもすべて有効にする（[shellcheck.1.md](https://github.com/koalaman/shellcheck/blob/v0.11.0/shellcheck.1.md)） |
 | shfmt | [`.editorconfig`](.editorconfig) の `simplify = true` で、もっと簡単に書けるコードも差分として出す。`-s` をコマンドラインで渡すと、EditorConfig の設定をすべて使わなくなるため（[shfmt.1.scd](https://github.com/mvdan/sh/blob/v3.14.1/cmd/shfmt/shfmt.1.scd?plain=1#L19-L21)） |
 | yamllint | `--strict` を付け、warning の指摘でも失敗する（[Errors and warnings](https://yamllint.readthedocs.io/en/stable/configuration.html#errors-and-warnings)） |
 | hadolint | [`.github/hadolint.yaml`](.github/hadolint.yaml) の `failure-threshold: style` で、重大度が style の指摘でも失敗する。デフォルトの `info` のままだと、style の指摘で失敗しない（[CLI](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#cli)）。`label-schema` のラベルがないときと、`strict-labels` でそれ以外のラベルがあるときも失敗する（[Linting Labels](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#linting-labels)） |
