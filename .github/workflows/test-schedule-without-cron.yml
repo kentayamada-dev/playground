@@ -1,0 +1,17 @@
+name: test-schedule-without-cron
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+    - timezone: Asia/Tokyo
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  noop:
+    name: noop
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 1
+    steps:
+      - run: echo noop
