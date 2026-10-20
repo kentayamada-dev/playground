@@ -24,6 +24,21 @@ web（Node.js）と api（Go）を、別々の Dev Container で開発します�
 - bash の履歴と、web の `node_modules`・pnpm のストアは、名前付きボリュームに置く。コンテナを作り直しても履歴を残し、macOS のバインドマウントで遅いインストールを速くするため。手元の `web/node_modules` は空のディレクトリになる
 - ウィンドウを閉じても、コンテナは止めない（`shutdownAction: "none"`）。もう一方のコンテナで開いているウィンドウが切れないようにするため
 
+### コマンドでコンテナを開く
+
+手元のリポジトリのルートで次のコマンドを実行すると、VS Code がそのコンテナのウィンドウを開きます。
+
+| コンテナ | コマンド |
+| --- | --- |
+| `api` | `make dev-api` |
+| `web` | `make dev-web` |
+
+どちらも [`Makefile`](Makefile) から [`open-devcontainer.sh`](.devcontainer/scripts/open-devcontainer/open-devcontainer.sh) にコンテナの名前を渡し、スクリプトが VS Code の `code` コマンドでウィンドウを開きます。
+
+- `code` コマンドがないと、`exec: code: not found` で止まる。VS Code のコマンドパレットで「Shell Command: Install 'code' command in PATH」を実行して入れる（[VS Code のドキュメント](https://code.visualstudio.com/docs/setup/mac)）
+- `code --folder-uri` に渡す URI の形式は、[vscli](https://github.com/michidk/vscli) の実装にならっている。公式のドキュメントでは確認できていないため、Dev Containers 拡張機能の更新で開けなくなるおそれがある
+- `devcontainer.json` のコメントは、行頭からの `//` だけに対応する。行末のコメントや末尾のカンマがあると、読めずに止まる
+
 ### サーバーを起動する
 
 コンテナを開いても、サーバーは起動しません。それぞれのコンテナのターミナルで、次のコマンドを実行します。

@@ -1,0 +1,75 @@
+#!/usr/bin/env bats
+
+setup() {
+  bats_require_minimum_version 1.5.0
+
+  # スクリプトはリポジトリのルートを自分の場所から決めるため、偽物のリポジトリにコピーして実行する
+  # shellcheck disable=SC2154 # BATS_TEST_TMPDIR は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
+  mkdir -p "${BATS_TEST_TMPDIR}/repo/.devcontainer/scripts/open-devcontainer" "${BATS_TEST_TMPDIR}/repo/.devcontainer/api" "${BATS_TEST_TMPDIR}/repo/.devcontainer/web"
+  repo=$(cd "${BATS_TEST_TMPDIR}/repo" && pwd -P)
+  script="${repo}/.devcontainer/scripts/open-devcontainer/open-devcontainer.sh"
+  # shellcheck disable=SC2154 # BATS_TEST_DIRNAME は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
+  cp "${BATS_TEST_DIRNAME}/open-devcontainer.sh" "${script}"
+  cat >"${repo}/.devcontainer/api/devcontainer.json" <<'EOF'
+{
+  "name": "api",
+  // コメント
+  "workspaceFolder": "/workspace/api"
+}
+EOF
+  cat >"${repo}/.devcontainer/web/devcontainer.json" <<'EOF'
+{
+  "name": "web",
+  "workspaceFolder": "/workspace/web"
+}
+EOF
+
+  # code の偽物。渡された引数を 1 行に 1 つずつ $STUB_DIR/code-args に残す
+  export STUB_DIR="${BATS_TEST_TMPDIR}/stub"
+  mkdir -p "${STUB_DIR}/bin"
+  PATH="${STUB_DIR}/bin:${PATH}"
+  cat >"${STUB_DIR}/bin/code" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$@" >"$STUB_DIR/code-args"
+EOF
+  chmod +x "${STUB_DIR}/bin/code"
+}
+
+@test "名前で選んだ設定と、その workspaceFolder を URI にして code に渡す" {
+  run -0 "${script}" api
+
+  local args
+  mapfile -t args <"${STUB_DIR}/code-args"
+  [[ ${#args[@]} -eq 2 ]]
+  [[ ${args[0]} == --folder-uri ]]
+  [[ ${args[1]} =~ ^vscode-remote://dev-container\+([0-9a-f]+)(/.*)$ ]]
+  local hex=${BASH_REMATCH[1]} folder=${BASH_REMATCH[2]}
+  local escaped json
+  escaped=$(sed 's/../\\x&/g' <<<"${hex}")
+  printf -v json '%b' "${escaped}"
+  [[ ${json} == "{\"hostPath\":\"${repo}\",\"configFile\":{\"scheme\":\"file\",\"path\":\"${repo}/.devcontainer/api/devcontainer.json\"}}" ]]
+  [[ ${folder} == /workspace/api ]]
+}
+
+@test "名前を渡さなければ、使い方と設定の名前を出して失敗する" {
+  run -1 --separate-stderr "${script}"
+
+  [[ ${stderr} == "使い方: ${script} <名前>（名前: api web）" ]]
+  [[ ! -e ${STUB_DIR}/code-args ]]
+}
+
+@test "設定のない名前を渡すと、設定の名前を出して失敗する" {
+  run -1 --separate-stderr "${script}" db
+
+  [[ ${stderr} == "エラー: db の設定がありません（名前: api web）" ]]
+  [[ ! -e ${STUB_DIR}/code-args ]]
+}
+
+@test "設定に workspaceFolder がなければ、code を開かずに失敗する" {
+  echo '{"name": "api"}' >"${repo}/.devcontainer/api/devcontainer.json"
+
+  run -1 --separate-stderr "${script}" api
+
+  [[ ${stderr} == "エラー: ${repo}/.devcontainer/api/devcontainer.json に workspaceFolder がありません" ]]
+  [[ ! -e ${STUB_DIR}/code-args ]]
+}
