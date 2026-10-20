@@ -17,12 +17,14 @@ web（Node.js）と api（Go）を、別々の Dev Container で開発します�
 | `api` | [`devcontainer.json`](.devcontainer/api/devcontainer.json)・[`Dockerfile`](.devcontainer/api/Dockerfile) | [`api`](api) | `golang`（Go 1.27） |
 
 - macOS 以外のホストでは、コンテナを作る前に止める。両方の `devcontainer.json` の `initializeCommand` が、ホストで [`check-host-os.sh`](.devcontainer/scripts/check-host-os/check-host-os.sh) を実行する。理由はダイアログには出ず、コマンドパレットの「Dev Containers: Show Container Log」で開くログの末尾近くに出る
-- 2 つのコンテナは、[`compose.yaml`](compose.yaml) のサービスとして動く。どちらも、リポジトリのルートを `/workspace` にマウントする。コンテナのなかでも git を使えるようにするため。イメージは公式イメージをもとに、コンテナごとの Dockerfile でビルドする。Dockerfile を変えたら「Dev Containers: Rebuild Container」で作り直す
-- 一般ユーザー `dev` で動き、sudo は入れていない。root で作業するときは、手元のリポジトリのルートで `docker compose exec -u root api bash` のように実行する。ユーザー名は `compose.yaml` の `x-build-args` で渡している。変えるときは、両方の `devcontainer.json` の `remoteUser` も合わせる
-- ホスト名は、端末のプロンプトで見分けられるよう、サービス名と同じ `web`・`api` にしている
+- 2 つのコンテナは、[`compose.yaml`](compose.yaml) のサービスとして動く。どちらも、リポジトリのルートを `/workspace` にマウントする。イメージは公式イメージをもとに、コンテナごとの Dockerfile でビルドする。Dockerfile を変えたら「Dev Containers: Rebuild Container」で作り直す
+- 一般ユーザー `dev` で動き、sudo は入れていない。root で作業するときは、手元のリポジトリのルートで `docker compose exec -u root api bash` のように実行する。ユーザー名は `compose.yaml` の `x-build-args` で渡している
 - web は pnpm を使う。版は web の Dockerfile だけで管理し、Renovate が更新する。[`web/pnpm-workspace.yaml`](web/pnpm-workspace.yaml) は、`storeDir` のほかは textlint の [`pnpm-workspace.yaml`](.github/textlint/pnpm-workspace.yaml) とそろえている。api には `http://api:8080`（`compose.yaml` の `API_URL`）で接続する
-- bash の履歴と、web の `node_modules`・pnpm のストアは、名前付きボリュームに置く。コンテナを作り直しても履歴を残し、macOS のバインドマウントで遅いインストールを速くするため。手元の `web/node_modules` は空のディレクトリになる
-- ウィンドウを閉じても、コンテナは止めない（`shutdownAction: "none"`）。もう一方のコンテナで開いているウィンドウが切れないようにするため
+- web と textlint の pnpm は、本体もパッケージも Takumi Guard のレジストリ（`https://npm.flatt.tech/`）から取得する。`npmjs:` と `@jsr` スコープも同じレジストリに向け、`gh:`（GitHub Packages）は使えないようにしている（[Registries](https://pnpm.io/registries)）
+- 公開から 1 日（`minimumReleaseAge: 1440` 分）経っていない版は入れない。待機期間を満たす版がないときと、レジストリが公開日時を返さないときは、インストールが失敗する。以前の版より信頼のレベルが下がった版も入れない（`trustPolicy: no-downgrade`）。どれも [pnpm の設定](https://pnpm.io/settings/dependency-resolution) による
+- bash の履歴と、web の `node_modules`・pnpm のストアは、名前付きボリュームに置く。コンテナを作り直しても、履歴は残る。手元の `web/node_modules` は空のディレクトリになる
+- ウィンドウを閉じても、コンテナは止めない（`shutdownAction: "none"`）
+- 設定の理由は、[`compose.yaml`](compose.yaml)・`devcontainer.json`・Dockerfile のコメントに書いている
 
 ### コマンドでコンテナを開く
 
@@ -102,9 +104,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `hadolint` | リポジトリ全体のうち、名前が `Dockerfile`・`Containerfile` のファイル。`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*`・`*.Containerfile` に一致するファイルも含む。`.git` は除く |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
-- yamllint にはディレクトリを渡す。ディレクトリを渡すと、`uv sync` が作る `.venv` など、git で管理していないファイルまで読む（[`cli.py`](https://github.com/adrienverge/yamllint/blob/v1.38.0/yamllint/cli.py#L27-L37)）。そのため、[`.yamllint.yaml`](.github/yamllint/.yamllint.yaml) の `ignore` で `.venv` と `node_modules` を除いている
-- lychee には、ディレクトリではなくグロブ `**/*` を渡す。ディレクトリを渡すと、`.md`・`.html` などの拡張子のファイルしか読まない（[`--extensions`](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L456-L467)）。グロブに一致したファイルは、拡張子によらず読む（[`resolver.rs`](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee-lib/src/types/input/resolver.rs#L140-L144)）。[`.github/lychee.toml`](.github/lychee.toml) で隠しファイルも読ませ、`.git` を除いている
-- typos は、デフォルトでは `.github`・`.devcontainer` など `.` で始まるファイルとディレクトリを読まない（[`files.ignore-hidden`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#filesignore-hidden)）。そのため、[`.github/typos.toml`](.github/typos.toml) で隠しファイルも読ませ、`.git` を除いている
+- 範囲の決め方と除く理由は、各ワークフローと、[`.yamllint.yaml`](.github/yamllint/.yamllint.yaml)・[`.github/lychee.toml`](.github/lychee.toml)・[`.github/typos.toml`](.github/typos.toml) のコメントに書いている
 - typos は、`typos.toml`・`Cargo.toml`・`pyproject.toml` など設定ファイルと同じ名前のファイルを、渡し方によらず読まない（[`file.rs`](https://github.com/crate-ci/typos/blob/v1.51.1/crates/typos-cli/src/file.rs#L942-L951)）。そのため、[`.github/typos.toml`](.github/typos.toml) と [`.github/yamllint/pyproject.toml`](.github/yamllint/pyproject.toml) は検査しない
 
 ### ツールごとの補足
@@ -118,9 +118,9 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | renovate-config-validator | `--strict` を付け、エラーと警告に加えて、設定の移行が必要なだけのときも失敗する（[renovate-config-validator の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L101-L120)） |
 | zizmor | 指摘が 1 件でもあると失敗する。`--strict-collection` を付け、入力のファイルを解析できないときも失敗する（[Input collection](https://docs.zizmor.sh/usage/#input-collection)）。`--persona=pedantic` を付け、すぐには攻撃に使えないコードの臭いも指摘させる（[Using personas](https://docs.zizmor.sh/usage/#using-personas)）。PR の注釈は最初の 10 件までで、残りはジョブのログにだけ出る（[Output formats](https://docs.zizmor.sh/usage/#output-formats)） |
 | ShellCheck | `--enable=all` を付け、デフォルトでは無効の任意のチェックもすべて有効にする（[shellcheck.1.md](https://github.com/koalaman/shellcheck/blob/v0.11.0/shellcheck.1.md)） |
-| shfmt | [`.editorconfig`](.editorconfig) の `simplify = true` で、もっと簡単に書けるコードも差分として出す。`-s` をコマンドラインで渡すと、EditorConfig の設定をすべて使わなくなるため（[shfmt.1.scd](https://github.com/mvdan/sh/blob/v3.14.1/cmd/shfmt/shfmt.1.scd?plain=1#L19-L21)） |
+| shfmt | [`.editorconfig`](.editorconfig) の `simplify = true` で、もっと簡単に書けるコードも差分として出す |
 | yamllint | `--strict` を付け、warning の指摘でも失敗する（[Errors and warnings](https://yamllint.readthedocs.io/en/stable/configuration.html#errors-and-warnings)） |
-| hadolint | [`.github/hadolint.yaml`](.github/hadolint.yaml) の `failure-threshold: style` で、重大度が style の指摘でも失敗する。デフォルトの `info` のままだと、style の指摘で失敗しない（[CLI](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#cli)）。`label-schema` のラベルがないときと、`strict-labels` でそれ以外のラベルがあるときも失敗する（[Linting Labels](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#linting-labels)） |
+| hadolint | [`.github/hadolint.yaml`](.github/hadolint.yaml) の `failure-threshold: style` で、重大度が style の指摘でも失敗する。`label-schema` のラベルがないときと、`strict-labels` でそれ以外のラベルがあるときも失敗する（[Linting Labels](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#linting-labels)） |
 
 #### 指摘を無視する方法
 
@@ -135,7 +135,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 
 #### actionlint
 
-- actionlint v1.7.12 は、GitHub ホストのランナーのラベル `ubuntu-26.04-arm` を知らない（[既知のラベルの一覧](https://github.com/rhysd/actionlint/blob/v1.7.12/rule_runner_label.go)）。そのため、[`actionlint.yaml`](.github/actionlint.yaml) でセルフホストのランナーのラベルとして認めている
+- ランナーのラベル `ubuntu-26.04-arm` を、[`actionlint.yaml`](.github/actionlint.yaml) でセルフホストのランナーのラベルとして認めている。理由は、そのファイルのコメントに書いている
 
 #### renovate-config-validator
 
@@ -158,13 +158,21 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 #### lychee
 
-- ネットワークを使わず（`--offline`）、リポジトリ内のファイルへのリンクと見出しのアンカーだけを確認する。外部のサイトの障害やレート制限で、PR をマージできなくならないようにするため
+- ネットワークを使わず（`--offline`）、リポジトリ内のファイルへのリンクと見出しのアンカーだけを確認する
 - Markdown と HTML 以外のファイルからは URL だけを拾い、コメントに書いた相対パスは検査しない
 
 #### markdownlint
 
 - [markdownlint-cli2-action](https://github.com/DavidAnson/markdownlint-cli2-action) に同梱された markdownlint-cli2 で検査する。npm から依存関係を取得しないので、`package.json` とロックファイルはない。markdownlint-cli2 の版は、アクションの版で決まる
 - 行の長さと 1 行目の見出しのルールだけを無効にしている。editorconfig や lychee の検査と重なるルールも有効のままにしている
+
+#### textlint
+
+- pnpm の版は、[`.github/textlint/package.json`](.github/textlint/package.json) の `devEngines.packageManager` だけで管理し、Renovate が更新する（[#26](https://github.com/kentayamada-dev/playground/pull/26)）。CI の pnpm/action-setup も、Renovate がロックファイルを更新するときも、この版を使う（[Renovate の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/modules/manager/npm/post-update/pnpm.ts#L55-L65)）
+
+#### bats
+
+- `LC_ALL=C` を付けて実行する。手元で実行するときも付ける。理由は [`test.yml`](.github/workflows/test.yml) のコメントに書いている
 
 #### yamllint
 
@@ -176,18 +184,20 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 #### hadolint
 
-- 対象のファイルが 1 つもなければ、hadolint を実行せずに成功する。hadolint は、ファイルを渡さないと失敗するため（[`app/Main.hs`](https://github.com/hadolint/hadolint/blob/v2.15.1/app/Main.hs#L58-L59)）
+- 対象のファイルが 1 つもなければ、hadolint を実行せずに成功する
 - `RUN` のスクリプトは、hadolint にライブラリとして組み込まれた ShellCheck で検査する。mise で入れる ShellCheck は使わない（[`hadolint.cabal`](https://github.com/hadolint/hadolint/blob/v2.15.1/hadolint.cabal#L169)）
-- 設定は [`.github/hadolint.yaml`](.github/hadolint.yaml) に書き、`--config` で渡す。設定ファイルを解釈できないと、hadolint はエラーを出すだけで、デフォルトの設定で検査を続ける（[`app/Main.hs`](https://github.com/hadolint/hadolint/blob/v2.15.1/app/Main.hs#L89-L93)）。そのため、style の指摘だけが出る Dockerfile を標準入力から渡し、失敗することを先に確認する。ラベルの指摘（DL3049・DL3050）は info で、デフォルトのしきい値でも失敗するので、この確認では外す
-- Dockerfile のラベルは、`.github/hadolint.yaml` の `label-schema` に挙げた 4 つだけを書く。値は変数で渡さず、各 Dockerfile に直接書く。変数で渡すと型を `text` にするしかなく、URL と SPDX の形式を検査できないため（[Note on dealing with variables in labels](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#note-on-dealing-with-variables-in-labels)）
+- 設定は [`.github/hadolint.yaml`](.github/hadolint.yaml) に書き、`--config` で渡す。検査の前に、style の指摘だけが出る Dockerfile を標準入力から渡し、設定が効いて失敗することを確かめる
+- Dockerfile のラベルは、`.github/hadolint.yaml` の `label-schema` に挙げた 4 つだけを書く。値は変数で渡さず、各 Dockerfile に直接書く
+- 理由は、[`hadolint.yml`](.github/workflows/hadolint.yml) と `.github/hadolint.yaml` のコメントに書いている
 
 ### 外部リンクの定期検査
 
 外部のリンクは、[`lychee.yml`](.github/workflows/lychee.yml) の `lychee-external` が毎週月曜と手動の実行（`workflow_dispatch`）で検査します。必須チェックではありません。
 
-- `429`・`502`・`503`・`504` は成功として扱う。レート制限の `429` は、リンク切れとは限らないため。`502`〜`504` は github.com がときどき返す一時的なエラーで、lychee v0.24.2 は `--max-retries` によらずリトライしないため（[#2319](https://github.com/lycheeverse/lychee/issues/2319)）
-- `mise.lock` と `uv.lock` の URL は、`mise lock` と `uv lock` が書くものなので、[`.github/lychee.toml`](.github/lychee.toml) で検査から除く
-- web と api のサーバーのアドレス（`http://localhost:3000` など）は、CI から接続できないため、[`.github/lychee.toml`](.github/lychee.toml) で検査から除く
+- `429`・`502`・`503`・`504` は成功として扱う
+- `mise.lock` と `uv.lock` の URL は、[`.github/lychee.toml`](.github/lychee.toml) で検査から除く
+- web と api のサーバーのアドレス（`http://localhost:3000` など）も、`.github/lychee.toml` で検査から除く
+- 理由は、[`lychee.yml`](.github/workflows/lychee.yml) と `.github/lychee.toml` のコメントに書いている
 - HTTPS で開けるリンクを `http://` で書いていると、失敗する（`require_https`、[lychee.example.toml](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee.example.toml#L98-L99)）。PR の検査は `--offline` でネットワークを使わないため、この検査は効かない
 - 通らないリンクがあると、[`report-broken-links.sh`](.github/scripts/report-broken-links/report-broken-links.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える
 - リンクを直したら、issue は手動で閉じる
@@ -218,6 +228,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 - 定義にないルールセットとラベルは、GitHub の画面で作ったものも削除される。消したラベルは issue や PR からも外れる。Organization のルールセットは対象外
 - シークレットスキャンとプッシュ保護は、リポジトリの設定と同じ API で変えるため、`repository.json` の `security_and_analysis` に書く
 - CodeQL のデフォルトセットアップも毎回送る。設定が変わらなければ、新しい解析は始まらない（[#190](https://github.com/kentayamada-dev/playground/pull/190) で確認）
+- 環境変数 `GH_REPO` は使わない。どのディレクトリから実行しても、スクリプトはリポジトリのルートに移り、git の remote から反映先を決める
 
 ### 実行に必要な権限
 
@@ -240,7 +251,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 - ルールセットは、GitHub が付ける `id`・`node_id`・`created_at` などを除き、定義と完全に一致するかを比べる
 - ほかの設定は、定義に書いた項目だけを比べる。定義に書いた項目が GitHub の応答になければ、ずれとして示す
-- 配列は並び順を無視して比べる。GitHub は `patterns_allowed` などを、定義と違う順で返すことがあるため
+- 配列は並び順を無視して比べる
 
 [`settings-drift.yml`](.github/workflows/settings-drift.yml) が毎日これを実行し、ずれがあるか検査に失敗すると issue を作ります。開いている issue があれば、新しく作らずに本文を最新の結果に書き換えます。ずれは、定義を直すか、同期のコマンドで GitHub を定義に揃えて直します。
 
@@ -248,7 +259,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 #### 検査に使うトークン
 
-Actions の権限などを読むには Administration の権限が必要ですが、`GITHUB_TOKEN` には与えられません（[`permissions` のキー](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions)）。そのため、リポジトリの secret `SETTINGS_READ_TOKEN` に登録した Fine-grained personal access token で読みます。issue の作成には、ワークフローの `GITHUB_TOKEN` を使います。
+GitHub の設定は、リポジトリの secret `SETTINGS_READ_TOKEN` に登録した Fine-grained personal access token で読みます。`GITHUB_TOKEN` を使わない理由は、[`settings-drift.yml`](.github/workflows/settings-drift.yml) のコメントに書いています。issue の作成には、ワークフローの `GITHUB_TOKEN` を使います。
 
 トークンは [トークンの作り方](#トークンの作り方) のとおりに作り、Repository permissions を次の表のとおりに設定します。
 
@@ -347,6 +358,11 @@ yamllint は Python のパッケージで、PyYAML と pathspec に依存しま�
 ## Renovate
 
 依存関係の更新は Renovate で自動化しています。[`.github/workflows/renovate.yml`](.github/workflows/renovate.yml) が毎時 23 分に Renovate を実行します。設定は [`.github/renovate.json5`](.github/renovate.json5) にあります。
+
+- PR には `dependencies` ラベルを付ける。タイトルは日本語にする（例: `chore(deps): jdx/mise を v2026.10.3 に更新`・`chore(deps): ロックファイルを更新`）
+- PR を作る時間帯は日本時間で決める（`timezone`）。Renovate 本体（`renovate/renovate`・`renovatebot/github-action`）の更新 PR は、毎日 0〜3 時にだけ作る
+- 脆弱性は、Dependabot アラートに加えて OSV のデータベースでも照会し、修正版があれば PR を作る（[`osvVulnerabilityAlerts`](https://docs.renovatebot.com/configuration-options/#osvvulnerabilityalerts)）。照会するのは直接の依存関係だけ
+- 設定の理由は、[`.github/renovate.json5`](.github/renovate.json5) のコメントに書いている
 
 ### 自動マージ
 
