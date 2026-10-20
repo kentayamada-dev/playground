@@ -1,10 +1,6 @@
 ---
 paths:
-  - "CLAUDE.md"
-  - "CONTRIBUTING.md"
-  - "README.md"
-  - ".claude/**/*.md"
-  - ".github/**/*.md"
+  - "**/*.md"
 ---
 
 ## ルールや手順を書くとき
