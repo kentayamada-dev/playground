@@ -36,4 +36,7 @@ fi
 folder_json=$(jq -cn --arg host_path "${root}" --arg config "${config}" \
   '{hostPath: $host_path, configFile: {scheme: "file", path: $config}}')
 folder_hex=$(printf '%s' "${folder_json}" | od -An -v -tx1 | tr -d ' \n')
+# Buildx v0.37.2 以降は、build context の外の Dockerfile を読む権限を Compose が渡さず、Dev Containers の build が失敗するため。Compose の修正のリリース後に外す
+# https://github.com/docker/compose/issues/14285 https://github.com/kentayamada-dev/playground/issues/272
+export BUILDX_BAKE_ENTITLEMENTS_FS=0
 exec code --folder-uri "vscode-remote://dev-container+${folder_hex}${workspace_folder}"

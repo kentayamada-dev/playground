@@ -38,6 +38,8 @@ web（Node.js）と api（Go）を、別々の Dev Container で開発します�
 どちらも [`Makefile`](Makefile) から [`open-devcontainer.sh`](.devcontainer/scripts/open-devcontainer/open-devcontainer.sh) にコンテナの名前を渡し、スクリプトが VS Code の `code` コマンドでウィンドウを開きます。
 
 - `code` コマンドがないと、`exec: code: not found` で止まる。VS Code のコマンドパレットで「Shell Command: Install 'code' command in PATH」を実行して入れる（[VS Code のドキュメント](https://code.visualstudio.com/docs/setup/mac)）
+- スクリプトは、`code` の実行に `BUILDX_BAKE_ENTITLEMENTS_FS=0` を付ける。開いたウィンドウの build では、作業ディレクトリの外のファイルの読み書きと、SSH エージェントの転送の確認が止まる（[`entitlements.go`](https://github.com/docker/buildx/blob/v0.38.0/bake/entitlements.go#L280-L386)）
+- VS Code の画面から開くときは、この変数を付けて起動した VS Code でないと build が失敗する。理由は `open-devcontainer.sh` のコメントに書いている。外す条件は [#272](https://github.com/kentayamada-dev/playground/issues/272) にある
 - `code --folder-uri` に渡す URI の形式は、[vscli](https://github.com/michidk/vscli) の実装にならっている。公式のドキュメントでは確認できていないため、Dev Containers 拡張機能の更新で開けなくなるおそれがある
 - `devcontainer.json` のコメントは、行頭からの `//` だけに対応する。行末のコメントや末尾のカンマがあると、読めずに止まる
 
