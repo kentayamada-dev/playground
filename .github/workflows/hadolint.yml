@@ -41,5 +41,5 @@ jobs:
       - run: >-
           find . -path ./.git -prune -o -type f
           \( -name Dockerfile -o -name 'Dockerfile.*' -o -name '*.Dockerfile'
-          -o -name Containerfile -o -name 'Containerfile.*' \)
+          -o -name Containerfile -o -name 'Containerfile.*' -o -name '*.Containerfile' \)
           -exec hadolint --config "$config_file" {} +
