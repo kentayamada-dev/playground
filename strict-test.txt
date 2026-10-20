@@ -1,0 +1,1 @@
+require_https の検証用: http://github.com/
