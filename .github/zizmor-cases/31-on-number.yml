@@ -1,0 +1,6 @@
+on: 123
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo a

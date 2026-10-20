@@ -1,0 +1,9 @@
+concurrency:
+  group: g
+  cancel-in-progress: " ${{ true }}"
+on: push
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo a

@@ -1,0 +1,7 @@
+concurrency: 123
+on: push
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo a

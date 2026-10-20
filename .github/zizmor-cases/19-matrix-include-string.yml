@@ -1,0 +1,9 @@
+on: push
+jobs:
+  a:
+    strategy:
+      matrix:
+        include: foo
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo a

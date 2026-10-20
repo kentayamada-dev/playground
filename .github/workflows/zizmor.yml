@@ -31,7 +31,24 @@ jobs:
           # https://github.com/jdx/mise-action/blob/v5.0.0/src/index.ts#L724-L745
           version: 2026.10.3
           working_directory: .github
-          install_args: zizmor
+          install_args: zizmor actionlint
+      # 検証用: ケースごとに、zizmor（strict あり・なし）と actionlint の結果を出す
+      - name: cases
+        shell: bash
+        run: |
+          set +e
+          for f in .github/zizmor-cases/*.yml; do
+            strict=$(zizmor --strict-collection --offline "${f}" 2>&1)
+            s=$?
+            loose=$(zizmor --offline "${f}" 2>&1)
+            l=$?
+            lint=$(actionlint -no-color "${f}" 2>&1)
+            a=$?
+            echo "== ${f##*/} strict=${s} loose=${l} actionlint=${a}"
+            grep -E 'failed to|^ +[0-9]+: ' <<<"${strict}" | sed 's/^/  strict: /'
+            grep -E 'WARN|failed to' <<<"${loose}" | sed 's/^/  loose: /'
+            printf '%s\n' "${lint}" | grep -v '^$' | head -3 | sed 's/^/  actionlint: /'
+          done
       # 注釈は 1 ステップで最初の 10 件しか表示されず、残りはログにだけ出る https://docs.zizmor.sh/usage/#output-formats
       - run: zizmor --strict-collection --persona=pedantic --format=github .
         env:

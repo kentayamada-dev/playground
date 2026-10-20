@@ -1,0 +1,7 @@
+on: push
+jobs:
+  a:
+    runs-on:
+      group: 1
+    steps:
+      - run: echo a

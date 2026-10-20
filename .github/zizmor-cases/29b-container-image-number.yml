@@ -1,0 +1,8 @@
+on: push
+jobs:
+  a:
+    container:
+      image: 123
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo a

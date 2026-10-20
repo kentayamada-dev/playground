@@ -1,0 +1,8 @@
+on:
+  issues:
+    types: 1
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo a

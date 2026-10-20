@@ -1,0 +1,7 @@
+on: push
+jobs:
+  a:
+    environment: 123
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo a

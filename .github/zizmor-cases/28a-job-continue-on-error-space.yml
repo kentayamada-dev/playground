@@ -1,0 +1,7 @@
+on: push
+jobs:
+  a:
+    continue-on-error: " ${{ true }}"
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo a

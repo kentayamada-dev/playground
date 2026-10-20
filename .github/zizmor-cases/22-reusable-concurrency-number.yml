@@ -1,0 +1,5 @@
+on: push
+jobs:
+  a:
+    uses: octo-org/repo/.github/workflows/w.yml@v1
+    concurrency: 123
