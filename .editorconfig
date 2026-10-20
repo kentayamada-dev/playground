@@ -13,6 +13,11 @@ trim_trailing_whitespace = true
 [*.md]
 indent_size = unset
 
+# shfmt に -s を渡すと EditorConfig の設定をすべて使わなくなり、インデントがタブに戻るため、ここで有効にする
+# https://github.com/mvdan/sh/blob/v3.14.1/cmd/shfmt/shfmt.1.scd?plain=1#L19-L21
+[*.{sh,bats}]
+simplify = true
+
 # gofmt はタブでインデントし、スペースに直しても次の整形でタブに戻るため
 # https://go.dev/doc/effective_go#formatting
 [*.go]

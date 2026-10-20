@@ -1,5 +1,6 @@
 include_fragments = "anchor-only"
 no_progress = true
+require_https = true
 
 # web と api のサーバーがコンテナのなかで待ち受けるアドレスで、CI からは接続できないため
 # このファイルも検査の対象で、localhost の行からは http://localhost/ が拾われるため、ポートの有無によらず一致させる
