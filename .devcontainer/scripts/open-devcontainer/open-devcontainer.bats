@@ -24,13 +24,17 @@ EOF
 }
 EOF
 
-  # code の偽物。渡された引数を 1 行に 1 つずつ $STUB_DIR/code-args に残す
+  # 手元の環境に同じ変数があると、スクリプトが付けなくてもテストが通るため消す
+  unset BUILDX_BAKE_ENTITLEMENTS_FS
+
+  # code の偽物。渡された引数を 1 行に 1 つずつ $STUB_DIR/code-args に、BUILDX_BAKE_ENTITLEMENTS_FS の値を $STUB_DIR/code-env に残す
   export STUB_DIR="${BATS_TEST_TMPDIR}/stub"
   mkdir -p "${STUB_DIR}/bin"
   PATH="${STUB_DIR}/bin:${PATH}"
   cat >"${STUB_DIR}/bin/code" <<'EOF'
 #!/usr/bin/env bash
 printf '%s\n' "$@" >"$STUB_DIR/code-args"
+printf '%s\n' "${BUILDX_BAKE_ENTITLEMENTS_FS-未設定}" >"$STUB_DIR/code-env"
 EOF
   chmod +x "${STUB_DIR}/bin/code"
 }
@@ -51,6 +55,14 @@ EOF
   printf -v json '%b' "${escaped}"
   [[ ${json} == "{\"hostPath\":\"${repo}\",\"configFile\":{\"scheme\":\"file\",\"path\":\"${repo}/.devcontainer/api/devcontainer.json\"}}" ]]
   [[ ${folder} == /workspace/api ]]
+}
+
+@test "BUILDX_BAKE_ENTITLEMENTS_FS=0 を付けて code を実行する" {
+  run -0 "${script}" api
+
+  local value
+  value=$(<"${STUB_DIR}/code-env")
+  [[ ${value} == 0 ]]
 }
 
 @test "名前を渡さなければ、使い方と設定の名前を出して失敗する" {
