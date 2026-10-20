@@ -2,7 +2,7 @@
   "name": "web",
   "dockerComposeFile": ["../../compose.yaml"],
   "service": "web",
-  "initializeCommand": "bash \"${localWorkspaceFolder}/.devcontainer/check-host-os/check-host-os.sh\"",
+  "initializeCommand": "bash \"${localWorkspaceFolder}/.devcontainer/scripts/check-host-os/check-host-os.sh\"",
   // Compose の既定の stopCompose は、ウィンドウを閉じると api のコンテナも止め、api で開いているウィンドウが切れるため
   // https://containers.dev/implementors/json_reference/
   "shutdownAction": "none",

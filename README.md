@@ -16,7 +16,7 @@ web（Node.js）と api（Go）を、別々の Dev Container で開発します�
 | `web` | [`devcontainer.json`](.devcontainer/web/devcontainer.json)・[`Dockerfile`](.devcontainer/web/Dockerfile) | [`web`](web) | `node`（Node.js 26） |
 | `api` | [`devcontainer.json`](.devcontainer/api/devcontainer.json)・[`Dockerfile`](.devcontainer/api/Dockerfile) | [`api`](api) | `golang`（Go 1.27） |
 
-- macOS 以外のホストでは、コンテナを作る前に止める。両方の `devcontainer.json` の `initializeCommand` が、ホストで [`check-host-os.sh`](.devcontainer/check-host-os/check-host-os.sh) を実行する。理由はダイアログには出ず、コマンドパレットの「Dev Containers: Show Container Log」で開くログの末尾近くに出る
+- macOS 以外のホストでは、コンテナを作る前に止める。両方の `devcontainer.json` の `initializeCommand` が、ホストで [`check-host-os.sh`](.devcontainer/scripts/check-host-os/check-host-os.sh) を実行する。理由はダイアログには出ず、コマンドパレットの「Dev Containers: Show Container Log」で開くログの末尾近くに出る
 - 2 つのコンテナは、[`compose.yaml`](compose.yaml) のサービスとして動く。どちらも、リポジトリのルートを `/workspace` にマウントする。コンテナのなかでも git を使えるようにするため。イメージは公式イメージをもとに、コンテナごとの Dockerfile でビルドする。Dockerfile を変えたら「Dev Containers: Rebuild Container」で作り直す
 - 一般ユーザー `dev` で動き、sudo は入れていない。root で作業するときは、手元のリポジトリのルートで `docker compose exec -u root api bash` のように実行する。ユーザー名は `compose.yaml` の `x-build-args` で渡している。変えるときは、両方の `devcontainer.json` の `remoteUser` も合わせる
 - ホスト名は、端末のプロンプトで見分けられるよう、サービス名と同じ `web`・`api` にしている
