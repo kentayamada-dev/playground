@@ -101,7 +101,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | ツール | 失敗する条件 |
 | --- | --- |
 | renovate-config-validator | `--strict` を付け、エラーと警告に加えて、設定の移行が必要なだけのときも失敗する（[renovate-config-validator の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L101-L120)） |
-| zizmor | 指摘が 1 件でもあると失敗する。PR の注釈は最初の 10 件までで、残りはジョブのログにだけ出る（[Output formats](https://docs.zizmor.sh/usage/#output-formats)） |
+| zizmor | 指摘が 1 件でもあると失敗する。`--strict-collection` を付け、入力のファイルを解析できないときも失敗する（[Input collection](https://docs.zizmor.sh/usage/#input-collection)）。PR の注釈は最初の 10 件までで、残りはジョブのログにだけ出る（[Output formats](https://docs.zizmor.sh/usage/#output-formats)） |
 | yamllint | `--strict` を付け、warning の指摘でも失敗する（[Errors and warnings](https://yamllint.readthedocs.io/en/stable/configuration.html#errors-and-warnings)） |
 | hadolint | [`.github/hadolint.yaml`](.github/hadolint.yaml) の `failure-threshold: style` で、重大度が style の指摘でも失敗する。デフォルトの `info` のままだと、style の指摘で失敗しない（[CLI](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#cli)） |
 
