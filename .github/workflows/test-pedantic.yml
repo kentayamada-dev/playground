@@ -1,0 +1,10 @@
+on: workflow_dispatch
+
+permissions: {}
+
+jobs:
+  noop:
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 5
+    steps:
+      - run: echo ok
