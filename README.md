@@ -20,7 +20,7 @@ web（Node.js）と api（Go）を、別々の Dev Container で開発します�
 - 2 つのコンテナは、[`compose.yaml`](compose.yaml) のサービスとして動く。どちらも、リポジトリのルートを `/workspace` にマウントする。イメージは公式イメージをもとに、コンテナごとの Dockerfile でビルドする。Dockerfile を変えたら「Dev Containers: Rebuild Container」で作り直す
 - 一般ユーザー `dev` で動き、sudo は入れていない。root で作業するときは、手元のリポジトリのルートで `docker compose exec -u root api bash` のように実行する。ユーザー名は `compose.yaml` の `x-build-args` で渡している
 - web は pnpm を使う。版は web の Dockerfile だけで管理し、Renovate が更新する。[`web/pnpm-workspace.yaml`](web/pnpm-workspace.yaml) は、`storeDir` のほかは textlint の [`pnpm-workspace.yaml`](.github/textlint/pnpm-workspace.yaml) とそろえている。api には `http://api:8080`（`compose.yaml` の `API_URL`）で接続する
-- web と textlint の pnpm は、本体もパッケージも Takumi Guard のレジストリ（`https://npm.flatt.tech/`）から取得する。`npmjs:` と `@jsr` スコープも同じレジストリに向け、`gh:`（GitHub Packages）は使えないようにしている（[Registries](https://pnpm.io/registries)）
+- web と textlint の pnpm は、本体とパッケージを Takumi Guard のレジストリ（`https://npm.flatt.tech/`）から取得する。`npmjs:` と `@jsr` スコープも同じレジストリに向け、`gh:`（GitHub Packages）は使えないようにしている（[Registries](https://pnpm.io/registries)）
 - 公開から 1 日（`minimumReleaseAge: 1440` 分）経っていない版は入れない。待機期間を満たす版がないときと、レジストリが公開日時を返さないときは、インストールが失敗する。以前の版より信頼のレベルが下がった版も入れない（`trustPolicy: no-downgrade`）。どれも [pnpm の設定](https://pnpm.io/settings/dependency-resolution) による
 - bash の履歴と、web の `node_modules`・pnpm のストアは、名前付きボリュームに置く。コンテナを作り直しても、履歴は残る。手元の `web/node_modules` は空のディレクトリになる
 - ウィンドウを閉じても、コンテナは止めない（`shutdownAction: "none"`）
@@ -186,7 +186,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 - 対象のファイルが 1 つもなければ、hadolint を実行せずに成功する
 - `RUN` のスクリプトは、hadolint にライブラリとして組み込まれた ShellCheck で検査する。mise で入れる ShellCheck は使わない（[`hadolint.cabal`](https://github.com/hadolint/hadolint/blob/v2.15.1/hadolint.cabal#L169)）
-- 設定は [`.github/hadolint.yaml`](.github/hadolint.yaml) に書き、`--config` で渡す。検査の前に、style の指摘だけが出る Dockerfile を標準入力から渡し、設定が効いて失敗することを確かめる
+- 設定は [`.github/hadolint.yaml`](.github/hadolint.yaml) に書き、`--config` で渡す。検査の前に、style の指摘だけが出る Dockerfile を標準入力から渡し、設定が効いて失敗することを確認する
 - Dockerfile のラベルは、`.github/hadolint.yaml` の `label-schema` に挙げた 4 つだけを書く。値は変数で渡さず、各 Dockerfile に直接書く
 - 理由は、[`hadolint.yml`](.github/workflows/hadolint.yml) と `.github/hadolint.yaml` のコメントに書いている
 
