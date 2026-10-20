@@ -17,12 +17,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
-# アクションは最新のタイトルを読むため、PR を API で取得し直す https://github.com/amannn/action-semantic-pull-request/blob/48f256284bd46cdaab1048c3721360e808335d50/src/index.js#L38-L46
 permissions:
-  pull-requests: read
+  pull-requests: read # アクションは最新のタイトルを読むため、PR を API で取得し直す https://github.com/amannn/action-semantic-pull-request/blob/48f256284bd46cdaab1048c3721360e808335d50/src/index.js#L38-L46
 
 jobs:
   pr-title:
+    name: pr-title
     runs-on: ubuntu-26.04-arm
     timeout-minutes: 5
     steps:

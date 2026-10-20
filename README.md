@@ -129,6 +129,10 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 #### zizmor
 
 - `GITHUB_TOKEN` を渡し、GitHub API で調べる監査も動かす（[Operating modes](https://docs.zizmor.sh/usage/#operating-modes)）。対象は `impostor-commit`・`known-vulnerable-actions`・`ref-confusion` の 3 つ
+- `--persona=pedantic` の指摘に合わせて、ワークフローを次のように書く（[Audit Rules](https://docs.zizmor.sh/audits/)）
+  - すべてのジョブに `name` を書く（`anonymous-definition`）。`name` は必須チェックの名前になるので、ジョブ ID と同じにする。変えるときは [`rulesets/main.json`](.github/settings/rulesets/main.json) の `context` も合わせる
+  - `concurrency` を書く（`concurrency-limits`）。同じ PR に push し直したら、古い実行を取り消す。PR 以外は実行ごとにグループを分け、`main` への push や定期実行は取り消さない
+  - `contents: read` 以外の `permissions` には、行末のコメントで理由を書く（`undocumented-permissions`）
 
 #### ghalint
 

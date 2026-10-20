@@ -13,9 +13,16 @@ on:
 # 書き込み権限はジョブごとに与え、あとから足したジョブに引き継がせない https://docs.zizmor.sh/audits/#excessive-permissions
 permissions: {}
 
+# 同じ PR に push し直したら古い実行を取り消す。PR 以外は実行ごとにグループを分け、待っている実行も後から来た実行に取り消されないようにする
+# https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   # 必須チェック。外部のサイトの障害やレート制限で PR をマージできなくならないよう、ネットワークを使わずリポジトリ内のリンクだけを検査する
   lychee:
+    name: lychee
     if: github.event_name == 'pull_request' || github.event_name == 'push'
     runs-on: ubuntu-26.04-arm
     timeout-minutes: 5
@@ -40,12 +47,13 @@ jobs:
       # 隠しファイルを読み、.git を除く設定は .github/lychee.toml にある
       - run: lychee --config .github/lychee.toml --offline '**/*'
   lychee-external:
+    name: lychee-external
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-26.04-arm
     timeout-minutes: 10
     permissions:
       contents: read
-      issues: write
+      issues: write # リンク切れを見つけたら、report-broken-links.sh が issue を作るか書き換えるため
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

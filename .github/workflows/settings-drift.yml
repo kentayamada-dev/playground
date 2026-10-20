@@ -9,13 +9,20 @@ on:
 # 書き込み権限はジョブごとに与え、あとから足したジョブに引き継がせない https://docs.zizmor.sh/audits/#excessive-permissions
 permissions: {}
 
+# 同じ PR に push し直したら古い実行を取り消す。PR 以外は実行ごとにグループを分け、待っている実行も後から来た実行に取り消されないようにする
+# https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   settings-drift:
+    name: settings-drift
     runs-on: ubuntu-26.04-arm
     timeout-minutes: 5
     permissions:
       contents: read
-      issues: write
+      issues: write # ずれを見つけたら、report-settings-drift.sh が issue を作るか書き換えるため
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
