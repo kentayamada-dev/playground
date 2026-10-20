@@ -44,8 +44,10 @@ EOF
   [[ ${args[0]} == --folder-uri ]]
   [[ ${args[1]} =~ ^vscode-remote://dev-container\+([0-9a-f]+)(/.*)$ ]]
   local hex=${BASH_REMATCH[1]} folder=${BASH_REMATCH[2]}
-  local escaped json
-  escaped=$(sed 's/../\\x&/g' <<<"${hex}")
+  local escaped='' json i
+  for ((i = 0; i < ${#hex}; i += 2)); do
+    escaped+="\\x${hex:i:2}"
+  done
   printf -v json '%b' "${escaped}"
   [[ ${json} == "{\"hostPath\":\"${repo}\",\"configFile\":{\"scheme\":\"file\",\"path\":\"${repo}/.devcontainer/api/devcontainer.json\"}}" ]]
   [[ ${folder} == /workspace/api ]]
