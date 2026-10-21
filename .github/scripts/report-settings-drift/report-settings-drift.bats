@@ -5,18 +5,20 @@
 setup() {
   bats_require_minimum_version 1.5.0
 
-  script="$BATS_TEST_DIRNAME/report-settings-drift.sh"
-  report="$BATS_TEST_TMPDIR/drift.txt"
-  echo 'ずれ: ラベル bug が GitHub にありません' >"$report"
+  # shellcheck disable=SC2154 # BATS_TEST_DIRNAME は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
+  script="${BATS_TEST_DIRNAME}/report-settings-drift.sh"
+  # shellcheck disable=SC2154 # BATS_TEST_TMPDIR は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
+  report="${BATS_TEST_TMPDIR}/drift.txt"
+  echo 'ずれ: ラベル bug が GitHub にありません' >"${report}"
   # 外部リンクの定期検査はこのファイルも読むため、lychee が検査しない example.com をダミーの URL に使う
   # https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L175
   export GITHUB_SERVER_URL=https://example.com GITHUB_REPOSITORY=owner/repo GITHUB_RUN_ID=123
 
   # gh issue の偽物。GitHub 上の issue を $STUB_DIR/issues.json として読み書きする
-  export STUB_DIR="$BATS_TEST_TMPDIR/stub"
-  mkdir -p "$STUB_DIR/bin"
-  PATH="$STUB_DIR/bin:$PATH"
-  cat >"$STUB_DIR/bin/gh" <<'EOF'
+  export STUB_DIR="${BATS_TEST_TMPDIR}/stub"
+  mkdir -p "${STUB_DIR}/bin"
+  PATH="${STUB_DIR}/bin:${PATH}"
+  cat >"${STUB_DIR}/bin/gh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 issues="$STUB_DIR/issues.json"
@@ -78,17 +80,19 @@ case "$command" in
     ;;
 esac
 EOF
-  chmod +x "$STUB_DIR/bin/gh"
-  echo '[]' >"$STUB_DIR/issues.json"
+  chmod +x "${STUB_DIR}/bin/gh"
+  echo '[]' >"${STUB_DIR}/issues.json"
 }
 
 given_github_issues() {
-  echo "$1" >"$STUB_DIR/issues.json"
+  echo "$1" >"${STUB_DIR}/issues.json"
 }
 
 assert_github_issues() {
-  if ! jq -e --argjson expected "$1" '. == $expected' "$STUB_DIR/issues.json" >/dev/null; then
-    echo "GitHub 上の issue: $(jq -c . "$STUB_DIR/issues.json")"
+  if ! jq -e --argjson expected "$1" '. == $expected' "${STUB_DIR}/issues.json" >/dev/null; then
+    local actual
+    actual=$(jq -c . "${STUB_DIR}/issues.json")
+    echo "GitHub 上の issue: ${actual}"
     return 1
   fi
 }
@@ -96,7 +100,7 @@ assert_github_issues() {
 @test "同じタイトルの issue が開いていなければ、実行の URL と検査の出力を本文にして issue を作る" {
   given_github_issues '[{"number": 22, "title": "chore(deps): 依存関係の更新状況", "state": "open", "body": "ダッシュボード"}]'
 
-  run -0 "$script" "$report"
+  run -0 "${script}" "${report}"
 
   assert_github_issues '[
     {"number": 22, "title": "chore(deps): 依存関係の更新状況", "state": "open", "body": "ダッシュボード"},
@@ -107,7 +111,7 @@ assert_github_issues() {
 @test "同じタイトルの issue が開いていれば、新しく作らずに本文を書き換える" {
   given_github_issues '[{"number": 185, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "open", "body": "前回の結果"}]'
 
-  run -0 "$script" "$report"
+  run -0 "${script}" "${report}"
 
   assert_github_issues '[
     {"number": 185, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "open", "body": "[GitHub の設定の定期検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。定義を直すか、`.github/scripts/sync-github-settings/sync-github-settings.sh` で GitHub を定義に揃えてください。\n\n```diff\nずれ: ラベル bug が GitHub にありません\n```\n"}
@@ -117,7 +121,7 @@ assert_github_issues() {
 @test "同じタイトルの issue が閉じていれば、書き換えずに新しく作る" {
   given_github_issues '[{"number": 185, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "closed", "body": "前回の結果"}]'
 
-  run -0 "$script" "$report"
+  run -0 "${script}" "${report}"
 
   assert_github_issues '[
     {"number": 185, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "closed", "body": "前回の結果"},
@@ -128,7 +132,7 @@ assert_github_issues() {
 @test "タイトルの一部だけが一致する issue は書き換えずに、新しく作る" {
   given_github_issues '[{"number": 190, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す（ラベル）", "state": "open", "body": "手で立てた issue"}]'
 
-  run -0 "$script" "$report"
+  run -0 "${script}" "${report}"
 
   assert_github_issues '[
     {"number": 190, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す（ラベル）", "state": "open", "body": "手で立てた issue"},
@@ -142,7 +146,7 @@ assert_github_issues() {
     {"number": 190, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "open", "body": "前回の結果"}
   ]'
 
-  run -0 "$script" "$report"
+  run -0 "${script}" "${report}"
 
   assert_github_issues '[
     {"number": 185, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "open", "body": "前々回の結果"},
@@ -153,13 +157,13 @@ assert_github_issues() {
 @test "issue の一覧を取得できなければ、issue を作らずに失敗する" {
   export STUB_FAIL="issue list"
 
-  run -1 "$script" "$report"
+  run -1 "${script}" "${report}"
 
   assert_github_issues '[]'
 }
 
 @test "検査の出力のファイルがなければ、issue を作らずに失敗する" {
-  run -1 "$script" "$BATS_TEST_TMPDIR/missing.txt"
+  run -1 "${script}" "${BATS_TEST_TMPDIR}/missing.txt"
 
   assert_github_issues '[]'
 }

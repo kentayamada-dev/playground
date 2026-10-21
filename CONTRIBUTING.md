@@ -53,7 +53,7 @@ docs/contributing-guide
 
 ```bash
 # キャッシュを使わせない
-gh_api "$operation" -H 'Cache-Control: no-cache' "$@"
+gh_api "${operation}" -H 'Cache-Control: no-cache' "$@"
 ```
 
 次のように書きます。消すとヘッダーが要らないように見えて外され、古い値を読む不具合が戻るためです。
@@ -61,7 +61,7 @@ gh_api "$operation" -H 'Cache-Control: no-cache' "$@"
 ```bash
 # GET の応答は Cache-Control: private, max-age=60 で、変更の直後に古い値が返ることがあったため、キャッシュを使わせない
 # https://github.com/kentayamada-dev/playground/pull/53
-gh_api "$operation" -H 'Cache-Control: no-cache' "$@"
+gh_api "${operation}" -H 'Cache-Control: no-cache' "$@"
 ```
 
 ### 定数
@@ -75,13 +75,13 @@ gh_api "$operation" -H 'Cache-Control: no-cache' "$@"
 ```bash
 # パスは 1 つの定数にまとめる
 settings_dir=.github/settings
-local files=("$settings_dir"/rulesets/*.json)
+local files=("${settings_dir}"/rulesets/*.json)
 
 # API のパスは定数にせず、そのまま書く
-gh_api "ルールセット $name の削除" --method DELETE "repos/{owner}/{repo}/rulesets/$id" --silent
+gh_api "ルールセット ${name} の削除" --method DELETE "repos/{owner}/{repo}/rulesets/${id}" --silent
 
 # テストの期待値は、実装の settings_dir を使わずにそのまま書く
-[[ $output == *"作成: ルールセット main (.github/settings/rulesets/main.json)"* ]]
+[[ ${output} == *"作成: ルールセット main (.github/settings/rulesets/main.json)"* ]]
 ```
 
 ### テスト
