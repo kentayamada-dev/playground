@@ -1,0 +1,45 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": [
+        "compose",
+        "run",
+        "--rm",
+        "--use-aliases",
+        "--publish",
+        "8080:8080",
+        "--workdir",
+        "/workspace/api",
+        "--name",
+        "playground-api-preview",
+        "api",
+        "go",
+        "run",
+        "."
+      ],
+      "port": 8080
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": [
+        "compose",
+        "run",
+        "--rm",
+        "--publish",
+        "3000:3000",
+        "--workdir",
+        "/workspace/web",
+        "--name",
+        "playground-web-preview",
+        "web",
+        "pnpm",
+        "dev"
+      ],
+      "port": 3000
+    }
+  ]
+}
