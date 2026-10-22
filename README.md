@@ -9,20 +9,20 @@
 
 ## 開発環境
 
-web（Node.js）と api（Go）を、別々の Dev Container で開発します。ホストの OS は macOS だけをサポートします。構成は VS Code の [Connect to multiple containers](https://code.visualstudio.com/remote/advancedcontainers/connect-multiple-containers) にならっています。
+nodejs と golang を、別々の Dev Container で開発します。ホストの OS は macOS だけをサポートします。構成は VS Code の [Connect to multiple containers](https://code.visualstudio.com/remote/advancedcontainers/connect-multiple-containers) にならっています。
 
 | コンテナ | 設定 | 開くディレクトリ | ベースイメージ |
 | --- | --- | --- | --- |
-| `web` | [`devcontainer.json`](.devcontainer/web/devcontainer.json)・[`Dockerfile`](.devcontainer/web/Dockerfile) | [`web`](web) | `node`（Node.js 26） |
-| `api` | [`devcontainer.json`](.devcontainer/api/devcontainer.json)・[`Dockerfile`](.devcontainer/api/Dockerfile) | [`api`](api) | `golang`（Go 1.27） |
+| `nodejs` | [`devcontainer.json`](.devcontainer/nodejs/devcontainer.json)・[`Dockerfile`](.devcontainer/nodejs/Dockerfile) | [`nodejs`](nodejs) | `node`（Node.js 26） |
+| `golang` | [`devcontainer.json`](.devcontainer/golang/devcontainer.json)・[`Dockerfile`](.devcontainer/golang/Dockerfile) | [`golang`](golang) | `golang`（Go 1.27） |
 
 - macOS 以外のホストでは、コンテナを作る前に止める。両方の `devcontainer.json` の `initializeCommand` が、ホストで [`check-host-os.sh`](.devcontainer/scripts/check-host-os/check-host-os.sh) を実行する。理由はダイアログには出ず、コマンドパレットの「Dev Containers: Show Container Log」で開くログの末尾近くに出る
 - 2 つのコンテナは、[`compose.yaml`](compose.yaml) のサービスとして動く。どちらも、リポジトリのルートを `/workspace` にマウントする。イメージは公式イメージをもとに、コンテナごとの Dockerfile でビルドする。Dockerfile を変えたら「Dev Containers: Rebuild Container」で作り直す
-- 一般ユーザー `dev` で動き、sudo は入れていない。root で作業するときは、手元のリポジトリのルートで `docker compose exec -u root api bash` のように実行する。ユーザー名は `compose.yaml` の `x-build-args` で渡している
-- web は pnpm を使う。版は web の Dockerfile だけで管理し、Renovate が更新する。[`web/pnpm-workspace.yaml`](web/pnpm-workspace.yaml) は、`storeDir` のほかは textlint の [`pnpm-workspace.yaml`](.github/textlint/pnpm-workspace.yaml) とそろえている。api には `http://api:8080`（`compose.yaml` の `API_URL`）で接続する
-- web と textlint の pnpm は、本体とパッケージを Takumi Guard のレジストリ（`https://npm.flatt.tech/`）から取得する。`npmjs:` と `@jsr` スコープも同じレジストリに向け、`gh:`（GitHub Packages）は使えないようにしている（[Registries](https://pnpm.io/registries)）
+- 一般ユーザー `dev` で動き、sudo は入れていない。root で作業するときは、手元のリポジトリのルートで `docker compose exec -u root golang bash` のように実行する。ユーザー名は `compose.yaml` の `x-build-args` で渡している
+- nodejs は pnpm を使う。版は nodejs の Dockerfile だけで管理し、Renovate が更新する。[`nodejs/pnpm-workspace.yaml`](nodejs/pnpm-workspace.yaml) は、`storeDir` のほかは textlint の [`pnpm-workspace.yaml`](.github/textlint/pnpm-workspace.yaml) とそろえている。golang には `http://golang:8080`（`compose.yaml` の `GOLANG_URL`）で接続する
+- nodejs と textlint の pnpm は、本体とパッケージを Takumi Guard のレジストリ（`https://npm.flatt.tech/`）から取得する。`npmjs:` と `@jsr` スコープも同じレジストリに向け、`gh:`（GitHub Packages）は使えないようにしている（[Registries](https://pnpm.io/registries)）
 - 公開から 1 日（`minimumReleaseAge: 1440` 分）経っていない版は入れない。待機期間を満たす版がないときと、レジストリが公開日時を返さないときは、インストールが失敗する。以前の版より信頼のレベルが下がった版も入れない（`trustPolicy: no-downgrade`）。どれも [pnpm の設定](https://pnpm.io/settings/dependency-resolution) による
-- bash の履歴と、web の `node_modules`・pnpm のストアは、名前付きボリュームに置く。コンテナを作り直しても、履歴は残る。手元の `web/node_modules` は空のディレクトリになる
+- bash の履歴と、nodejs の `node_modules`・pnpm のストアは、名前付きボリュームに置く。コンテナを作り直しても、履歴は残る。手元の `nodejs/node_modules` は空のディレクトリになる
 - ウィンドウを閉じても、コンテナは止めない（`shutdownAction: "none"`）
 - 設定の理由は、[`compose.yaml`](compose.yaml)・`devcontainer.json`・Dockerfile のコメントに書いている
 
@@ -32,8 +32,8 @@ web（Node.js）と api（Go）を、別々の Dev Container で開発します�
 
 | コンテナ | コマンド |
 | --- | --- |
-| `api` | `make dev-api` |
-| `web` | `make dev-web` |
+| `golang` | `make dev-golang` |
+| `nodejs` | `make dev-nodejs` |
 
 どちらも [`Makefile`](Makefile) から [`open-devcontainer.sh`](.devcontainer/scripts/open-devcontainer/open-devcontainer.sh) にコンテナの名前を渡し、スクリプトが VS Code の `code` コマンドでウィンドウを開きます。
 
@@ -49,8 +49,8 @@ web（Node.js）と api（Go）を、別々の Dev Container で開発します�
 
 | コンテナ | コマンド | 動作 |
 | --- | --- | --- |
-| `api` | `go run .` | `GET /hello` に `{"message":"hello from api"}` を返す |
-| `web` | `pnpm dev` | `GET /` で api の `/hello` を呼び、応答のメッセージを返す。ファイルを変えると再起動する |
+| `golang` | `go run .` | `GET /hello` に `{"message":"hello from golang"}` を返す |
+| `nodejs` | `pnpm dev` | `GET /` で golang の `/hello` を呼び、応答のメッセージを返す。ファイルを変えると再起動する |
 
 サーバーが待ち受けているポートは、VS Code が手元に自動で転送します（`remote.autoForwardPorts`）。両方を起動したら、手元のブラウザで `http://localhost:3000` を開きます。
 
@@ -198,7 +198,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 - `429`・`502`・`503`・`504` は成功として扱う
 - `mise.lock` と `uv.lock` の URL は、[`.github/lychee.toml`](.github/lychee.toml) で検査から除く
-- web と api のサーバーのアドレス（`http://localhost:3000` など）も、`.github/lychee.toml` で検査から除く
+- nodejs と golang のサーバーのアドレス（`http://localhost:3000` など）も、`.github/lychee.toml` で検査から除く
 - 理由は、[`lychee.yml`](.github/workflows/lychee.yml) と `.github/lychee.toml` のコメントに書いている
 - HTTPS で開けるリンクを `http://` で書いていると、失敗する（`require_https`、[lychee.example.toml](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee.example.toml#L98-L99)）。PR の検査は `--offline` でネットワークを使わないため、この検査は効かない
 - 通らないリンクがあると、[`report-broken-links.sh`](.github/scripts/report-broken-links/report-broken-links.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える

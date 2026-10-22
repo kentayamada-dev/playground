@@ -4,7 +4,7 @@
   // https://github.com/kentayamada-dev/playground/pull/276
   "configurations": [
     {
-      "name": "api",
+      "name": "golang",
       "runtimeExecutable": "docker-compose",
       "runtimeArgs": [
         "run",
@@ -13,10 +13,10 @@
         "--publish",
         "8080:8080",
         "--workdir",
-        "/workspace/api",
+        "/workspace/golang",
         "--name",
-        "playground-api-preview",
-        "api",
+        "playground-golang-preview",
+        "golang",
         "go",
         "run",
         "."
@@ -25,7 +25,7 @@
       "autoPort": false
     },
     {
-      "name": "web",
+      "name": "nodejs",
       "runtimeExecutable": "docker-compose",
       "runtimeArgs": [
         "run",
@@ -33,10 +33,10 @@
         "--publish",
         "3000:3000",
         "--workdir",
-        "/workspace/web",
+        "/workspace/nodejs",
         "--name",
-        "playground-web-preview",
-        "web",
+        "playground-nodejs-preview",
+        "nodejs",
         "pnpm",
         "dev"
       ],

@@ -1,9 +1,9 @@
 open_devcontainer := .devcontainer/scripts/open-devcontainer/open-devcontainer.sh
 
-.PHONY: dev-api dev-web
+.PHONY: dev-golang dev-nodejs
 
-dev-api:
-	$(open_devcontainer) api
+dev-golang:
+	$(open_devcontainer) golang
 
-dev-web:
-	$(open_devcontainer) web
+dev-nodejs:
+	$(open_devcontainer) nodejs

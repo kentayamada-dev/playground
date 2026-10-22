@@ -2,11 +2,11 @@ include_fragments = "anchor-only"
 no_progress = true
 require_https = true
 
-# web と api のサーバーがコンテナのなかで待ち受けるアドレスで、CI からは接続できないため
+# nodejs と golang のサーバーがコンテナのなかで待ち受けるアドレスで、CI からは接続できないため
 # このファイルも検査の対象で、localhost の行からは http://localhost/ が拾われるため、ポートの有無によらず一致させる
 exclude = [
   '^http://localhost\b',
-  '^http://api:8080\b',
+  '^http://golang:8080\b',
 ]
 
 # 渡したグロブの * と ** は、デフォルトでは . で始まるファイルとディレクトリに一致せず、.github などを見落とすため

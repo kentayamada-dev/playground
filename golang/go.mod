@@ -1,4 +1,4 @@
-module github.com/kentayamada-dev/playground/api
+module github.com/kentayamada-dev/playground/golang
 
 go 1.26.0
 

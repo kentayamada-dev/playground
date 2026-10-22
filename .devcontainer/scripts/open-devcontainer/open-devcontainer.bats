@@ -5,22 +5,22 @@ setup() {
 
   # スクリプトはリポジトリのルートを自分の場所から決めるため、偽物のリポジトリにコピーして実行する
   # shellcheck disable=SC2154 # BATS_TEST_TMPDIR は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
-  mkdir -p "${BATS_TEST_TMPDIR}/repo/.devcontainer/scripts/open-devcontainer" "${BATS_TEST_TMPDIR}/repo/.devcontainer/api" "${BATS_TEST_TMPDIR}/repo/.devcontainer/web"
+  mkdir -p "${BATS_TEST_TMPDIR}/repo/.devcontainer/scripts/open-devcontainer" "${BATS_TEST_TMPDIR}/repo/.devcontainer/golang" "${BATS_TEST_TMPDIR}/repo/.devcontainer/nodejs"
   repo=$(cd "${BATS_TEST_TMPDIR}/repo" && pwd -P)
   script="${repo}/.devcontainer/scripts/open-devcontainer/open-devcontainer.sh"
   # shellcheck disable=SC2154 # BATS_TEST_DIRNAME は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
   cp "${BATS_TEST_DIRNAME}/open-devcontainer.sh" "${script}"
-  cat >"${repo}/.devcontainer/api/devcontainer.json" <<'EOF'
+  cat >"${repo}/.devcontainer/golang/devcontainer.json" <<'EOF'
 {
-  "name": "api",
+  "name": "golang",
   // コメント
-  "workspaceFolder": "/workspace/api"
+  "workspaceFolder": "/workspace/golang"
 }
 EOF
-  cat >"${repo}/.devcontainer/web/devcontainer.json" <<'EOF'
+  cat >"${repo}/.devcontainer/nodejs/devcontainer.json" <<'EOF'
 {
-  "name": "web",
-  "workspaceFolder": "/workspace/web"
+  "name": "nodejs",
+  "workspaceFolder": "/workspace/nodejs"
 }
 EOF
 
@@ -40,7 +40,7 @@ EOF
 }
 
 @test "名前で選んだ設定と、その workspaceFolder を URI にして code に渡す" {
-  run -0 "${script}" api
+  run -0 "${script}" golang
 
   local args
   mapfile -t args <"${STUB_DIR}/code-args"
@@ -53,12 +53,12 @@ EOF
     escaped+="\\x${hex:i:2}"
   done
   printf -v json '%b' "${escaped}"
-  [[ ${json} == "{\"hostPath\":\"${repo}\",\"configFile\":{\"scheme\":\"file\",\"path\":\"${repo}/.devcontainer/api/devcontainer.json\"}}" ]]
-  [[ ${folder} == /workspace/api ]]
+  [[ ${json} == "{\"hostPath\":\"${repo}\",\"configFile\":{\"scheme\":\"file\",\"path\":\"${repo}/.devcontainer/golang/devcontainer.json\"}}" ]]
+  [[ ${folder} == /workspace/golang ]]
 }
 
 @test "BUILDX_BAKE_ENTITLEMENTS_FS=0 を付けて code を実行する" {
-  run -0 "${script}" api
+  run -0 "${script}" golang
 
   local value
   value=$(<"${STUB_DIR}/code-env")
@@ -68,22 +68,22 @@ EOF
 @test "名前を渡さなければ、使い方と設定の名前を出して失敗する" {
   run -1 --separate-stderr "${script}"
 
-  [[ ${stderr} == "使い方: ${script} <名前>（名前: api web）" ]]
+  [[ ${stderr} == "使い方: ${script} <名前>（名前: golang nodejs）" ]]
   [[ ! -e ${STUB_DIR}/code-args ]]
 }
 
 @test "設定のない名前を渡すと、設定の名前を出して失敗する" {
   run -1 --separate-stderr "${script}" db
 
-  [[ ${stderr} == "エラー: db の設定がありません（名前: api web）" ]]
+  [[ ${stderr} == "エラー: db の設定がありません（名前: golang nodejs）" ]]
   [[ ! -e ${STUB_DIR}/code-args ]]
 }
 
 @test "設定に workspaceFolder がなければ、code を開かずに失敗する" {
-  echo '{"name": "api"}' >"${repo}/.devcontainer/api/devcontainer.json"
+  echo '{"name": "golang"}' >"${repo}/.devcontainer/golang/devcontainer.json"
 
-  run -1 --separate-stderr "${script}" api
+  run -1 --separate-stderr "${script}" golang
 
-  [[ ${stderr} == "エラー: ${repo}/.devcontainer/api/devcontainer.json に workspaceFolder がありません" ]]
+  [[ ${stderr} == "エラー: ${repo}/.devcontainer/golang/devcontainer.json に workspaceFolder がありません" ]]
   [[ ! -e ${STUB_DIR}/code-args ]]
 }
