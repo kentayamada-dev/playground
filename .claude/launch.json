@@ -1,0 +1,47 @@
+{
+  "version": "0.0.1",
+  // docker compose（CLI のプラグイン）は止めたときに SIGTERM をコンテナへ転送しないことがあり、コンテナが残ってポートを使い続けるため、単体の docker-compose を使う
+  // https://github.com/kentayamada-dev/playground/pull/276
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "docker-compose",
+      "runtimeArgs": [
+        "run",
+        "--rm",
+        "--use-aliases",
+        "--publish",
+        "8080:8080",
+        "--workdir",
+        "/workspace/api",
+        "--name",
+        "playground-api-preview",
+        "api",
+        "go",
+        "run",
+        "."
+      ],
+      "port": 8080,
+      "autoPort": false
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "docker-compose",
+      "runtimeArgs": [
+        "run",
+        "--rm",
+        "--publish",
+        "3000:3000",
+        "--workdir",
+        "/workspace/web",
+        "--name",
+        "playground-web-preview",
+        "web",
+        "pnpm",
+        "dev"
+      ],
+      "port": 3000,
+      "autoPort": false
+    }
+  ]
+}
