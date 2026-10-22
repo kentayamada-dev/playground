@@ -375,9 +375,10 @@ yamllint は Python のパッケージで、PyYAML と pathspec に依存しま�
 | 更新の種類 | マージのしかた |
 | --- | --- |
 | minor・patch・digest | 公開後 14 日を過ぎてから、自動でマージする |
+| major | 公開後 14 日を過ぎてから PR を作る。自動ではマージしない。内容を確認して手動でマージする |
 | pin・pinDigest（バージョンやダイジェストの固定） | 自動でマージする |
 | ロックファイルの更新 | 自動でマージする。PR は毎週月曜の 0〜3 時に作る |
-| major など、上記以外の更新 | 自動ではマージしない。内容を確認して手動でマージする |
+| 上記以外の更新（置き換えなど） | 自動ではマージしない。内容を確認して手動でマージする |
 
 - 自動マージには GitHub の自動マージを使い、必須チェックがすべて通るとマージされる（[Renovate の自動マージ](https://docs.renovatebot.com/key-concepts/automerge/)・[GitHub の自動マージ](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request)）
 - [マージの条件](#マージの条件) のとおり `main` の最新を取り込む必要があるため、同じ実行で作った PR の 2 件目以降は、次の実行まで自動マージされない

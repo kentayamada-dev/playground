@@ -42,10 +42,10 @@
       "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
       "automerge": true
     },
-    // 自動マージの前に、悪意のあるバージョンがレジストリから取り下げられる時間を取る https://docs.renovatebot.com/upgrade-best-practices/#wait-two-weeks-before-automerging-third-party-dependencies
+    // 悪意のあるバージョンがレジストリから取り下げられる時間を取ってから PR を作る。手でマージする major も、中身を見て見抜けるとは限らないため含める https://docs.renovatebot.com/upgrade-best-practices/#wait-two-weeks-before-automerging-third-party-dependencies
     // pin は待ち日数に対応しておらず、付けると更新が出なくなるため外す https://github.com/renovatebot/renovate/issues/40288
     {
-      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "matchUpdateTypes": ["major", "minor", "patch", "digest"],
       "minimumReleaseAge": "14 days"
     },
     // security:openssf-scorecard が PR 本文の列を置き換え、npm で Merge Confidence の Age と Confidence が消えるため、両方を並べる
