@@ -36,7 +36,7 @@ lychee の外部リンクの検査では、次のように分ける。
 Dev Container では、次のように分ける。
 
 - 書かない:「`USER_NAME` を変えるときは、両方の `devcontainer.json` の `remoteUser` も合わせる」（編集する人向け。`compose.yaml` のコメントにある）
-- 書く:「版は web の Dockerfile だけで管理し、Renovate が更新する」（pnpm の版。使う人と編集する人の両方が要る）
+- 書く:「版は nodejs の Dockerfile だけで管理し、Renovate が更新する」（pnpm の版。使う人と編集する人の両方が要る）
 - 書く: mise の設定を `.github` に置く理由（複数のワークフローにまたがり、1 か所のコードに結びつかない）
 
 ## CI の検査に通る書き方

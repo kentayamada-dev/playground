@@ -1,11 +1,11 @@
 {
-  "name": "web",
+  "name": "nodejs",
   "dockerComposeFile": ["../../compose.yaml"],
-  "service": "web",
+  "service": "nodejs",
   "initializeCommand": "bash \"${localWorkspaceFolder}/.devcontainer/scripts/check-host-os/check-host-os.sh\"",
-  // Compose の既定の stopCompose は、ウィンドウを閉じると api のコンテナも止め、api で開いているウィンドウが切れるため
+  // Compose の既定の stopCompose は、ウィンドウを閉じると golang のコンテナも止め、golang で開いているウィンドウが切れるため
   // https://containers.dev/implementors/json_reference/
   "shutdownAction": "none",
-  "workspaceFolder": "/workspace/web",
+  "workspaceFolder": "/workspace/nodejs",
   "remoteUser": "dev"
 }

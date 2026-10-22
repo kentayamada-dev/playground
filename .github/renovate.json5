@@ -27,11 +27,11 @@
       "datasourceTemplate": "github-runners",
       "depTypeTemplate": "github-runner"
     },
-    // web の Dockerfile で入れる pnpm の版を更新する。dockerfile マネージャーは、RUN で入れるパッケージを apk と apt のものしか拾わないため
+    // nodejs の Dockerfile で入れる pnpm の版を更新する。dockerfile マネージャーは、RUN で入れるパッケージを apk と apt のものしか拾わないため
     // https://docs.renovatebot.com/modules/manager/dockerfile/
     {
       "customType": "regex",
-      "managerFilePatterns": [".devcontainer/web/Dockerfile"],
+      "managerFilePatterns": [".devcontainer/nodejs/Dockerfile"],
       "matchStrings": ["\\bpnpm@(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
       "depNameTemplate": "pnpm",
       "datasourceTemplate": "npm"
