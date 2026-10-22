@@ -35,7 +35,8 @@ Renovate が作った依存更新の PR を、リリースノートと影響を�
    - 変更履歴: リポジトリの `CHANGELOG.md`
    - タグのあいだの差分: `gh api repos/<owner>/<repo>/compare/<旧タグ>...<新タグ>`
 4. ほかのデータやライブラリを取り込んだだけの版なら、取り込み元のリリースノートまでたどる。辞書や定義ファイルのパッケージは、リリースノートが「Update」の 1 行だけのことがある
-5. 新版の公開日時を確認する。公開からの日数が、`.github/renovate.json5` でその更新に当てはまる `minimumReleaseAge` に満たなければ、手順 6 で待つかどうかを聞く
+5. 新版の公開日時を確認する。公開からの日数を、手順 1 の worktree の `.github/renovate.json5` で、その更新に当てはまる `minimumReleaseAge` と比べる。満たなければ、手順 6 で待つかどうかを聞く
+   - 作業ディレクトリの `.github/renovate.json5` は使わない。main とは別のブランチで、設定が変わっていることがある
    - 設定を変える前に作られた PR や、待ち日数の対象外の更新では、待ち日数を満たす前に PR が作られる
    - 脆弱性の修正は、Renovate が待ち日数を確認せずに PR を作る（[Minimum Release Age](https://docs.renovatebot.com/key-concepts/minimum-release-age/)）。この PR では、待たずに進める候補を推奨にする
    - GitHub のリリースの公開日時は、`gh release list -R <owner>/<repo> --json tagName,publishedAt` で確認できる
@@ -70,7 +71,7 @@ Renovate が作った依存更新の PR を、リリースノートと影響を�
 ## 5. PR にコメントする
 
 確認の結果を、依存関係に詳しくない人にも伝わる言葉でまとめる。書き方と本文の形は [comment-template.md](comment-template.md) に従う。
-確認結果のコメントは、PR ごとに 1 件にする。
+確認結果のコメントは、PR ごとに 1 件とする。
 
 1. 前に投稿した確認結果のコメントを、次のコマンドで探す
 
@@ -89,7 +90,7 @@ Renovate が作った依存更新の PR を、リリースノートと影響を�
 - 最後の 1 問は進め方にする。「待ち日数を満たすまで待つか」のように進め方の選択と重なる項目は、別に聞かずに進め方の候補に含める。候補は次から当てはまるものを選ぶ
   - 自動マージを予約する（`gh pr merge --auto --squash`）。`CLEAN` など、すぐマージできる状態ならその場でマージされるので、候補の名前を「マージする」にする
   - 修正をコミットして PR のブランチに push し、自動マージを予約する。何を直すかを説明に書く
-  - 保留する（何もしない）。待つ理由があれば、いつまで待つかを書く
+  - 保留する（決めたことの追記のほかは、何もしない）。待つ理由があれば、いつまで待つかを書く
   - PR を閉じる。Renovate はこの更新を再び提案しなくなる（PR 本文の「Ignore」の行）
 - 候補の説明には、選ばれたら実行する外向きの操作（決めたことの追記・push・マージの予約・クローズ）をすべて書く。選ばれた候補を、その操作の指示とみなす
 
@@ -108,11 +109,11 @@ Renovate が作った依存更新の PR を、リリースノートと影響を�
 2. `git -C <worktree のパス> add` と `git -C <worktree のパス> commit` でコミットする
 3. `git push origin <PR のブランチ名>` で push する。worktree とはブランチを共有しているので、作業ディレクトリから push できる
 4. `BEHIND` なら `gh pr update-branch <番号>` で main に追いつかせる。Renovate は、ほかの人がコミットしたブランチを更新しなくなるため（[Updating and rebasing branches](https://docs.renovatebot.com/updating-rebasing/)）
-5. 「自動マージの予約」に進む。そのあと `gh pr checks <番号> --watch` で CI の終了を待ち、結果を確認する
+5. 「自動マージの予約」に進む。そのあと `gh pr checks <番号> --watch` で CI の終了を待ち、結果を確認する。CI の終了まで 10 分を超えることがあるため、このコマンドはバックグラウンドで実行する
 
 ### 保留・クローズ
 
-- 保留: 「決めたことの記録」のほかは、何もしない
+- 保留: 決めたことの記録のほかは、何もしない
 - クローズ: `gh pr close <番号>` を実行する
 
 ### 決めたことの記録
@@ -127,5 +128,5 @@ Renovate が作った依存更新の PR を、リリースノートと影響を�
 
 1. `git worktree remove <worktree のパス>` と `git branch -D <PR のブランチ名>` で、手順 1 の worktree とローカルのブランチを消す
 2. `git worktree list` で、worktree が残っていないことを確認する
-3. `git config --get-regexp '^branch\.<PR のブランチ名>'` で、追跡の設定が残っていないことを確認する。出力がなく終了コードが 1 なら、残っていない。`git branch -D` が `.git/config` のロックに失敗して残ったら、`git config --remove-section branch.<PR のブランチ名>` で消す
+3. `git config --get-regexp '^branch\.<PR のブランチ名>'` で、追跡の設定が残っていないことを確認する。出力がなく、終了コードも 1 なら、残っていない。`git branch -D` が `.git/config` のロックに失敗して残ったら、`git config --remove-section branch.<PR のブランチ名>` で消す
 4. コメントの URL・選ばれた対応・まだ終わっていないこと（Renovate の次の実行を待っている、など）をユーザーに伝える。保留なら、いつスキルを動かし直すかも伝える
