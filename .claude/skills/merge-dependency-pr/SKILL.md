@@ -40,7 +40,7 @@ Renovate が作った依存更新の PR を、リリースノートと影響を�
    - 変更履歴: リポジトリの `CHANGELOG.md`
    - タグのあいだの差分: `gh api repos/<owner>/<repo>/compare/<旧タグ>...<新タグ>`
 
-公開日時は確かめない。Renovate は、`.github/renovate.json5` の `minimumReleaseAge` の日数がたってから PR を作る。
+公開日時は確認しない。Renovate は、`.github/renovate.json5` の `minimumReleaseAge` の日数がたってから PR を作る。
 
 ## 3. このリポジトリでの使われ方を調べる
 
@@ -59,7 +59,7 @@ Renovate が作った依存更新の PR を、リリースノートと影響を�
   - `gh run view <run_id> --job <job_id> --log` で、新版が入って動いたことをログで確認する（npm なら `+ <パッケージ> <新版>` の行）
   - ログは長く、出力がファイルに保存されることがある。保存先は Bash からは読めないことがあるため、Read ツールで読む
 
-main との差は確かめない。必須チェックは、main の最新を取り込んだ状態で通す必要がある（README の「マージの条件」）。
+main との差は確認しない。必須チェックは、main の最新を取り込んだ状態で通す必要がある（README の「マージの条件」）。
 
 ## 5. PR にコメントする
 
