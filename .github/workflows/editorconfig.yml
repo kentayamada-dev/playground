@@ -29,7 +29,7 @@ jobs:
         with:
           # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
           # https://github.com/jdx/mise-action/blob/v5.0.0/src/index.ts#L724-L745
-          version: 2026.10.3
+          version: 2026.10.4
           working_directory: .github
           install_args: editorconfig-checker
       - run: editorconfig-checker -format github-actions
