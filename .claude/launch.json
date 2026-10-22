@@ -1,11 +1,12 @@
 {
   "version": "0.0.1",
+  // docker compose（CLI のプラグイン）は止めたときに SIGTERM をコンテナへ転送しないことがあり、コンテナが残ってポートを使い続けるため、単体の docker-compose を使う
+  // https://github.com/kentayamada-dev/playground/pull/276
   "configurations": [
     {
       "name": "api",
-      "runtimeExecutable": "docker",
+      "runtimeExecutable": "docker-compose",
       "runtimeArgs": [
-        "compose",
         "run",
         "--rm",
         "--use-aliases",
@@ -25,9 +26,8 @@
     },
     {
       "name": "web",
-      "runtimeExecutable": "docker",
+      "runtimeExecutable": "docker-compose",
       "runtimeArgs": [
-        "compose",
         "run",
         "--rm",
         "--publish",
