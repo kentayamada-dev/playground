@@ -35,8 +35,9 @@ Renovate が作った依存更新の PR を、リリースノートと影響を�
    - 変更履歴: リポジトリの `CHANGELOG.md`
    - タグのあいだの差分: `gh api repos/<owner>/<repo>/compare/<旧タグ>...<新タグ>`
 4. ほかのデータやライブラリを取り込んだだけの版なら、取り込み元のリリースノートまでたどる。辞書や定義ファイルのパッケージは、リリースノートが「Update」の 1 行だけのことがある
-5. 新版の公開日時を確認する。公開から 14 日未満なら、手順 6 で待つかどうかを聞く
-   - `.github/renovate.json5` の `minimumReleaseAge` の 14 日は minor・patch・digest だけの設定で、major には設定していないため
+5. 新版の公開日時を確認する。公開からの日数が `.github/renovate.json5` の `minimumReleaseAge` に満たなければ、手順 6 で待つかどうかを聞く
+   - 設定を変える前に作られた PR や、待ち日数の対象外の更新では、待ち日数を満たす前に PR が作られる
+   - 脆弱性の修正は、Renovate が待ち日数を確認せずに PR を作る（[Minimum Release Age](https://docs.renovatebot.com/key-concepts/minimum-release-age/)）。この PR では、待たずに進める候補を推奨にする
    - GitHub のリリースは `gh release list -R <owner>/<repo> --json tagName,publishedAt` で確認できる
    - npm のパッケージは、次のコマンドで provenance の有無も確認する。`dist.integrity` は、ロックファイルの値と一致するかを見る
 
@@ -122,7 +123,7 @@ flowchart LR
 コメントを投稿したら、マージにあたって決めてほしいことを `AskUserQuestion` で聞く。1 回で聞けるのは 4 問までである。
 
 - 手順 4 で「要判断」にした項目ごとに 1 問を立てる。候補は具体的な対応にし、推奨する候補は先頭に置いて `label` の末尾に `(Recommended)` を付ける
-- 最後の 1 問は進め方にする。「公開から 14 日待つか」のように進め方の選択と重なる項目は、別の問いにせず進め方の候補に含める。候補は次から当てはまるものを選ぶ
+- 最後の 1 問は進め方にする。「待ち日数を満たすまで待つか」のように進め方の選択と重なる項目は、別の問いにせず進め方の候補に含める。候補は次から当てはまるものを選ぶ
   - 自動マージを予約する（`gh pr merge --auto --squash`）
   - 修正をコミットして PR のブランチに push し、自動マージを予約する。何を直すかを説明に書く
   - 保留する（何もしない）。待つ理由があれば、いつまで待つかを書く
