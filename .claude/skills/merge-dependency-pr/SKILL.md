@@ -16,7 +16,6 @@ Renovate が作った依存更新の PR を、リリースノートと影響を�
 
 - ほかのデータやライブラリを取り込んだだけの版の、取り込み元のリリースノート
 - 間接の利用で、このパッケージに依存しているパッケージ
-- npm の provenance（手順 2 の `npm view` が返す `dist.attestations` の `url`）
 
 ## 1. 対象の PR を決める
 
@@ -40,18 +39,8 @@ Renovate が作った依存更新の PR を、リリースノートと影響を�
    - リリース: `gh release view <タグ> -R <owner>/<repo>`
    - 変更履歴: リポジトリの `CHANGELOG.md`
    - タグのあいだの差分: `gh api repos/<owner>/<repo>/compare/<旧タグ>...<新タグ>`
-4. 新版の公開日時を確認する。公開からの日数を、手順 1 の worktree の `.github/renovate.json5` で、その更新に当てはまる `minimumReleaseAge` と比べる。満たなければ、手順 6 で待つかどうかを聞く
-   - 作業ディレクトリの `.github/renovate.json5` は使わない。main とは別のブランチで、設定が変わっていることがある
-   - 設定を変える前に作られた PR や、待ち日数の対象外の更新では、待ち日数を満たす前に PR が作られる
-   - 脆弱性の修正は、Renovate が待ち日数を確認せずに PR を作る（[Minimum Release Age](https://docs.renovatebot.com/key-concepts/minimum-release-age/)）。この PR では、待たずに進める候補を推奨にする
-   - GitHub のリリースの公開日時は、`gh release list -R <owner>/<repo> --json tagName,publishedAt` で確認できる
-   - npm のパッケージは、Renovate が待ち日数の判定に使う npm の `time` の値を使う。provenance の URL も、次のコマンドで合わせて取る
 
-     ```bash
-     npm view <パッケージ>@<新版> time dist.attestations --json --cache "$TMPDIR/npm-cache"
-     ```
-
-   - キャッシュを `$TMPDIR` に向けるのは、サンドボックスでは `~/.npm` に書き込めないため。接続先の `registry.npmjs.org` は、サンドボックスで許可して実行する
+公開日時は確かめない。Renovate は、`.github/renovate.json5` の `minimumReleaseAge` の日数がたってから PR を作る。
 
 ## 3. このリポジトリでの使われ方を調べる
 
@@ -92,7 +81,7 @@ main との差は確かめない。必須チェックは、main の最新を取�
 コメントを投稿したら、マージにあたって決めてほしいことを `AskUserQuestion` で聞く。
 
 - 手順 4 で「要判断」とした項目ごとに 1 問を立てる。候補は具体的な対応にし、推奨する候補は先頭に置き、`label` の末尾に `(Recommended)` を付ける
-- 最後の 1 問は進め方にする。「待ち日数を満たすまで待つか」のように進め方の選択と重なる項目は、別に聞かずに進め方の候補に含める。候補は次から当てはまるものを選ぶ
+- 最後の 1 問は進め方にする。進め方の選択と重なる項目は、別に聞かずに進め方の候補に含める。候補は次から当てはまるものを選ぶ
   - 自動マージを予約する（`gh pr merge --auto --squash`）。`CLEAN` など、すぐマージできる状態ならその場でマージされるので、候補の名前を「マージする」にする
   - 修正をコミットして PR のブランチに push し、自動マージを予約する。何を直すかを説明に書く
   - 保留する（決めたことの追記のほかは、何もしない）。待つ理由があれば、いつまで待つかを書く
