@@ -33,6 +33,9 @@ https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-
 
 理由をコメントに書いたときは、必要に応じて README で「理由は〜のコメントに書いている」と案内する。
 
+- make のターゲットの一覧や、ターゲットとスクリプトが内部で実行するコマンドは書かず、そのファイルへのリンクにする。中身を変えると古くなるため
+- アプリのエンドポイントや応答の中身は書かない。コードを読めばわかり、アプリを変えると古くなるため
+
 次のように分ける。
 
 - 書く:「`429`・`502`・`503`・`504` は成功として扱う」（挙動）
@@ -40,6 +43,9 @@ https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-
 - 書かない:「`USER_NAME` を変えるときは、両方の `devcontainer.json` の `remoteUser` も合わせる」（編集する人向け。コメントにある）
 - 書く:「版は nodejs の Dockerfile だけで管理し、Renovate が更新する」（pnpm の版。使う人と編集する人の両方が要る）
 - 書く: mise の設定を `.github` に置く理由（複数のワークフローにまたがり、1 か所のコードに結びつかない）
+- 書かない: ターゲットごとの動作やコマンドを並べた表（ファイルを見ればわかる）
+- 書く:「ほかのターゲットは、`golang/Makefile` にある」（ファイルへのリンク）
+- 書かない:「`GET /hello` に `{"message":"hello from golang"}` を返す」（アプリの応答の中身）
 
 ## 版の番号
 
