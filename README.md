@@ -327,7 +327,6 @@ CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対�
 
 ### `mise.lock` の更新
 
-- `mise.toml` を書き換えたら、`.github` で `mise lock` を実行して `mise.lock` も更新する。mise-action は、`mise.lock` があると `mise install --locked` で入れる。そのため、`mise.lock` にない版やプラットフォームは入らない
 - `mise.lock` には、CI の linux-arm64 だけを記録している。`mise lock` は `--platform` を付けないと `mise.lock` にあるプラットフォームだけを対象にするので、手元で実行しても macOS などの記録は増えない（[`mise lock`](https://mise.jdx.dev/cli/lock.html)）
 
 ### ダウンロードするファイルの検証
@@ -345,18 +344,14 @@ CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対�
 | lychee | aqua | リリースに署名も GitHub の artifact attestations もない。aqua レジストリの定義にも検証の設定がない（[lycheeverse/lychee](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/lycheeverse/lychee/registry.yaml)）。`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest と同じ値になる |
 | bats | aqua | リリースにファイルがなく、タグのソースアーカイブを入れる。`mise lock` は sha256 を記録しないので、版（タグ）でだけ固定している |
 
-- editorconfig-checker は、mise のレジストリで github バックエンドが指定されている
-- shfmt・ghalint・typos は、mise のレジストリでは aqua バックエンドになる。aqua レジストリの定義を mise が検証に使えないため、github バックエンドで入れている。`mise.toml` には `github:mvdan/sh`・`github:suzuki-shunsuke/ghalint`・`github:crate-ci/typos` と書く
-  - shfmt は、aqua レジストリの定義に検証の設定がない（[mvdan/sh](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/mvdan/sh/registry.yaml)）
-  - ghalint は、aqua レジストリの定義の検証を mise が使えない（[suzuki-shunsuke/ghalint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/suzuki-shunsuke/ghalint/registry.yaml)）。cosign は `opts` で渡す形で、mise がネイティブに検証するキーやバンドルの指定がない。SLSA provenance には、署名者の指定がない（[aqua バックエンドの実装](https://github.com/jdx/mise/blob/v2026.9.18/src/backend/aqua.rs#L1368-L1404)）
-  - typos は、aqua レジストリの定義に検証の設定がない（[crate-ci/typos](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/crate-ci/typos/registry.yaml)）。リリースのファイルに付く attestation は、タグとファイルを結び付けるリリースの attestation だけで、ビルドしたワークフローを含まない
+- github バックエンドで入れるツールを選んだ理由は、[`.github/mise.toml`](.github/mise.toml) のコメントに書いている
+- typos のリリースのファイルに付く attestation は、タグとファイルを結び付けるリリースの attestation だけで、ビルドしたワークフローを含まない
 
 ### yamllint の依存関係
 
 yamllint は Python のパッケージで、PyYAML と pathspec に依存します（[PyPI](https://pypi.org/project/yamllint/)）。依存関係まで版と sha256 を固定するため、mise ではなく uv で入れています。uv 本体は mise で入れます。
 
 - [`.github/yamllint`](.github/yamllint) の `pyproject.toml` で yamllint の版を、`uv.lock` で依存関係を含むすべての版と sha256 を固定する
-- `pyproject.toml` を書き換えたら、`.github/yamllint` で `uv lock` を実行して `uv.lock` も更新する。CI は `uv sync --locked` で入れるため、`uv.lock` が古いと失敗する（[`uv sync`](https://docs.astral.sh/uv/reference/cli/#uv-sync)）
 - `pyproject.toml` と `uv.lock` は、Renovate の pep621 マネージャーが更新する（[pep621](https://docs.renovatebot.com/modules/manager/pep621/)）
 
 ## Renovate
