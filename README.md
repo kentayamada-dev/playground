@@ -19,7 +19,7 @@ nodejs と golang を、別々の Dev Container で開発します。ホスト�
 - macOS 以外のホストでは、コンテナを作る前に止める。両方の `devcontainer.json` の `initializeCommand` が、ホストで [`check-host-os.sh`](.devcontainer/scripts/check-host-os/check-host-os.sh) を実行する。理由はダイアログには出ず、コマンドパレットの「Dev Containers: Show Container Log」で開くログの末尾近くに出る
 - 2 つのコンテナは、[`compose.yaml`](compose.yaml) のサービスとして動く。どちらも、リポジトリのルートを `/workspace` にマウントする。イメージは公式イメージをもとに、コンテナごとの Dockerfile でビルドする。Dockerfile を変えたら「Dev Containers: Rebuild Container」で作り直す
 - 一般ユーザー `dev` で動き、sudo は入れていない。root で作業するときは、手元のリポジトリのルートで `docker compose exec -u root golang bash` のように実行する。ユーザー名は `compose.yaml` の `x-build-args` で渡している
-- nodejs は pnpm を使う。版は nodejs の Dockerfile だけで管理し、Renovate が更新する。[`nodejs/pnpm-workspace.yaml`](nodejs/pnpm-workspace.yaml) は、`storeDir` のほかは textlint の [`pnpm-workspace.yaml`](.github/textlint/pnpm-workspace.yaml) とそろえている。golang には `http://golang:8080`（`compose.yaml` の `GOLANG_URL`）で接続する
+- nodejs は pnpm を使う。版は nodejs の Dockerfile だけで管理し、Renovate が更新する。[`nodejs/pnpm-workspace.yaml`](nodejs/pnpm-workspace.yaml) は、`storeDir` のほかは textlint の [`pnpm-workspace.yaml`](.github/textlint/pnpm-workspace.yaml) とそろえている。golang には、`compose.yaml` の `GOLANG_URL` のアドレスで接続する
 - nodejs では npm を使えない。`npm install`・`npm run` などは、`EBADDEVENGINES` のエラーで止まる。[`nodejs/package.json`](nodejs/package.json) の `devEngines.packageManager` で pnpm を指定しているため（[devEngines](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines)）
 - `devEngines.packageManager` には版を書かず、pnpm の版は Dockerfile の 1 か所で管理する。pnpm は `onFail` を省くと `download` として扱うため、`error` を明示している（[pmOnFail](https://pnpm.io/settings/cli#pmonfail)）
 - nodejs と textlint の pnpm は、本体とパッケージを Takumi Guard のレジストリ（`https://npm.flatt.tech/`）から取得する。`npmjs:` と `@jsr` スコープも同じレジストリに向け、`gh:`（GitHub Packages）は使えないようにしている（[Registries](https://pnpm.io/registries)）
@@ -30,29 +30,17 @@ nodejs と golang を、別々の Dev Container で開発します。ホスト�
 
 ### コマンドでコンテナを開く
 
-手元のリポジトリのルートで次のコマンドを実行すると、VS Code がそのコンテナのウィンドウを開きます。
+手元のリポジトリのルートで [`Makefile`](Makefile) のターゲットを実行すると、VS Code がそのコンテナのウィンドウを開きます。
 
-| コンテナ | コマンド |
-| --- | --- |
-| `golang` | `make dev-golang` |
-| `nodejs` | `make dev-nodejs` |
-
-どちらも [`Makefile`](Makefile) から [`open-devcontainer.sh`](.devcontainer/scripts/open-devcontainer/open-devcontainer.sh) にコンテナの名前を渡し、スクリプトが VS Code の `code` コマンドでウィンドウを開きます。
-
-- `code` コマンドがないと、`exec: code: not found` で止まる。VS Code のコマンドパレットで「Shell Command: Install 'code' command in PATH」を実行して入れる（[VS Code のドキュメント](https://code.visualstudio.com/docs/setup/mac)）
-- スクリプトは、`code` の実行に `BUILDX_BAKE_ENTITLEMENTS_FS=0` を付ける。開いたウィンドウの build では、作業ディレクトリの外のファイルの読み書きと、SSH エージェントの転送の確認が止まる（[`entitlements.go`](https://github.com/docker/buildx/blob/v0.38.0/bake/entitlements.go#L280-L386)）
+- VS Code の `code` コマンドがないと、`exec: code: not found` で止まる。VS Code のコマンドパレットで「Shell Command: Install 'code' command in PATH」を実行して入れる（[VS Code のドキュメント](https://code.visualstudio.com/docs/setup/mac)）
+- `open-devcontainer.sh` は、`code` の実行に `BUILDX_BAKE_ENTITLEMENTS_FS=0` を付ける。開いたウィンドウの build では、作業ディレクトリの外のファイルの読み書きと、SSH エージェントの転送の確認が止まる（[`entitlements.go`](https://github.com/docker/buildx/blob/v0.38.0/bake/entitlements.go#L280-L386)）
 - VS Code の画面から開くときは、この変数を付けて起動した VS Code でないと build が失敗する。理由は `open-devcontainer.sh` のコメントに書いている。外す条件は [#272](https://github.com/kentayamada-dev/playground/issues/272) にある
-- `code --folder-uri` に渡す URI の形式は、[vscli](https://github.com/michidk/vscli) の実装にならっている。公式のドキュメントでは確認できていないため、Dev Containers 拡張機能の更新で開けなくなるおそれがある
+- コンテナのウィンドウを開く方法は、公式のドキュメントでは確認できていないため、Dev Containers 拡張機能の更新で開けなくなるおそれがある
 - `devcontainer.json` のコメントは、行頭からの `//` だけに対応する。行末のコメントや末尾のカンマがあると、読めずに止まる
 
 ### サーバーを起動する
 
-コンテナを開いても、サーバーは起動しません。それぞれのコンテナのターミナルで、次のコマンドを実行します。
-
-| コンテナ | コマンド | 動作 |
-| --- | --- | --- |
-| `golang` | `go run .` | `GET /hello` に `{"message":"hello from golang"}` を返す |
-| `nodejs` | `pnpm dev` | `GET /` で golang の `/hello` を呼び、応答のメッセージを返す。ファイルを変えると再起動する |
+コンテナを開いても、サーバーは起動しません。それぞれのコンテナのターミナルで、[`golang/Makefile`](golang/Makefile)・[`nodejs/Makefile`](nodejs/Makefile) のターゲットを実行して起動します。
 
 サーバーが待ち受けているポートは、VS Code が手元に自動で転送します（`remote.autoForwardPorts`）。両方を起動したら、手元のブラウザで `http://localhost:3000` を開きます。
 
