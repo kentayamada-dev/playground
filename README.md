@@ -13,8 +13,8 @@ nodejs と golang を、別々の Dev Container で開発します。ホスト�
 
 | コンテナ | 設定 | 開くディレクトリ | ベースイメージ |
 | --- | --- | --- | --- |
-| `nodejs` | [`devcontainer.json`](.devcontainer/nodejs/devcontainer.json)・[`Dockerfile`](.devcontainer/nodejs/Dockerfile) | [`nodejs`](nodejs) | `node`（Node.js 26） |
-| `golang` | [`devcontainer.json`](.devcontainer/golang/devcontainer.json)・[`Dockerfile`](.devcontainer/golang/Dockerfile) | [`golang`](golang) | `golang`（Go 1.27） |
+| `nodejs` | [`devcontainer.json`](.devcontainer/nodejs/devcontainer.json)・[`Dockerfile`](.devcontainer/nodejs/Dockerfile) | [`nodejs`](nodejs) | `node` |
+| `golang` | [`devcontainer.json`](.devcontainer/golang/devcontainer.json)・[`Dockerfile`](.devcontainer/golang/Dockerfile) | [`golang`](golang) | `golang` |
 
 - macOS 以外のホストでは、コンテナを作る前に止める。両方の `devcontainer.json` の `initializeCommand` が、ホストで [`check-host-os.sh`](.devcontainer/scripts/check-host-os/check-host-os.sh) を実行する。理由はダイアログには出ず、コマンドパレットの「Dev Containers: Show Container Log」で開くログの末尾近くに出る
 - 2 つのコンテナは、[`compose.yaml`](compose.yaml) のサービスとして動く。どちらも、リポジトリのルートを `/workspace` にマウントする。イメージは公式イメージをもとに、コンテナごとの Dockerfile でビルドする。Dockerfile を変えたら「Dev Containers: Rebuild Container」で作り直す
@@ -304,7 +304,7 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 
 - 間接的な依存関係を検査しているのは OSV-Scanner だけ。GitHub の依存関係グラフは、どちらのロックファイルからも間接的な依存関係を読まないため
   - 依存関係グラフは、`pnpm-lock.yaml` の 1 つ目の文書しか読まない（文書の順番を入れ替えて確認した）
-  - pnpm 12 は、1 つ目の文書に pnpm 本体の版を書く。依存関係があるのは 2 つ目の文書（[Reading pnpm-lock.yaml](https://pnpm.io/lockfile)）
+  - pnpm は、1 つ目の文書に pnpm 本体の版を書く。依存関係があるのは 2 つ目の文書（[Reading pnpm-lock.yaml](https://pnpm.io/lockfile)）
   - yamllint の `uv.lock` は、依存関係グラフが読むファイルの一覧にない（[Dependency graph supported package ecosystems](https://docs.github.com/en/code-security/reference/supply-chain-security/dependency-graph-supported-package-ecosystems)）
 - Dependabot のマルウェアアラートは有効にしていない。Dependabot が読むパッケージは、すべて OSV-Scanner でも検査しているため
 - Actions のアクションは SHA で固定しているため、Dependabot のアラートは出ない（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner もデフォルトでは Actions を検査しない
@@ -327,7 +327,6 @@ CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対�
 
 ### `mise.lock` の更新
 
-- `mise.toml` を書き換えたら、`.github` で `mise lock` を実行して `mise.lock` も更新する。mise-action は、`mise.lock` があると `mise install --locked` で入れる。そのため、`mise.lock` にない版やプラットフォームは入らない
 - `mise.lock` には、CI の linux-arm64 だけを記録している。`mise lock` は `--platform` を付けないと `mise.lock` にあるプラットフォームだけを対象にするので、手元で実行しても macOS などの記録は増えない（[`mise lock`](https://mise.jdx.dev/cli/lock.html)）
 
 ### ダウンロードするファイルの検証
@@ -345,18 +344,14 @@ CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対�
 | lychee | aqua | リリースに署名も GitHub の artifact attestations もない。aqua レジストリの定義にも検証の設定がない（[lycheeverse/lychee](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/lycheeverse/lychee/registry.yaml)）。`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest と同じ値になる |
 | bats | aqua | リリースにファイルがなく、タグのソースアーカイブを入れる。`mise lock` は sha256 を記録しないので、版（タグ）でだけ固定している |
 
-- editorconfig-checker は、mise のレジストリで github バックエンドが指定されている
-- shfmt・ghalint・typos は、mise のレジストリでは aqua バックエンドになる。aqua レジストリの定義を mise が検証に使えないため、github バックエンドで入れている。`mise.toml` には `github:mvdan/sh`・`github:suzuki-shunsuke/ghalint`・`github:crate-ci/typos` と書く
-  - shfmt は、aqua レジストリの定義に検証の設定がない（[mvdan/sh](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/mvdan/sh/registry.yaml)）
-  - ghalint は、aqua レジストリの定義の検証を mise が使えない（[suzuki-shunsuke/ghalint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/suzuki-shunsuke/ghalint/registry.yaml)）。cosign は `opts` で渡す形で、mise がネイティブに検証するキーやバンドルの指定がない。SLSA provenance には、署名者の指定がない（[aqua バックエンドの実装](https://github.com/jdx/mise/blob/v2026.9.18/src/backend/aqua.rs#L1368-L1404)）
-  - typos は、aqua レジストリの定義に検証の設定がない（[crate-ci/typos](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/crate-ci/typos/registry.yaml)）。リリースのファイルに付く attestation は、タグとファイルを結び付けるリリースの attestation だけで、ビルドしたワークフローを含まない
+- github バックエンドで入れるツールを選んだ理由は、[`.github/mise.toml`](.github/mise.toml) のコメントに書いている
+- typos のリリースのファイルに付く attestation は、タグとファイルを結び付けるリリースの attestation だけで、ビルドしたワークフローを含まない
 
 ### yamllint の依存関係
 
 yamllint は Python のパッケージで、PyYAML と pathspec に依存します（[PyPI](https://pypi.org/project/yamllint/)）。依存関係まで版と sha256 を固定するため、mise ではなく uv で入れています。uv 本体は mise で入れます。
 
 - [`.github/yamllint`](.github/yamllint) の `pyproject.toml` で yamllint の版を、`uv.lock` で依存関係を含むすべての版と sha256 を固定する
-- `pyproject.toml` を書き換えたら、`.github/yamllint` で `uv lock` を実行して `uv.lock` も更新する。CI は `uv sync --locked` で入れるため、`uv.lock` が古いと失敗する（[`uv sync`](https://docs.astral.sh/uv/reference/cli/#uv-sync)）
 - `pyproject.toml` と `uv.lock` は、Renovate の pep621 マネージャーが更新する（[pep621](https://docs.renovatebot.com/modules/manager/pep621/)）
 
 ## Renovate
@@ -375,9 +370,10 @@ yamllint は Python のパッケージで、PyYAML と pathspec に依存しま�
 | 更新の種類 | マージのしかた |
 | --- | --- |
 | minor・patch・digest | 公開後 14 日を過ぎてから、自動でマージする |
+| major | 公開後 14 日を過ぎてから PR を作る。自動ではマージしない。内容を確認して手動でマージする |
 | pin・pinDigest（バージョンやダイジェストの固定） | 自動でマージする |
 | ロックファイルの更新 | 自動でマージする。PR は毎週月曜の 0〜3 時に作る |
-| major など、上記以外の更新 | 自動ではマージしない。内容を確認して手動でマージする |
+| 上記以外の更新（置き換えなど） | 自動ではマージしない。内容を確認して手動でマージする |
 
 - 自動マージには GitHub の自動マージを使い、必須チェックがすべて通るとマージされる（[Renovate の自動マージ](https://docs.renovatebot.com/key-concepts/automerge/)・[GitHub の自動マージ](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request)）
 - [マージの条件](#マージの条件) のとおり `main` の最新を取り込む必要があるため、同じ実行で作った PR の 2 件目以降は、次の実行まで自動マージされない
