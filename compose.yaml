@@ -34,10 +34,16 @@ services:
   golang:
     build:
       context: .devcontainer/golang
-      args: *build-args
+      args:
+        <<: *build-args
+        GO_CACHE_DIR: &go-cache-dir /gocache
     hostname: golang
     volumes:
       - .:/workspace
+      # コンテナを作り直しても、ダウンロードしたモジュールとビルドの結果を使い回すため
+      - type: volume
+        source: golang-go-cache
+        target: *go-cache-dir
       - type: volume
         source: golang-history
         target: *history-dir
@@ -46,4 +52,5 @@ services:
 volumes:
   nodejs-node-modules:
   nodejs-history:
+  golang-go-cache:
   golang-history:

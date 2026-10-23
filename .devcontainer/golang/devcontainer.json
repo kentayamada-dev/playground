@@ -10,7 +10,16 @@
   "remoteUser": "dev",
   "customizations": {
     "vscode": {
-      "extensions": ["golang.Go"]
+      "settings": {
+        "remote.restoreForwardedPorts": false,
+        "gopls": {
+          "formatting.gofumpt": true,
+          "ui.diagnostic.staticcheck": true
+        }
+      },
+      "extensions": [
+        "golang.Go"
+      ]
     }
   }
 }
