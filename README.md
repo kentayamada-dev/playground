@@ -287,7 +287,7 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 | 仕組み | 実行のタイミング | 結果 |
 | --- | --- | --- |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner` | PR ごと | PR のベースと比べて新しく入ったものがあると失敗する。必須チェックなので、失敗するとマージできない |
-| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-full` | `main` への push と毎日 | 見つかったものを Code scanning に出し、1 件でもあれば失敗する |
+| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-full` | `main` への push と毎日 | 見つかったものを Code scanning に出し、1 件でもあれば失敗する。失敗すると issue で知らせる |
 | Dependabot アラート | アドバイザリが公開されたときと、依存関係を変えて push したとき | 脆弱性を Dependabot のアラートに出す |
 
 - 間接的な依存関係を検査しているのは OSV-Scanner だけ。GitHub の依存関係グラフは、どちらのロックファイルからも間接的な依存関係を読まないため
@@ -297,6 +297,9 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 - Dependabot のマルウェアアラートは有効にしていない。Dependabot が読むパッケージは、すべて OSV-Scanner でも検査しているため
 - Actions のアクションは SHA で固定しているため、Dependabot のアラートは出ない（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner もデフォルトでは Actions を検査しない
 - 修正版がなく影響もない脆弱性は、ロックファイルと同じディレクトリの `osv-scanner.toml` に、理由と期限（`ignoreUntil`）を付けて除外する（例: [`.github/textlint/osv-scanner.toml`](.github/textlint/osv-scanner.toml)）。設定はそのディレクトリのロックファイルにだけ効く（[Configuration](https://google.github.io/osv-scanner/configuration/)）
+- `osv-scanner-full` が失敗すると、issue「fix(deps): 依存関係の検査で見つかった脆弱性を直す」を作る。開いていれば、本文を最新の結果に書き換える
+- issue は [`report-vulnerabilities.sh`](.github/scripts/report-vulnerabilities/report-vulnerabilities.sh) が作り、本文にはもう一度スキャンした結果の表を載せる。スキャンし直せなかったときは、表を載せない
+- 脆弱性を直したら、issue は手動で閉じる
 
 ## シークレットの検査
 
