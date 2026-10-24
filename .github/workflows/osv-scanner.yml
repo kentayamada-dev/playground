@@ -43,36 +43,3 @@ jobs:
       security-events: write # 再利用ワークフローが SARIF を code scanning に上げるため
     with:
       runs-on: ubuntu-26.04-arm
-  # PR の検査は増えた脆弱性しか見ないため、main で失敗しても気づけるよう issue で知らせる。再利用ワークフローにはステップを足せないため、ジョブを分ける
-  # https://google.github.io/osv-scanner/github-action/#scan-on-pull-request https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows
-  report-vulnerabilities:
-    name: report-vulnerabilities
-    needs: osv-scanner-full
-    # needs のジョブが失敗したときだけ true になる。PR では osv-scanner-full が飛ばされるため、このジョブも飛ばされる
-    # https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#failure
-    if: failure()
-    runs-on: ubuntu-26.04-arm
-    timeout-minutes: 5
-    permissions:
-      contents: read
-      issues: write # report-vulnerabilities.sh が issue を作るか書き換えるため
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
-          persist-credentials: false
-      # 全件スキャンの結果はジョブの出力で受け取れるが、上限の 1 MB を超えると受け取れないため、issue の本文用に Markdown でスキャンし直す
-      # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idoutputs
-      - uses: google/osv-scanner-action/osv-scanner-action@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
-        # 脆弱性が見つかると終了コード 1 で終わるが、結果はファイルに書かれているため続ける https://google.github.io/osv-scanner/output/#return-codes
-        continue-on-error: true
-        with:
-          scan-args: |-
-            --format=markdown
-            --output-file=osv-scanner.md
-            -r
-            ./
-      - run: .github/scripts/report-vulnerabilities/report-vulnerabilities.sh osv-scanner.md
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
