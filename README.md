@@ -26,6 +26,7 @@ nodejs と golang を、別々の Dev Container で開発します。ホスト�
 - 公開から 1 日（`minimumReleaseAge: 1440` 分）経っていない版は入れない。待機期間を満たす版がないときと、レジストリが公開日時を返さないときは、インストールが失敗する。以前の版より信頼のレベルが下がった版も入れない（`trustPolicy: no-downgrade`）。どれも [pnpm の設定](https://pnpm.io/settings/dependency-resolution) による
 - golang は、gopls と gofumpt をイメージに入れている。版は golang の Dockerfile だけで管理し、Renovate が更新する
 - bash の履歴、nodejs の `node_modules`・pnpm のストア、golang のモジュールとビルドのキャッシュは、名前付きボリュームに置く。コンテナを作り直しても、履歴とキャッシュは残る。手元の `nodejs/node_modules` は空のディレクトリになる
+- nodejs のコンテナを作ると、`nodejs` で `pnpm install` を実行する。インストールが終わってから、VS Code がコンテナに接続する
 - ウィンドウを閉じても、コンテナは止めない（`shutdownAction: "none"`）
 - 設定の理由は、[`compose.yaml`](compose.yaml)・`devcontainer.json`・Dockerfile のコメントに書いている
 

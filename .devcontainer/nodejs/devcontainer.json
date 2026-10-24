@@ -7,6 +7,9 @@
   // https://containers.dev/implementors/json_reference/
   "shutdownAction": "none",
   "workspaceFolder": "/workspace/nodejs",
+  // postCreateCommand と違い、既定の waitFor では VS Code が終わるまで接続を待つため、拡張機能が開いた時点から node_modules を読める
+  // https://containers.dev/implementors/json_reference/
+  "updateContentCommand": "pnpm install",
   "remoteUser": "dev",
   "customizations": {
     "vscode": {
