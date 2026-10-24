@@ -11,7 +11,7 @@ title='fix(deps): 依存関係の検査で見つかった脆弱性を直す'
 # GITHUB_* は GitHub Actions が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定するため、:? で設定されている前提を示す
 run_link="[依存関係の脆弱性の検査](${GITHUB_SERVER_URL:?}/${GITHUB_REPOSITORY:?}/actions/runs/${GITHUB_RUN_ID:?})"
 # スキャナー自体が失敗するとレポートが書かれないが、検査が止まっていることも知らせるため、一覧なしで issue を作る
-if [[ -s ${report} ]]; then
+if [[ -e ${report} ]]; then
   body="${run_link} が失敗しました。同じ内容をもう一度スキャンした結果です。
 
 $(cat "${report}")"
