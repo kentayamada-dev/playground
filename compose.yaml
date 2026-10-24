@@ -31,6 +31,8 @@ services:
     command: sleep infinity
     environment:
       GOLANG_URL: http://golang:8080
+      NEXT_TELEMETRY_DISABLED: 1
+
   golang:
     build:
       context: .devcontainer/golang

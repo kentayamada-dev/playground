@@ -9,7 +9,6 @@ build:
 test:
 	go test ./...
 
-# 保存時に gopls がかける整形（devcontainer.json の formatting.gofumpt）とそろえるため
 fmt:
 	gofumpt -w .
 

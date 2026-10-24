@@ -298,6 +298,7 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
   - yamllint の `uv.lock` は、依存関係グラフが読むファイルの一覧にない（[Dependency graph supported package ecosystems](https://docs.github.com/en/code-security/reference/supply-chain-security/dependency-graph-supported-package-ecosystems)）
 - Dependabot のマルウェアアラートは有効にしていない。Dependabot が読むパッケージは、すべて OSV-Scanner でも検査しているため
 - Actions のアクションは SHA で固定しているため、Dependabot のアラートは出ない（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner もデフォルトでは Actions を検査しない
+- Go の標準ライブラリは、OSV-Scanner では検査しない。OSV-Scanner はデフォルトでは go.mod の Go の版を読まない（[Scan Go Mod Version](https://google.github.io/osv-scanner/configuration/#scan-go-mod-version)）。代わりに Renovate が、[`golang/go.mod`](golang/go.mod) の `toolchain` の版で脆弱性を照会し、修正版への PR を作る
 - 修正版がなく影響もない脆弱性は、ロックファイルと同じディレクトリの `osv-scanner.toml` に、理由と期限（`ignoreUntil`）を付けて除外する（例: [`.github/textlint/osv-scanner.toml`](.github/textlint/osv-scanner.toml)）。設定はそのディレクトリのロックファイルにだけ効く（[Configuration](https://google.github.io/osv-scanner/configuration/)）
 
 ## シークレットの検査
