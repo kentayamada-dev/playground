@@ -38,6 +38,7 @@ jobs:
     with:
       runs-on: ubuntu-26.04-arm
   # PR の検査は増えた脆弱性しか見ないため、main で失敗しても気づけるよう issue で知らせる。再利用ワークフローにはステップを足せないため、ジョブを分ける
+  # https://google.github.io/osv-scanner/github-action/#scan-on-pull-request https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows
   report-vulnerabilities:
     name: report-vulnerabilities
     needs: osv-scanner-full
