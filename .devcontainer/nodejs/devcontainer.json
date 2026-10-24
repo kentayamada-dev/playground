@@ -7,5 +7,25 @@
   // https://containers.dev/implementors/json_reference/
   "shutdownAction": "none",
   "workspaceFolder": "/workspace/nodejs",
-  "remoteUser": "dev"
+  "remoteUser": "dev",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "remote.restoreForwardedPorts": false,
+        "js/ts.experimental.useTsgo": true,
+        "js/ts.tsdk.path": "./node_modules/typescript",
+        "files.associations": {
+          "*.css": "tailwindcss"
+        },
+        "editor.quickSuggestions": {
+          "strings": "on"
+        }
+      },
+      "extensions": [
+        "TypeScriptTeam.native-preview",
+        "bradlc.vscode-tailwindcss",
+        "EditorConfig.EditorConfig"
+      ]
+    }
+  }
 }
