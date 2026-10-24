@@ -1,4 +1,6 @@
 #!/usr/bin/env bats
+# bats はテストごとに別のプロセスで動かすので、テスト内で変えた変数がほかのテストに漏れないのは意図どおり https://bats-core.readthedocs.io/en/v1.14.0/writing-tests.html
+# shellcheck disable=SC2030,SC2031
 
 setup() {
   bats_require_minimum_version 1.5.0
