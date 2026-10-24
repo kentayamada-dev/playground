@@ -1,4 +1,5 @@
 engineStrict: true
+saveExact: true
 # デフォルト値と同じだが、明示したときだけ minimumReleaseAgeStrict がデフォルトで true になり、待機期間に満たないバージョンへフォールバックして minimumReleaseAgeExclude に自動で追記することがなくなる
 # https://pnpm.io/settings/dependency-resolution#minimumreleaseagestrict
 minimumReleaseAge: 1440

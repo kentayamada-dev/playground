@@ -35,6 +35,13 @@
       "matchStrings": ["\\bpnpm@(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
       "depNameTemplate": "pnpm",
       "datasourceTemplate": "npm"
+    },
+    // golang の Dockerfile で go install する gopls と gofumpt の版を更新する。pnpm と同じく dockerfile マネージャーが拾わないため
+    {
+      "customType": "regex",
+      "managerFilePatterns": [".devcontainer/golang/Dockerfile"],
+      "matchStrings": ["go install (?<depName>\\S+)@(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
+      "datasourceTemplate": "go"
     }
   ],
   "packageRules": [

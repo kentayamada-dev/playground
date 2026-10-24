@@ -24,7 +24,9 @@ nodejs と golang を、別々の Dev Container で開発します。ホスト�
 - `devEngines.packageManager` には版を書かず、pnpm の版は Dockerfile の 1 か所で管理する。pnpm は `onFail` を省くと `download` として扱うため、`error` を明示している（[pmOnFail](https://pnpm.io/settings/cli#pmonfail)）
 - nodejs と textlint の pnpm は、本体とパッケージを Takumi Guard のレジストリ（`https://npm.flatt.tech/`）から取得する。`npmjs:` と `@jsr` スコープも同じレジストリに向け、`gh:`（GitHub Packages）は使えないようにしている（[Registries](https://pnpm.io/registries)）
 - 公開から 1 日（`minimumReleaseAge: 1440` 分）経っていない版は入れない。待機期間を満たす版がないときと、レジストリが公開日時を返さないときは、インストールが失敗する。以前の版より信頼のレベルが下がった版も入れない（`trustPolicy: no-downgrade`）。どれも [pnpm の設定](https://pnpm.io/settings/dependency-resolution) による
-- bash の履歴と、nodejs の `node_modules`・pnpm のストアは、名前付きボリュームに置く。コンテナを作り直しても、履歴は残る。手元の `nodejs/node_modules` は空のディレクトリになる
+- golang は、gopls と gofumpt をイメージに入れている。版は golang の Dockerfile だけで管理し、Renovate が更新する
+- bash の履歴、nodejs の `node_modules`・pnpm のストア、golang のモジュールとビルドのキャッシュは、名前付きボリュームに置く。コンテナを作り直しても、履歴とキャッシュは残る。手元の `nodejs/node_modules` は空のディレクトリになる
+- nodejs のコンテナを作ると、`nodejs` で `pnpm install` を実行する。インストールが終わってから、VS Code がコンテナに接続する
 - ウィンドウを閉じても、コンテナは止めない（`shutdownAction: "none"`）
 - 設定の理由は、[`compose.yaml`](compose.yaml)・`devcontainer.json`・Dockerfile のコメントに書いている
 
@@ -296,6 +298,7 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
   - yamllint の `uv.lock` は、依存関係グラフが読むファイルの一覧にない（[Dependency graph supported package ecosystems](https://docs.github.com/en/code-security/reference/supply-chain-security/dependency-graph-supported-package-ecosystems)）
 - Dependabot のマルウェアアラートは有効にしていない。Dependabot が読むパッケージは、すべて OSV-Scanner でも検査しているため
 - Actions のアクションは SHA で固定しているため、Dependabot のアラートは出ない（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner もデフォルトでは Actions を検査しない
+- Go の標準ライブラリは、OSV-Scanner では検査しない。OSV-Scanner は go.mod の Go の版を読み取るが、デフォルトでは検査に使わない（[Scan Go Mod Version](https://google.github.io/osv-scanner/configuration/#scan-go-mod-version)）。代わりに Renovate が、[`golang/go.mod`](golang/go.mod) の `toolchain` の版で脆弱性を照会し、修正版への PR を作る
 - 修正版がなく影響もない脆弱性は、ロックファイルと同じディレクトリの `osv-scanner.toml` に、理由と期限（`ignoreUntil`）を付けて除外する（例: [`.github/textlint/osv-scanner.toml`](.github/textlint/osv-scanner.toml)）。設定はそのディレクトリのロックファイルにだけ効く（[Configuration](https://google.github.io/osv-scanner/configuration/)）
 
 ## シークレットの検査
