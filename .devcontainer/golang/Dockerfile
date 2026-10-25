@@ -5,12 +5,6 @@ LABEL org.opencontainers.image.title="golang" \
   org.opencontainers.image.source="https://github.com/kentayamada-dev/playground" \
   org.opencontainers.image.licenses="MIT"
 
-# gopls と gofumpt の版はここだけで管理し、.github/renovate.json5 の customManagers で Renovate が更新する
-# go install は版を付けると 1 つのモジュールのパッケージしか受け付けないため、モジュールごとに分ける https://go.dev/ref/mod#go-install
-RUN go install golang.org/x/tools/gopls@v0.23.0 \
-  && go install mvdan.cc/gofumpt@v0.12.0 \
-  && go clean -cache -modcache
-
 # 値は compose.yaml の golang の build.args から渡す
 ARG USER_NAME
 ARG HISTORY_DIR
@@ -22,7 +16,6 @@ ENV GOMODCACHE="$GO_CACHE_DIR/mod" GOCACHE="$GO_CACHE_DIR/build"
 # https://github.com/docker-library/golang/blob/8380885ec449224702b989d8792d2e1470a46e89/1.27/trixie/Dockerfile#L129 https://go.dev/doc/toolchain#select
 ENV GOTOOLCHAIN=auto
 
-# GOPATH の /go は誰でも書き込めるため、このユーザーでも go install を使える https://github.com/docker-library/golang/blob/8380885ec449224702b989d8792d2e1470a46e89/1.27/trixie/Dockerfile#L135
 # compose.yaml でマウントする空のボリュームには、Docker がこのディレクトリを所有者ごとコピーするため、sudo なしでもこのユーザーが書き込める
 # https://github.com/moby/moby/blob/3f38b15147b14ce0ce7b11558a1aa9e9f14db103/daemon/container/container_unix.go#L386-L400
 # bash は exit や SIGHUP では履歴を書くが、端末を開いたままコンテナを止めると書かずに終わるため、コマンドごとに書き出す
@@ -32,3 +25,12 @@ RUN useradd --create-home --user-group --shell /bin/bash "$USER_NAME" \
   && chown "$USER_NAME:$USER_NAME" "$HISTORY_DIR" "$GO_CACHE_DIR" \
   && echo "export PROMPT_COMMAND='history -a' HISTFILE=$HISTORY_DIR/.bash_history" >>"/home/$USER_NAME/.bashrc"
 USER $USER_NAME
+
+# gopls と gofumpt の版はここだけで管理し、.github/renovate.json5 の customManagers で Renovate が更新する
+# go install は版を付けると 1 つのモジュールのパッケージしか受け付けないため、モジュールごとに分ける https://go.dev/ref/mod#go-install
+# GOPATH の /go は誰でも書き込めるため、このユーザーでも go install を使える https://github.com/docker-library/golang/blob/8380885ec449224702b989d8792d2e1470a46e89/1.27/trixie/Dockerfile#L135
+# root で入れると go install が作る $GOPATH/pkg/sumdb が root のものになり、このユーザーがツールチェーンのダウンロードを検証できなくなる
+# https://github.com/golang/go/blob/go1.27.3/src/cmd/go/internal/modfetch/sumdb.go#L250-L261
+RUN go install golang.org/x/tools/gopls@v0.23.0 \
+  && go install mvdan.cc/gofumpt@v0.12.0 \
+  && go clean -cache -modcache
