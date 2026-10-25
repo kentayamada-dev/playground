@@ -7,7 +7,7 @@ LABEL org.opencontainers.image.title="nodejs" \
 
 # pnpm の版はここだけで管理し、.github/renovate.json5 の customManagers で Renovate が更新する
 # .github/textlint の pnpm と同じく、Takumi Guard のレジストリから取得する
-RUN npm install --global --registry=https://npm.flatt.tech/ pnpm@12.12.0
+RUN npm install --global --registry=https://npm.flatt.tech/ pnpm@12.12.1
 
 # 値は compose.yaml の nodejs の build.args から渡す
 ARG USER_NAME
