@@ -29,7 +29,7 @@ jobs:
         with:
           # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
           # https://github.com/jdx/mise-action/blob/v5.0.0/src/index.ts#L724-L745
-          version: 2026.10.7
+          version: 2026.10.8
           working_directory: .github
           install_args: zizmor
       # 注釈は 1 ステップで最初の 10 件しか表示されず、残りはログにだけ出る https://docs.zizmor.sh/usage/#output-formats
