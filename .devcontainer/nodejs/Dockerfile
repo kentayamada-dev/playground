@@ -5,9 +5,12 @@ LABEL org.opencontainers.image.title="nodejs" \
   org.opencontainers.image.source="https://github.com/kentayamada-dev/playground" \
   org.opencontainers.image.licenses="MIT"
 
-# pnpm の版はここだけで管理し、.github/renovate.json5 の customManagers で Renovate が更新する
+# pnpm の版はここだけで管理し、.github/renovate.json5 で読み込む customManagers:dockerfileVersions で Renovate が更新する
+# このプリセットは renovate: のコメントのすぐ次の行の ARG しか読まないため、間に行を入れない
+# renovate: datasource=npm depName=pnpm
+ARG PNPM_VERSION=12.10.1
 # .github/textlint の pnpm と同じく、Takumi Guard のレジストリから取得する
-RUN npm install --global --registry=https://npm.flatt.tech/ pnpm@12.10.1
+RUN npm install --global --registry=https://npm.flatt.tech/ "pnpm@${PNPM_VERSION}"
 
 # 値は compose.yaml の nodejs の build.args から渡す
 ARG USER_NAME

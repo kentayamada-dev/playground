@@ -26,11 +26,13 @@ RUN useradd --create-home --user-group --shell /bin/bash "$USER_NAME" \
   && echo "export PROMPT_COMMAND='history -a' HISTFILE=$HISTORY_DIR/.bash_history" >>"/home/$USER_NAME/.bashrc"
 USER $USER_NAME
 
-# gopls と gofumpt の版はここだけで管理し、.github/renovate.json5 の customManagers で Renovate が更新する
-# go install は版を付けると 1 つのモジュールのパッケージしか受け付けないため、モジュールごとに分ける https://go.dev/ref/mod#go-install
+# gopls と gofumpt の版は tools のツールごとの go.mod で管理し、Renovate の gomod マネージャーが更新する
+# 1 つの go.mod にまとめると、gopls の golang.org/x/tools が gofumpt の要求する版に引き上げられ、gopls の公開時と違う組み合わせでビルドされるため分ける
+# https://github.com/golang/tools/blob/gopls/v0.23.0/gopls/go.mod https://github.com/mvdan/gofumpt/blob/v0.12.0/go.mod
+COPY tools /tmp/tools
 # GOPATH の /go は誰でも書き込めるため、このユーザーでも go install を使える https://github.com/docker-library/golang/blob/8380885ec449224702b989d8792d2e1470a46e89/1.27/trixie/Dockerfile#L135
 # root で入れると go install が作る $GOPATH/pkg/sumdb が root のものになり、このユーザーがツールチェーンのダウンロードを検証できなくなる
 # https://github.com/golang/go/blob/go1.27.3/src/cmd/go/internal/modfetch/sumdb.go#L250-L261
-RUN go install golang.org/x/tools/gopls@v0.23.0 \
-  && go install mvdan.cc/gofumpt@v0.12.0 \
+RUN go install -C /tmp/tools/gopls tool \
+  && go install -C /tmp/tools/gofumpt tool \
   && go clean -cache -modcache
