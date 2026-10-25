@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - test/osv-scanner-default-runner
   # 依存関係を変えていなくても、使っているバージョンが後から脆弱性やマルウェアと判定されるため毎日検査する
   schedule:
     - cron: '41 21 * * *'
@@ -19,6 +20,8 @@ jobs:
   # 必須チェックの名前は「このジョブ名 / 再利用ワークフローのジョブ名」になるため、変えるときは rulesets/main.json も合わせる https://github.com/kentayamada-dev/playground/pull/95
   osv-scanner:
     if: github.event_name == 'pull_request'
+    # with で runs-on を渡すと Renovate の github-actions マネージャーが検出せず、ランナーの版が古いまま残るため、両方のジョブで再利用ワークフローの既定の ubuntu-latest を使う
+    # https://github.com/renovatebot/renovate/blob/44.151.1/lib/modules/manager/github-actions/extract.ts#L311-L316
     uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
     # 再利用ワークフローのジョブが要求する権限。呼び出し側より広げられないため、ここで与えないと起動できない
     # https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows
@@ -26,8 +29,6 @@ jobs:
       actions: read # 再利用ワークフローが SARIF を code scanning に上げるのに要る https://github.com/github/codeql-action/issues/2117
       contents: read
       security-events: write # 再利用ワークフローが SARIF を code scanning に上げるため
-    with:
-      runs-on: ubuntu-26.04-arm
   osv-scanner-full:
     if: github.event_name != 'pull_request'
     uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
@@ -35,5 +36,3 @@ jobs:
       actions: read # 再利用ワークフローが SARIF を code scanning に上げるのに要る https://github.com/github/codeql-action/issues/2117
       contents: read
       security-events: write # 再利用ワークフローが SARIF を code scanning に上げるため
-    with:
-      runs-on: ubuntu-26.04-arm
