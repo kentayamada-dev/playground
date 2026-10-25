@@ -18,6 +18,10 @@ ARG GO_CACHE_DIR
 
 ENV GOMODCACHE="$GO_CACHE_DIR/mod" GOCACHE="$GO_CACHE_DIR/build"
 
+# 公式イメージは GOTOOLCHAIN=local で go.mod の toolchain 行を無視するため、イメージより新しい版が書かれていればその版を使わせる
+# https://github.com/docker-library/golang/blob/8380885ec449224702b989d8792d2e1470a46e89/1.27/trixie/Dockerfile#L129 https://go.dev/doc/toolchain#select
+ENV GOTOOLCHAIN=auto
+
 # GOPATH の /go は誰でも書き込めるため、このユーザーでも go install を使える https://github.com/docker-library/golang/blob/8380885ec449224702b989d8792d2e1470a46e89/1.27/trixie/Dockerfile#L135
 # compose.yaml でマウントする空のボリュームには、Docker がこのディレクトリを所有者ごとコピーするため、sudo なしでもこのユーザーが書き込める
 # https://github.com/moby/moby/blob/3f38b15147b14ce0ce7b11558a1aa9e9f14db103/daemon/container/container_unix.go#L386-L400
