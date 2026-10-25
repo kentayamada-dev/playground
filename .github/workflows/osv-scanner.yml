@@ -13,6 +13,12 @@ on:
 # 書き込み権限はジョブごとに与え、あとから足したジョブに引き継がせない https://docs.zizmor.sh/audits/#excessive-permissions
 permissions: {}
 
+# 同じ PR に push し直したら古い実行を取り消す。PR 以外は実行ごとにグループを分け、待っている実行も後から来た実行に取り消されないようにする
+# https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 # Code scanning は PR と main の結果を category で突き合わせ、category は「呼び出し元のワークフローのパス:再利用ワークフローのジョブ名」になる。
 # ワークフローを分けると突き合わせられず、PR の Code scanning の結果が neutral になる https://github.com/github/codeql-action/issues/1179
 jobs:
