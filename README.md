@@ -307,7 +307,15 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 - Dependabot のマルウェアアラートは有効にしていない。Dependabot が読むパッケージは、すべて OSV-Scanner でも検査しているため
 - Actions のアクションは SHA で固定しているため、Dependabot のアラートは出ない（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner もデフォルトでは Actions を検査しない
 - Go の標準ライブラリは、OSV-Scanner では検査しない。OSV-Scanner は go.mod の Go の版を読み取るが、デフォルトでは検査に使わない（[Scan Go Mod Version](https://google.github.io/osv-scanner/configuration/#scan-go-mod-version)）。代わりに Renovate が、[`golang/go.mod`](golang/go.mod) の `toolchain` の版で脆弱性を照会し、修正版への PR を作る
-- 修正版がなく影響もない脆弱性は、ロックファイルと同じディレクトリの `osv-scanner.toml` に、理由と期限（`ignoreUntil`）を付けて除外する（例: [`.github/textlint/osv-scanner.toml`](.github/textlint/osv-scanner.toml)）。設定はそのディレクトリのロックファイルにだけ効く（[Configuration](https://google.github.io/osv-scanner/configuration/)）
+- 見つかった脆弱性は、依存関係の種類ごとに次のように直す
+  - 直接の依存関係は、Renovate が修正版への PR を作る（[Renovate](#renovate)）
+  - pnpm のロックファイルにある間接的な依存関係には、Renovate は PR を作らない。毎週のロックファイルの更新で上がる（例: `fast-uri` は [#305](https://github.com/kentayamada-dev/playground/pull/305) で上がった）
+  - 毎週の更新を待たずに直すときは、Dependency Dashboard の issue の「Awaiting Schedule」で、ロックファイルの更新を選ぶ。次の Renovate の実行で PR が作られる（[`dependency-dashboard.ts`](https://github.com/renovatebot/renovate/blob/44.151.1/lib/workers/repository/dependency-dashboard.ts#L515-L524)）
+  - Dev Container の Go のツールの依存関係は、依存関係だけを上げず、ツールの新しい版で上げる。理由は、golang の Dockerfile のコメントに書いている
+- 次の脆弱性は、ロックファイルと同じディレクトリの `osv-scanner.toml` に、理由と期限（`ignoreUntil`）を付けて除外する。設定はそのディレクトリのロックファイルにだけ効く（[Configuration](https://google.github.io/osv-scanner/configuration/)）
+  - 修正版がなく、影響もない脆弱性（例: [`.github/textlint/osv-scanner.toml`](.github/textlint/osv-scanner.toml)）
+  - 修正版はあるが、すぐには取り込めない脆弱性。依存元が修正版を使う版を出すのを待つときや、公開後 14 日の待機が明けるのを待つときなど。期限は取り込める見込みの日にし、理由に何を待っているかを書く
+- 期限を過ぎると除外は切れ、また検出される（[`config.go`](https://github.com/google/osv-scanner/blob/v2.6.0/internal/config/config.go#L149-L157)）。除外が要らなくなると、OSV-Scanner のログに `has unused ignores` と出る（CI のログで確認した）
 
 ## シークレットの検査
 
