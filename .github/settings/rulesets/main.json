@@ -101,6 +101,10 @@
           {
             "context": "hadolint",
             "integration_id": 15368
+          },
+          {
+            "context": "devcontainer",
+            "integration_id": 15368
           }
         ]
       }
