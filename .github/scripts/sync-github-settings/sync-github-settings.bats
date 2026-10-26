@@ -5,13 +5,13 @@
 setup() {
   bats_require_minimum_version 1.5.0
 
-  # shellcheck disable=SC2154 # BATS_TEST_TMPDIR は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
+  # shellcheck disable=SC2154 # BATS_TEST_TMPDIR は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する https://github.com/koalaman/shellcheck/blob/v0.11.0/src/ShellCheck/Analytics.hs#L256-L261
   repo="${BATS_TEST_TMPDIR}/repo"
   mkdir -p "${repo}"
   repo=$(cd "${repo}" && pwd -P)
   script="${repo}/.github/scripts/sync-github-settings/sync-github-settings.sh"
   settings="${repo}/.github/settings"
-  # shellcheck disable=SC2154 # BATS_TEST_DIRNAME は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
+  # shellcheck disable=SC2154 # BATS_TEST_DIRNAME は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する https://github.com/koalaman/shellcheck/blob/v0.11.0/src/ShellCheck/Analytics.hs#L256-L261
   real_settings="${BATS_TEST_DIRNAME}/../../settings"
   mkdir -p "${repo}/.github/scripts/sync-github-settings" "${settings}/rulesets"
   cp "${BATS_TEST_DIRNAME}/sync-github-settings.sh" "${script}"
@@ -20,7 +20,6 @@ setup() {
   echo '{}' >"${settings}/actions.json"
   echo '[]' >"${settings}/labels.json"
 
-  # gh api の偽物。GitHub 上の状態を $STUB_DIR 配下の JSON として読み書きする
   export STUB_DIR="${BATS_TEST_TMPDIR}/stub"
   mkdir -p "${STUB_DIR}/bin"
   PATH="${STUB_DIR}/bin:${PATH}"
@@ -70,7 +69,7 @@ fresh_or_stale() {
   fi
 }
 
-# STUB_FAIL は「メソッド エンドポイント」に一致させるパターン
+# STUB_FAIL は「メソッド エンドポイント」に一致させるグロブのパターンで、* を使えるよう右辺をクォートしない
 if [ -n "${STUB_FAIL-}" ] && [[ "$method $endpoint" == $STUB_FAIL ]]; then
   echo "gh: Server Error (HTTP 500)" >&2
   exit 1
@@ -340,7 +339,6 @@ assert_github_rulesets() {
   fi
 }
 
-# スクリプトが使うコマンドのうち、指定したものだけがない PATH を作る
 path_without() {
   local dir="${BATS_TEST_TMPDIR}/path-without-$1" command target
   mkdir -p "${dir}"

@@ -22,7 +22,7 @@
   // デフォルトでは PR にラベルを付けないため、.github/settings/labels.json の dependencies を付ける https://docs.renovatebot.com/configuration-options/#labels
   "labels": ["dependencies"],
   // GitHub の依存グラフに textlint の依存が出ず、Dependabot alerts からは脆弱性修正 PR が作られないため、OSV のデータベースでも照会させる
-  // https://docs.renovatebot.com/configuration-options/#osvvulnerabilityalerts
+  // https://github.com/kentayamada-dev/playground/pull/215 https://docs.renovatebot.com/configuration-options/#osvvulnerabilityalerts
   "osvVulnerabilityAlerts": true,
   // .devcontainer/golang/tools の go.mod には Go のファイルがなく、Renovate が実行する go get -t ./... はどのパッケージにも一致しないため、
   // tool ディレクティブを読む go mod tidy で go.mod と go.sum を新しい版にそろえる https://github.com/renovatebot/renovate/blob/44.151.1/lib/modules/manager/gomod/artifacts.ts#L271 https://github.com/renovatebot/renovate/blob/44.151.1/lib/modules/manager/gomod/artifacts.ts#L310-L316

@@ -4,7 +4,7 @@
 actionlint = "1.7.12"
 bats = "1.14.0"
 betterleaks = "1.9.0"
-# mise のレジストリで github バックエンドが指定されているため、github: を付けずに書く
+# mise のレジストリで github バックエンドが指定されているため、github: を付けずに書く https://github.com/jdx/mise/blob/v2026.10.8/registry/editorconfig-checker.toml#L2
 editorconfig-checker = "4.0.2"
 # mise のレジストリでは aqua バックエンドだが、aqua レジストリの定義に検証の設定がないため、github バックエンドで入れる
 # https://github.com/aquaproj/aqua-registry/blob/main/pkgs/crate-ci/typos/registry.yaml

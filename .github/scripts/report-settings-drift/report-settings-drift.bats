@@ -7,16 +7,15 @@
 setup() {
   bats_require_minimum_version 1.5.0
 
-  # shellcheck disable=SC2154 # BATS_TEST_DIRNAME は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
+  # shellcheck disable=SC2154 # BATS_TEST_DIRNAME は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する https://github.com/koalaman/shellcheck/blob/v0.11.0/src/ShellCheck/Analytics.hs#L256-L261
   script="${BATS_TEST_DIRNAME}/report-settings-drift.sh"
-  # shellcheck disable=SC2154 # BATS_TEST_TMPDIR は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
+  # shellcheck disable=SC2154 # BATS_TEST_TMPDIR は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する https://github.com/koalaman/shellcheck/blob/v0.11.0/src/ShellCheck/Analytics.hs#L256-L261
   report="${BATS_TEST_TMPDIR}/drift.txt"
   echo 'ずれ: ラベル bug が GitHub にありません' >"${report}"
   # 外部リンクの定期検査はこのファイルも読むため、lychee が検査しない example.com をダミーの URL に使う
   # https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L175
   export GITHUB_SERVER_URL=https://example.com GITHUB_REPOSITORY=owner/repo GITHUB_RUN_ID=123
 
-  # gh issue の偽物。GitHub 上の issue を $STUB_DIR/issues.json として読み書きする
   export STUB_DIR="${BATS_TEST_TMPDIR}/stub"
   mkdir -p "${STUB_DIR}/bin"
   PATH="${STUB_DIR}/bin:${PATH}"
@@ -32,7 +31,6 @@ fi
 command=$2
 shift 2
 
-# STUB_FAIL は「issue サブコマンド」に一致させるパターン
 if [ -n "${STUB_FAIL-}" ] && [[ "issue $command" == $STUB_FAIL ]]; then
   echo "gh: Server Error (HTTP 500)" >&2
   exit 1

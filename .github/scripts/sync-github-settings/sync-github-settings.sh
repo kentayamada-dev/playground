@@ -33,7 +33,7 @@ drift() {
 
 report_drift() {
   local subject=$1 desired actual
-  # GitHub は配列を定義と違う順で返すことがある（selected-actions の patterns_allowed で確認）。定義の配列はどれも順序で意味が変わらないとみなし、並べ替えて比べる
+  # GitHub は配列を定義と違う順で返すことがある（selected-actions の patterns_allowed で確認）。定義の配列はどれも順序で意味が変わらないとみなし、並べ替えて比べる https://github.com/kentayamada-dev/playground/pull/190
   desired=$(jq -S 'walk(if type == "array" then sort else . end)' <<<"$2")
   actual=$(jq -S 'walk(if type == "array" then sort else . end)' <<<"$3")
   if [[ ${desired} != "${actual}" ]]; then
@@ -173,7 +173,7 @@ validate_security() {
 security_feature_enabled() {
   local feature=$1 response
   if [[ ${feature} != vulnerability_alerts ]]; then
-    # コマンド置換のなかで呼ばれて set -e が効かないため、失敗を明示的に返す。gh_get は失敗を自分で返すので、そのなかで set -e が効かなくても困らない
+    # コマンド置換のなかで呼ばれて set -e が効かないため、失敗を明示的に返す。gh_get は失敗を自分で返すので、そのなかで set -e が効かなくても困らない https://www.gnu.org/software/bash/manual/html_node/Command-Execution-Environment.html
     # shellcheck disable=SC2310
     response=$(gh_get "${feature} の取得" "repos/{owner}/{repo}/${feature//_/-}") || return 1
     jq -r .enabled <<<"${response}"
@@ -332,7 +332,6 @@ sync_labels() {
   done <<<"${stale}"
 }
 
-# --check では GitHub を変えず、反映すると変わる箇所をずれとして示す
 check_only=false
 if [[ $# -eq 1 ]] && [[ $1 == --check ]]; then
   check_only=true

@@ -32,7 +32,6 @@ jobs:
           version: 2026.10.8
           working_directory: .github
           install_args: zizmor
-      # 注釈は 1 ステップで最初の 10 件しか表示されず、残りはログにだけ出る https://docs.zizmor.sh/usage/#output-formats
       - run: zizmor --strict-collection --persona=pedantic --format=github .
         env:
           # トークンがないとオフラインで動き、impostor-commit などの GitHub API を使う監査が飛ばされる https://docs.zizmor.sh/usage/#operating-modes

@@ -34,17 +34,14 @@ jobs:
           version: 2026.10.8
           working_directory: .github
           install_args: hadolint
-      # 設定ファイルを読めないと、hadolint はエラーを出すだけで既定の info のまま検査を続け、style の指摘で失敗しなくなるため、先に確かめる
-      # https://github.com/hadolint/hadolint/blob/v2.15.1/app/Main.hs#L89-L93
-      # ラベルの指摘（DL3049・DL3050）は info で、failure-threshold が効いていなくても失敗するため、外して style の DL3048 だけで確かめる
-      # https://github.com/hadolint/hadolint/blob/v2.15.1/src/Hadolint/Rule/DL3049.hs#L32-L33 https://github.com/hadolint/hadolint/blob/v2.15.1/src/Hadolint/Rule/DL3050.hs#L11-L13
+      # 設定ファイルを読めないと、hadolint はエラーを出すだけで既定の info のまま検査を続け、style の指摘で失敗しなくなるため、先に確かめる https://github.com/hadolint/hadolint/blob/v2.15.1/app/Main.hs#L89-L93
+      # ラベルの指摘（DL3049・DL3050）は info で、failure-threshold が効いていなくても失敗するため、外して style の DL3048 だけで確かめる https://github.com/hadolint/hadolint/blob/v2.15.1/src/Hadolint/Rule/DL3049.hs#L32-L33 https://github.com/hadolint/hadolint/blob/v2.15.1/src/Hadolint/Rule/DL3050.hs#L11-L13
       - run: |
           if printf 'FROM debian:13\nLABEL Foo=bar\n' | hadolint --config "$config_file" --ignore DL3049 --ignore DL3050 -; then
             echo "エラー: style の指摘（DL3048）で失敗しなかった。$config_file の failure-threshold が効いていない" >&2
             exit 1
           fi
-      # hadolint はファイルを渡さないと「Please provide a Dockerfile」で失敗するが、-exec の + の形は一致するファイルがなければ実行しない
-      # https://github.com/hadolint/hadolint/blob/v2.15.1/app/Main.hs#L58-L59 https://github.com/kentayamada-dev/playground/pull/235
+      # hadolint はファイルを渡さないと「Please provide a Dockerfile」で失敗するが、-exec の + の形は一致するファイルがなければ実行しない https://github.com/hadolint/hadolint/blob/v2.15.1/app/Main.hs#L58-L59 https://github.com/kentayamada-dev/playground/pull/235
       # hadolint の失敗が find の終了コードに伝わるのは + の形だけのため、; の形にしない https://man7.org/linux/man-pages/man1/find.1.html
       - run: >-
           find . -path ./.git -prune -o -type f

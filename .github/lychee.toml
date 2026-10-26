@@ -3,7 +3,7 @@ no_progress = true
 require_https = true
 
 # nodejs と golang のサーバーがコンテナのなかで待ち受けるアドレスで、CI からは接続できないため
-# このファイルも検査の対象で、localhost の行からは http://localhost/ が拾われるため、ポートの有無によらず一致させる
+# このファイルも検査の対象で、localhost の行からは http://localhost/ が拾われるため、ポートの有無によらず一致させる https://github.com/kentayamada-dev/playground/pull/235
 exclude = [
   '^http://localhost\b',
   '^http://golang:8080\b',

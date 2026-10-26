@@ -3,7 +3,7 @@ name: renovate
 on:
   schedule:
     # main の必須チェックは最新への追従を求め、同じ実行で作った PR の 2 件目以降は次の実行まで自動マージされないため、1 日に何度も動かす。
-    # 3 時間ごとにしても 1 日の起動回数は毎時と同じ 4 回前後だったため、予定時刻の多い毎時にし、混雑で遅れやすい毎時 0 分は避ける https://github.com/kentayamada-dev/playground/issues/50 https://github.com/kentayamada-dev/playground/issues/94 https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule
+    # 1 日の起動回数は cron の間隔によらないため、予定時刻の多い毎時にし、混雑で遅れやすい毎時 0 分は避ける https://github.com/kentayamada-dev/playground/issues/50 https://github.com/kentayamada-dev/playground/issues/94 https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule
     - cron: '23 * * * *'
   workflow_dispatch:
 

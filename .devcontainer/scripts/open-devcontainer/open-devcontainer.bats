@@ -4,11 +4,11 @@ setup() {
   bats_require_minimum_version 1.5.0
 
   # スクリプトはリポジトリのルートを自分の場所から決めるため、偽物のリポジトリにコピーして実行する
-  # shellcheck disable=SC2154 # BATS_TEST_TMPDIR は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
+  # shellcheck disable=SC2154 # BATS_TEST_TMPDIR は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する https://github.com/koalaman/shellcheck/blob/v0.11.0/src/ShellCheck/Analytics.hs#L256-L261
   mkdir -p "${BATS_TEST_TMPDIR}/repo/.devcontainer/scripts/open-devcontainer" "${BATS_TEST_TMPDIR}/repo/.devcontainer/golang" "${BATS_TEST_TMPDIR}/repo/.devcontainer/nodejs"
   repo=$(cd "${BATS_TEST_TMPDIR}/repo" && pwd -P)
   script="${repo}/.devcontainer/scripts/open-devcontainer/open-devcontainer.sh"
-  # shellcheck disable=SC2154 # BATS_TEST_DIRNAME は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
+  # shellcheck disable=SC2154 # BATS_TEST_DIRNAME は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する https://github.com/koalaman/shellcheck/blob/v0.11.0/src/ShellCheck/Analytics.hs#L256-L261
   cp "${BATS_TEST_DIRNAME}/open-devcontainer.sh" "${script}"
   cat >"${repo}/.devcontainer/golang/devcontainer.json" <<'EOF'
 {
@@ -27,7 +27,6 @@ EOF
   # 手元の環境に同じ変数があると、スクリプトが付けなくてもテストが通るため消す
   unset BUILDX_BAKE_ENTITLEMENTS_FS
 
-  # code の偽物。渡された引数を 1 行に 1 つずつ $STUB_DIR/code-args に、BUILDX_BAKE_ENTITLEMENTS_FS の値を $STUB_DIR/code-env に残す
   export STUB_DIR="${BATS_TEST_TMPDIR}/stub"
   mkdir -p "${STUB_DIR}/bin"
   PATH="${STUB_DIR}/bin:${PATH}"

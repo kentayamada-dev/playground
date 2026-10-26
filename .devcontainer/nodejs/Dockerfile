@@ -6,7 +6,7 @@ LABEL org.opencontainers.image.title="nodejs" \
   org.opencontainers.image.licenses="MIT"
 
 # pnpm の版はここだけで管理し、.github/renovate.json5 で読み込む customManagers:dockerfileVersions で Renovate が更新する
-# このプリセットは renovate: のコメントのすぐ次の行の ARG しか読まないため、間に行を入れない
+# このプリセットは renovate: のコメントのすぐ次の行の ARG しか読まないため、間に行を入れない https://github.com/renovatebot/renovate/blob/44.151.1/lib/config/presets/internal/custom-managers.preset.ts#L57
 # renovate: datasource=npm depName=pnpm
 ARG PNPM_VERSION=12.12.1
 # .github/textlint の pnpm と同じく、Takumi Guard のレジストリから取得する
@@ -17,10 +17,8 @@ ARG USER_NAME
 ARG HISTORY_DIR
 ARG NODE_MODULES_DIR
 
-# compose.yaml でマウントする空のボリュームには、Docker がこのディレクトリを所有者ごとコピーするため、sudo なしでもこのユーザーが書き込める
-# https://github.com/moby/moby/blob/3f38b15147b14ce0ce7b11558a1aa9e9f14db103/daemon/container/container_unix.go#L386-L400
-# bash は exit や SIGHUP では履歴を書くが、端末を開いたままコンテナを止めると書かずに終わるため、コマンドごとに書き出す
-# https://github.com/kentayamada-dev/playground/pull/235
+# compose.yaml でマウントする空のボリュームには、Docker がこのディレクトリを所有者ごとコピーするため、sudo なしでもこのユーザーが書き込める https://github.com/moby/moby/blob/3f38b15147b14ce0ce7b11558a1aa9e9f14db103/daemon/container/container_unix.go#L386-L400
+# bash は exit や SIGHUP では履歴を書くが、端末を開いたままコンテナを止めると書かずに終わるため、コマンドごとに書き出す https://github.com/kentayamada-dev/playground/pull/235
 RUN useradd --create-home --user-group --shell /bin/bash "$USER_NAME" \
   && mkdir -p "$HISTORY_DIR" "$NODE_MODULES_DIR" \
   && chown "$USER_NAME:$USER_NAME" "$HISTORY_DIR" "$NODE_MODULES_DIR" \

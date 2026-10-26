@@ -7,7 +7,7 @@ if [[ $# -ne 1 ]]; then
 fi
 
 title='chore: 定期検査で見つかった GitHub の設定と定義のずれを直す'
-# GITHUB_* は GitHub Actions が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定するため、:? で設定されている前提を示す
+# GITHUB_* は GitHub Actions が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定するため、:? で設定されている前提を示す https://github.com/koalaman/shellcheck/blob/v0.11.0/src/ShellCheck/Analytics.hs#L256-L261
 run_url="${GITHUB_SERVER_URL:?}/${GITHUB_REPOSITORY:?}/actions/runs/${GITHUB_RUN_ID:?}"
 
 if [[ $1 == --resolved ]]; then
