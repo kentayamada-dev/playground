@@ -52,7 +52,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-      issues: write # リンク切れを見つけたら、report-broken-links.sh が issue を作るか書き換えるため
+      issues: write # report-broken-links.sh が、リンク切れを見つけたら issue を作るか書き換え、すべて通ったら閉じるため
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -79,6 +79,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - if: failure() && steps.lychee.outcome == 'failure'
         run: .github/scripts/report-broken-links/report-broken-links.sh "$RUNNER_TEMP/lychee.md"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+      - run: .github/scripts/report-broken-links/report-broken-links.sh --resolved
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}

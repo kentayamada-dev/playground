@@ -36,7 +36,7 @@ if [ -n "${STUB_FAIL-}" ] && [[ "issue $command" == $STUB_FAIL ]]; then
   exit 1
 fi
 
-number='' state=open fields='' filter=. title='' body_file=''
+number='' state=open fields='' filter=. title='' body_file='' reason='' comment=''
 while [ $# -gt 0 ]; do
   case "$1" in
     --state) state=$2; shift 2 ;;
@@ -45,6 +45,8 @@ while [ $# -gt 0 ]; do
     --jq) filter=$2; shift 2 ;;
     --title) title=$2; shift 2 ;;
     --body-file) body_file=$2; shift 2 ;;
+    --reason) reason=$2; shift 2 ;;
+    --comment) comment=$2; shift 2 ;;
     -*) echo "gh スタブ: 未対応のフラグ $1" >&2; exit 1 ;;
     *) number=$1; shift ;;
   esac
@@ -72,6 +74,15 @@ case "$command" in
   create)
     jq --arg title "$title" --rawfile body "$body_file" \
       '. + [{number: ((map(.number) | max // 0) + 1), title: $title, state: "open", body: $body}]' "$issues" >"$issues.new"
+    mv "$issues.new" "$issues"
+    ;;
+  close)
+    if ! jq -e --argjson number "$number" 'any(.number == $number)' "$issues" >/dev/null; then
+      echo "gh: Could not resolve to an issue with the number of $number" >&2
+      exit 1
+    fi
+    jq --argjson number "$number" --arg reason "$reason" --arg comment "$comment" \
+      'map(if .number == $number then .state = "closed" | .state_reason = $reason | .comments += [$comment] else . end)' "$issues" >"$issues.new"
     mv "$issues.new" "$issues"
     ;;
   *)
@@ -166,4 +177,64 @@ assert_github_issues() {
   run -1 "${script}" "${BATS_TEST_TMPDIR}/missing.txt"
 
   assert_github_issues '[]'
+}
+
+@test "検査が通ったとき（--resolved）、同じタイトルの開いている issue に実行の URL をコメントして、completed で閉じる" {
+  given_github_issues '[
+    {"number": 22, "title": "chore(deps): 依存関係の更新状況", "state": "open", "body": "ダッシュボード"},
+    {"number": 185, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "open", "body": "前回の結果"}
+  ]'
+
+  run -0 "${script}" --resolved
+
+  assert_github_issues '[
+    {"number": 22, "title": "chore(deps): 依存関係の更新状況", "state": "open", "body": "ダッシュボード"},
+    {"number": 185, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "closed", "body": "前回の結果", "state_reason": "completed", "comments": ["[GitHub の設定の定期検査](https://example.com/owner/repo/actions/runs/123) で、GitHub の設定が定義と一致しました。"]}
+  ]'
+}
+
+@test "検査が通ったとき（--resolved）、同じタイトルの issue が複数開いていれば、すべて閉じる" {
+  given_github_issues '[
+    {"number": 185, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "open", "body": "前々回の結果"},
+    {"number": 190, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "open", "body": "前回の結果"}
+  ]'
+
+  run -0 "${script}" --resolved
+
+  assert_github_issues '[
+    {"number": 185, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "closed", "body": "前々回の結果", "state_reason": "completed", "comments": ["[GitHub の設定の定期検査](https://example.com/owner/repo/actions/runs/123) で、GitHub の設定が定義と一致しました。"]},
+    {"number": 190, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "closed", "body": "前回の結果", "state_reason": "completed", "comments": ["[GitHub の設定の定期検査](https://example.com/owner/repo/actions/runs/123) で、GitHub の設定が定義と一致しました。"]}
+  ]'
+}
+
+@test "検査が通ったとき（--resolved）、閉じている issue とタイトルの一部だけが一致する issue には触れない" {
+  given_github_issues '[
+    {"number": 185, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "closed", "body": "前回の結果"},
+    {"number": 190, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す（ラベル）", "state": "open", "body": "手で立てた issue"}
+  ]'
+
+  run -0 "${script}" --resolved
+
+  assert_github_issues '[
+    {"number": 185, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "closed", "body": "前回の結果"},
+    {"number": 190, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す（ラベル）", "state": "open", "body": "手で立てた issue"}
+  ]'
+}
+
+@test "検査が通ったとき（--resolved）、issue の一覧を取得できなければ、issue を閉じずに失敗する" {
+  given_github_issues '[{"number": 185, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "open", "body": "前回の結果"}]'
+  export STUB_FAIL="issue list"
+
+  run -1 "${script}" --resolved
+
+  assert_github_issues '[{"number": 185, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "open", "body": "前回の結果"}]'
+}
+
+@test "検査が通ったとき（--resolved）、issue を閉じられなければ失敗する" {
+  given_github_issues '[{"number": 185, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "open", "body": "前回の結果"}]'
+  export STUB_FAIL="issue close"
+
+  run -1 "${script}" --resolved
+
+  assert_github_issues '[{"number": 185, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "open", "body": "前回の結果"}]'
 }
