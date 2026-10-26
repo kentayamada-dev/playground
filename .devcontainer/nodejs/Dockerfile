@@ -8,7 +8,7 @@ LABEL org.opencontainers.image.title="nodejs" \
 # pnpm の版はここだけで管理し、.github/renovate.json5 で読み込む customManagers:dockerfileVersions で Renovate が更新する
 # このプリセットは renovate: のコメントのすぐ次の行の ARG しか読まないため、間に行を入れない
 # renovate: datasource=npm depName=pnpm
-ARG PNPM_VERSION=12.12.0
+ARG PNPM_VERSION=12.12.1
 # .github/textlint の pnpm と同じく、Takumi Guard のレジストリから取得する
 RUN npm install --global --registry=https://npm.flatt.tech/ "pnpm@${PNPM_VERSION}"
 
