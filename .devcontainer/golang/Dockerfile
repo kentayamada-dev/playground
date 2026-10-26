@@ -35,4 +35,5 @@ COPY tools /tmp/tools
 # https://github.com/golang/go/blob/go1.27.3/src/cmd/go/internal/modfetch/sumdb.go#L250-L261
 RUN go install -C /tmp/tools/gopls tool \
   && go install -C /tmp/tools/gofumpt tool \
-  && go clean -cache -modcache
+  && go clean -cache -modcache \
+  && rm "$(go env GOPATH)/bin/gopls"
