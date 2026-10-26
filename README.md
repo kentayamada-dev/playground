@@ -202,7 +202,8 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - 理由は、[`lychee.yml`](.github/workflows/lychee.yml) と `.github/lychee.toml` のコメントに書いている
 - HTTPS で開けるリンクを `http://` で書いていると、失敗する（`require_https`、[lychee.example.toml](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee.example.toml#L98-L99)）。PR の検査は `--offline` でネットワークを使わないため、この検査は効かない
 - 通らないリンクがあると、[`report-broken-links.sh`](.github/scripts/report-broken-links/report-broken-links.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える
-- リンクを直したら、issue は手動で閉じる
+- すべてのリンクが通ると、開いている issue に実行の URL をコメントして閉じる
+- リンクを直したら、次の検査を待つか、手動で実行して issue を閉じる
 
 ### CodeQL
 
@@ -255,13 +256,13 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 - ほかの設定は、定義に書いた項目だけを比べる。定義に書いた項目が GitHub の応答になければ、ずれとして示す
 - 配列は並び順を無視して比べる
 
-[`settings-drift.yml`](.github/workflows/settings-drift.yml) が毎日これを実行し、ずれがあるか検査に失敗すると issue を作ります。開いている issue があれば、新しく作らずに本文を最新の結果に書き換えます。ずれは、定義を直すか、同期のコマンドで GitHub を定義に揃えて直します。
+[`settings-drift.yml`](.github/workflows/settings-drift.yml) が毎日これを実行し、ずれがあるか検査に失敗すると issue を作ります。開いている issue があれば、新しく作らずに本文を最新の結果に書き換えます。ずれは、定義を直すか、同期のコマンドで GitHub を定義に揃えて直します。直したあとの検査が通ると、開いている issue に実行の URL をコメントして閉じます。
 
 - 定義を変えた PR をマージしたら、同期のコマンドを実行する。実行し忘れると、次の検査で issue になる
 
 #### 検査に使うトークン
 
-GitHub の設定は、リポジトリの secret `SETTINGS_READ_TOKEN` に登録した Fine-grained personal access token で読みます。`GITHUB_TOKEN` を使わない理由は、[`settings-drift.yml`](.github/workflows/settings-drift.yml) のコメントに書いています。issue の作成には、ワークフローの `GITHUB_TOKEN` を使います。
+GitHub の設定は、リポジトリの secret `SETTINGS_READ_TOKEN` に登録した Fine-grained personal access token で読みます。`GITHUB_TOKEN` を使わない理由は、[`settings-drift.yml`](.github/workflows/settings-drift.yml) のコメントに書いています。issue の操作には、ワークフローの `GITHUB_TOKEN` を使います。
 
 トークンは [トークンの作り方](#トークンの作り方) のとおりに作り、Repository permissions を次の表のとおりに設定します。
 
