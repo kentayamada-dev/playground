@@ -67,6 +67,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`markdownlint.yml`](.github/workflows/markdownlint.yml) | すべての `.md` の書式。見出しのレベル・リストの記号・表の列数・空行・コードブロックの言語の指定など。[markdownlint](https://github.com/DavidAnson/markdownlint) で検査する。設定は [`.github/markdownlint-cli2.jsonc`](.github/markdownlint-cli2.jsonc) にある | `markdownlint` |
 | [`yamllint.yml`](.github/workflows/yamllint.yml) | `.yml`・`.yaml` の構文と書式。キーの重複・インデント・コメントの書き方など。[yamllint](https://github.com/adrienverge/yamllint) で検査する。設定は [`.github/yamllint/.yamllint.yaml`](.github/yamllint/.yamllint.yaml) にある | `yamllint` |
 | [`hadolint.yml`](.github/workflows/hadolint.yml) | Dockerfile の書き方。ベースイメージのタグの指定・`apt-get install` の版の固定など。[hadolint](https://github.com/hadolint/hadolint) で検査し、`RUN` のスクリプトは hadolint に組み込まれた ShellCheck にかける。設定は [`.github/hadolint.yaml`](.github/hadolint.yaml) にある | `hadolint` |
+| [`devcontainer.yml`](.github/workflows/devcontainer.yml) | [開発環境](#開発環境) の 2 つのイメージを、[`compose.yaml`](compose.yaml) のとおりにビルドできるか。golang では gopls と gofumpt が、nodejs では pnpm が起動するかも確認する。詳しくは [devcontainer](#devcontainer) | `devcontainer` |
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 
 どのワークフローも、PR と `main` への push で動きます。動くタイミングが違うのは、次の 4 つです。
@@ -96,6 +97,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `typos` | リポジトリ全体。`.git` と、`typos.toml`・`pyproject.toml` など typos の設定ファイルと同じ名前のファイルは除く |
 | `yamllint` | リポジトリ全体の `.yml`・`.yaml`。`pnpm-lock.yaml` と、`.venv`・`node_modules` の下は除く |
 | `hadolint` | リポジトリ全体のうち、名前が `Dockerfile`・`Containerfile` のファイル。`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*`・`*.Containerfile` に一致するファイルも含む。`.git` は除く |
+| `devcontainer` | [`compose.yaml`](compose.yaml) の `nodejs`・`golang` のサービスのイメージ。ランナーと同じ arm64 のイメージだけをビルドする |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
 - 範囲の決め方と除く理由は、各ワークフローと、[`.yamllint.yaml`](.github/yamllint/.yamllint.yaml)・[`.github/lychee.toml`](.github/lychee.toml)・[`.github/typos.toml`](.github/typos.toml) のコメントに書いている
@@ -183,6 +185,12 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - 設定は [`.github/hadolint.yaml`](.github/hadolint.yaml) に書き、`--config` で渡す。検査の前に、style の指摘だけが出る Dockerfile を標準入力から渡し、設定が効いて失敗することを確認する
 - Dockerfile のラベルは、`.github/hadolint.yaml` の `label-schema` に挙げた 4 つだけを書く。値は変数で渡さず、各 Dockerfile に直接書く
 - 理由は、[`hadolint.yml`](.github/workflows/hadolint.yml) と `.github/hadolint.yaml` のコメントに書いている
+
+#### devcontainer
+
+- Renovate は、ベースイメージ・pnpm・gopls・gofumpt の minor・patch・digest の更新を自動マージする。組み合わせによってはビルドが壊れるため、必須チェックにしている
+- ビルドのキャッシュは使わず、毎回すべての層をビルドする
+- ビルドでは、Docker Hub・Takumi Guard のレジストリ・Go のモジュールプロキシから取得する。どれかに接続できないと、どの PR もマージできない
 
 ### 外部リンクの定期検査
 
