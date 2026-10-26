@@ -1,6 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:best-practices", "security:openssf-scorecard", "helpers:pinGitHubActionDigestsToSemver"],
+  "extends": [
+    "config:best-practices",
+    "security:openssf-scorecard",
+    "helpers:pinGitHubActionDigestsToSemver",
+    // nodejs の Dockerfile で入れる pnpm の版を、renovate: のコメントを付けた ARG から更新させる。dockerfile マネージャーは、RUN で入れるパッケージを apk と apt のものしか拾わないため
+    // https://docs.renovatebot.com/modules/manager/dockerfile/ https://docs.renovatebot.com/presets-customManagers/#custommanagersdockerfileversions
+    "customManagers:dockerfileVersions"
+  ],
   // schedule（ロックファイル更新の月曜 0〜3 時、Renovate 関連の毎日 0〜3 時）を日本時間で解釈させる
   "timezone": "Asia/Tokyo",
   // CONTRIBUTING.md でタイトルを Conventional Commits 形式と定めているため、履歴からの自動判定に任せない https://docs.renovatebot.com/configuration-options/#semanticcommits
@@ -17,26 +24,9 @@
   // GitHub の依存グラフに textlint の依存が出ず、Dependabot alerts からは脆弱性修正 PR が作られないため、OSV のデータベースでも照会させる
   // https://docs.renovatebot.com/configuration-options/#osvvulnerabilityalerts
   "osvVulnerabilityAlerts": true,
-  "customManagers": [
-    // 再利用ワークフローに with で渡すランナーは github-actions マネージャーが検出せず、ほかのジョブの runs-on だけが更新されるため
-    // https://github.com/renovatebot/renovate/blob/44.151.1/lib/modules/manager/github-actions/extract.ts#L311-L316
-    {
-      "customType": "regex",
-      "managerFilePatterns": [".github/workflows/osv-scanner.yml"],
-      "matchStrings": ["runs-on: (?<depName>[a-zA-Z]+)-(?<currentValue>\\S+)"],
-      "datasourceTemplate": "github-runners",
-      "depTypeTemplate": "github-runner"
-    },
-    // nodejs の Dockerfile で入れる pnpm の版を更新する。dockerfile マネージャーは、RUN で入れるパッケージを apk と apt のものしか拾わないため
-    // https://docs.renovatebot.com/modules/manager/dockerfile/
-    {
-      "customType": "regex",
-      "managerFilePatterns": [".devcontainer/nodejs/Dockerfile"],
-      "matchStrings": ["\\bpnpm@(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
-      "depNameTemplate": "pnpm",
-      "datasourceTemplate": "npm"
-    }
-  ],
+  // .devcontainer/golang/tools の go.mod には Go のファイルがなく、Renovate が実行する go get -t ./... はどのパッケージにも一致しないため、
+  // tool ディレクティブを読む go mod tidy で go.mod と go.sum を新しい版にそろえる https://github.com/renovatebot/renovate/blob/44.151.1/lib/modules/manager/gomod/artifacts.ts#L271 https://github.com/renovatebot/renovate/blob/44.151.1/lib/modules/manager/gomod/artifacts.ts#L310-L316
+  "postUpdateOptions": ["gomodTidy"],
   "packageRules": [
     {
       "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
