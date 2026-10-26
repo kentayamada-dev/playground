@@ -262,7 +262,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 
 #### 検査に使うトークン
 
-GitHub の設定は、リポジトリの secret `SETTINGS_READ_TOKEN` に登録した Fine-grained personal access token で読みます。`GITHUB_TOKEN` を使わない理由は、[`settings-drift.yml`](.github/workflows/settings-drift.yml) のコメントに書いています。issue の作成には、ワークフローの `GITHUB_TOKEN` を使います。
+GitHub の設定は、リポジトリの secret `SETTINGS_READ_TOKEN` に登録した Fine-grained personal access token で読みます。`GITHUB_TOKEN` を使わない理由は、[`settings-drift.yml`](.github/workflows/settings-drift.yml) のコメントに書いています。issue の操作には、ワークフローの `GITHUB_TOKEN` を使います。
 
 トークンは [トークンの作り方](#トークンの作り方) のとおりに作り、Repository permissions を次の表のとおりに設定します。
 
