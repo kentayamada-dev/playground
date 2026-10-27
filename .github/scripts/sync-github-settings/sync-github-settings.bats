@@ -340,7 +340,7 @@ assert_github_rulesets() {
   fi
 }
 
-# スクリプトが使うコマンドのうち、指定したものだけがない PATH を作る
+# 指定したコマンドがない PATH を作る。システムの PATH を引き継がないため、リンクしたもののほかは使えない
 path_without() {
   local dir="${BATS_TEST_TMPDIR}/path-without-$1" command target
   mkdir -p "${dir}"

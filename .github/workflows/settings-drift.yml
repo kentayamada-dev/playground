@@ -9,11 +9,9 @@ on:
 # 書き込み権限はジョブごとに与え、あとから足したジョブに引き継がせない https://docs.zizmor.sh/audits/#excessive-permissions
 permissions: {}
 
-# 同じ PR に push し直したら古い実行を取り消す。PR 以外は実行ごとにグループを分け、待っている実行も後から来た実行に取り消されないようにする
-# https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency
+# 同時に動くと、どちらも開いている issue がないと判断して issue を 2 件作ることがあるため、実行を重ねない
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}
 
 jobs:
   settings-drift:
@@ -31,7 +29,7 @@ jobs:
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
-          # https://github.com/jdx/mise-action/blob/v5.0.0/src/index.ts#L724-L745
+          # https://github.com/jdx/mise-action/blob/v5.1.2/src/index.ts#L882-L903
           version: 2026.10.8
           working_directory: .github
           install_args: jq

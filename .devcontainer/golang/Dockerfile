@@ -28,7 +28,7 @@ USER $USER_NAME
 
 # gopls と gofumpt の版は tools のツールごとの go.mod で管理し、Renovate の gomod マネージャーが更新する
 # gopls は golang.org/x/tools の内部パッケージを使い、自身の go.mod と違う版の x/tools ではビルドできないことがあるため、go.mod を分け、依存だけを上げずに gopls ごと上げる
-# https://github.com/golang/tools/blob/gopls/v0.23.0/gopls/internal/analysis/unusedfunc/unusedfunc.go#L22-L77
+# 例: gopls v0.23.0 が使う packagepath.IsStdPackage は、gopls v0.24.0 の時点の x/tools にない https://github.com/golang/tools/blob/gopls/v0.23.0/gopls/internal/analysis/unusedfunc/unusedfunc.go#L22-L77
 COPY tools /tmp/tools
 # GOPATH の /go は誰でも書き込めるため、このユーザーでも go install を使える https://github.com/docker-library/golang/blob/8380885ec449224702b989d8792d2e1470a46e89/1.27/trixie/Dockerfile#L135
 # root で入れると go install が作る $GOPATH/pkg/sumdb が root のものになり、このユーザーがツールチェーンのダウンロードを検証できなくなる
