@@ -36,7 +36,13 @@ CONTRIBUTING.md の「コメント」を読み、各コメントに当てる。�
 版のタグやコミットで固定したリンクは、今使っている版と比べる。今使っている版は、`.github/mise.toml`・`uses:` の行末のコメント・ロックファイル・`go.mod`・Dockerfile の `FROM` などで調べる。
 
 - 版がずれていたら、両方の版のソースを取得して読み比べ、主張が今の版でも成り立つかを確認する
-  - ソースは `curl -fsSL https://raw.githubusercontent.com/<owner>/<repo>/<タグ>/<パス>` か、`gh api -H 'Accept: application/vnd.github.raw' 'repos/<owner>/<repo>/contents/<パス>?ref=<タグ>'` で取得する
+  - ソースは、次のどちらかで版を指定して取得する
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/<owner>/<repo>/<タグ>/<パス>
+    gh api -H 'Accept: application/vnd.github.raw' 'repos/<owner>/<repo>/contents/<パス>?ref=<タグ>'
+    ```
+
   - 成り立てば、URL の版と行番号を今の版に替える
   - 成り立たなければ、URL を替えずに報告する。コメントだけでなく、コードや設定の見直しが要るため
 - 過去に起きた実例を示すリンクは、版を上げない。実例だとわかる書き方になっているかを確認する
