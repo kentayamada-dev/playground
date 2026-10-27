@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // JS を許すときは、tsconfig.json の allowJs も合わせる
+  pageExtensions: ["tsx", "ts"],
   cacheComponents: true,
   partialPrefetching: true,
   typedRoutes: true,
