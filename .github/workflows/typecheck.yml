@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - test/typecheck-pass
 
 permissions:
   contents: read
