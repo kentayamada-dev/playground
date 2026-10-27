@@ -3,7 +3,7 @@
   "dockerComposeFile": ["../../compose.yaml"],
   "service": "golang",
   "initializeCommand": "bash \"${localWorkspaceFolder}/.devcontainer/scripts/check-host-os/check-host-os.sh\"",
-  // Compose の既定の stopCompose は、ウィンドウを閉じると nodejs のコンテナも止め、nodejs で開いているウィンドウが切れるため
+  // Compose の既定の stopCompose は、ウィンドウを閉じると node のコンテナも止め、node で開いているウィンドウが切れるため
   // https://containers.dev/implementors/json_reference/
   "shutdownAction": "none",
   "workspaceFolder": "/workspace/golang",

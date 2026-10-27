@@ -9,24 +9,24 @@
 
 ## 開発環境
 
-nodejs と golang を、別々の Dev Container で開発します。ホストの OS は macOS だけをサポートします。構成は VS Code の [Connect to multiple containers](https://code.visualstudio.com/remote/advancedcontainers/connect-multiple-containers) にならっています。
+node と golang を、別々の Dev Container で開発します。ホストの OS は macOS だけをサポートします。構成は VS Code の [Connect to multiple containers](https://code.visualstudio.com/remote/advancedcontainers/connect-multiple-containers) にならっています。
 
 | コンテナ | 設定 | 開くディレクトリ | ベースイメージ |
 | --- | --- | --- | --- |
-| `nodejs` | [`devcontainer.json`](.devcontainer/nodejs/devcontainer.json)・[`Dockerfile`](.devcontainer/nodejs/Dockerfile) | [`nodejs`](nodejs) | `node` |
+| `node` | [`devcontainer.json`](.devcontainer/node/devcontainer.json)・[`Dockerfile`](.devcontainer/node/Dockerfile) | [`node`](node) | `node` |
 | `golang` | [`devcontainer.json`](.devcontainer/golang/devcontainer.json)・[`Dockerfile`](.devcontainer/golang/Dockerfile) | [`golang`](golang) | `golang` |
 
 - macOS 以外のホストでは、コンテナを作る前に止める。両方の `devcontainer.json` の `initializeCommand` が、ホストで [`check-host-os.sh`](.devcontainer/scripts/check-host-os/check-host-os.sh) を実行する。理由はダイアログには出ず、コマンドパレットの「Dev Containers: Show Container Log」で開くログの末尾近くに出る
 - 2 つのコンテナは、[`compose.yaml`](compose.yaml) のサービスとして動く。どちらも、リポジトリのルートを `/workspace` にマウントする。イメージは公式イメージをもとに、コンテナごとの Dockerfile でビルドする。Dockerfile を変えたら「Dev Containers: Rebuild Container」で作り直す
 - 一般ユーザー `dev` で動き、sudo は入れていない。root で作業するときは、手元のリポジトリのルートで `docker compose exec -u root golang bash` のように実行する。ユーザー名は `compose.yaml` の `x-build-args` で渡している
-- nodejs は pnpm を使う。版は nodejs の Dockerfile だけで管理し、Renovate が更新する。[`nodejs/pnpm-workspace.yaml`](nodejs/pnpm-workspace.yaml) は、`storeDir` のほかは textlint の [`pnpm-workspace.yaml`](.github/textlint/pnpm-workspace.yaml) とそろえている。golang には、`compose.yaml` の `GOLANG_URL` のアドレスで接続する
-- nodejs では npm を使えない。`npm install`・`npm run` などは、`EBADDEVENGINES` のエラーで止まる。[`nodejs/package.json`](nodejs/package.json) の `devEngines.packageManager` で pnpm を指定しているため（[devEngines](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines)）
+- node は pnpm を使う。版は node の Dockerfile だけで管理し、Renovate が更新する。[`node/pnpm-workspace.yaml`](node/pnpm-workspace.yaml) は、`storeDir` のほかは textlint の [`pnpm-workspace.yaml`](.github/textlint/pnpm-workspace.yaml) とそろえている。golang には、`compose.yaml` の `GOLANG_URL` のアドレスで接続する
+- node では npm を使えない。`npm install`・`npm run` などは、`EBADDEVENGINES` のエラーで止まる。[`node/package.json`](node/package.json) の `devEngines.packageManager` で pnpm を指定しているため（[devEngines](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines)）
 - `devEngines.packageManager` には版を書かず、pnpm の版は Dockerfile の 1 か所で管理する。pnpm は `onFail` を省くと `download` として扱うため、`error` を明示している（[pmOnFail](https://pnpm.io/settings/cli#pmonfail)）
-- nodejs と textlint の pnpm は、本体とパッケージを Takumi Guard のレジストリ（`https://npm.flatt.tech/`）から取得する。`npmjs:` と `@jsr` スコープも同じレジストリに向け、`gh:`（GitHub Packages）は使えないようにしている（[Registries](https://pnpm.io/registries)）
+- node と textlint の pnpm は、本体とパッケージを Takumi Guard のレジストリ（`https://npm.flatt.tech/`）から取得する。`npmjs:` と `@jsr` スコープも同じレジストリに向け、`gh:`（GitHub Packages）は使えないようにしている（[Registries](https://pnpm.io/registries)）
 - 公開から 1 日（`minimumReleaseAge: 1440` 分）経っていない版は入れない。待機期間を満たす版がないときと、レジストリが公開日時を返さないときは、インストールが失敗する。以前の版より信頼のレベルが下がった版も入れない（`trustPolicy: no-downgrade`）。どれも [pnpm の設定](https://pnpm.io/settings/dependency-resolution) による
 - golang は、gopls と gofumpt をイメージに入れている。版は [`.devcontainer/golang/tools`](.devcontainer/golang/tools) のツールごとの `go.mod` で管理し、Renovate が更新する
-- bash の履歴、nodejs の `node_modules`・pnpm のストア、golang のモジュールとビルドのキャッシュは、名前付きボリュームに置く。コンテナを作り直しても、履歴とキャッシュは残る。手元の `nodejs/node_modules` は空のディレクトリになる
-- nodejs のコンテナを作ると、`nodejs` で `pnpm install` を実行する。インストールが終わってから、VS Code がコンテナに接続する
+- bash の履歴、node の `node_modules`・pnpm のストア、golang のモジュールとビルドのキャッシュは、名前付きボリュームに置く。コンテナを作り直しても、履歴とキャッシュは残る。手元の `node/node_modules` は空のディレクトリになる
+- node のコンテナを作ると、`node` で `pnpm install` を実行する。インストールが終わってから、VS Code がコンテナに接続する
 - ウィンドウを閉じても、コンテナは止めない（`shutdownAction: "none"`）
 - 設定の理由は、[`compose.yaml`](compose.yaml)・`devcontainer.json`・Dockerfile のコメントに書いている
 
@@ -42,7 +42,7 @@ nodejs と golang を、別々の Dev Container で開発します。ホスト�
 
 ### サーバーを起動する
 
-コンテナを開いても、サーバーは起動しません。それぞれのコンテナのターミナルで、[`golang/Makefile`](golang/Makefile)・[`nodejs/Makefile`](nodejs/Makefile) のターゲットを実行して起動します。
+コンテナを開いても、サーバーは起動しません。それぞれのコンテナのターミナルで、[`golang/Makefile`](golang/Makefile)・[`node/Makefile`](node/Makefile) のターゲットを実行して起動します。
 
 サーバーが待ち受けているポートは、VS Code が手元に自動で転送します（`remote.autoForwardPorts`）。両方を起動したら、手元のブラウザで `http://localhost:3000` を開きます。
 
@@ -67,7 +67,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`markdownlint.yml`](.github/workflows/markdownlint.yml) | すべての `.md` の書式。見出しのレベル・リストの記号・表の列数・空行・コードブロックの言語の指定など。[markdownlint](https://github.com/DavidAnson/markdownlint) で検査する。設定は [`.github/markdownlint-cli2.jsonc`](.github/markdownlint-cli2.jsonc) にある | `markdownlint` |
 | [`yamllint.yml`](.github/workflows/yamllint.yml) | `.yml`・`.yaml` の構文と書式。キーの重複・インデント・コメントの書き方など。[yamllint](https://github.com/adrienverge/yamllint) で検査する。設定は [`.github/yamllint/.yamllint.yaml`](.github/yamllint/.yamllint.yaml) にある | `yamllint` |
 | [`hadolint.yml`](.github/workflows/hadolint.yml) | Dockerfile の書き方。ベースイメージのタグの指定・`apt-get install` の版の固定など。[hadolint](https://github.com/hadolint/hadolint) で検査し、`RUN` のスクリプトは hadolint に組み込まれた ShellCheck にかける。設定は [`.github/hadolint.yaml`](.github/hadolint.yaml) にある | `hadolint` |
-| [`devcontainer.yml`](.github/workflows/devcontainer.yml) | [開発環境](#開発環境) の 2 つのイメージを、[`compose.yaml`](compose.yaml) のとおりにビルドできるか。golang では gopls と gofumpt が、nodejs では pnpm が起動するかも確認する。詳しくは [devcontainer](#devcontainer) | `devcontainer` |
+| [`devcontainer.yml`](.github/workflows/devcontainer.yml) | [開発環境](#開発環境) の 2 つのイメージを、[`compose.yaml`](compose.yaml) のとおりにビルドできるか。golang では gopls と gofumpt が、node では pnpm が起動するかも確認する。詳しくは [devcontainer](#devcontainer) | `devcontainer` |
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 
 どのワークフローも、PR と `main` への push で動きます。動くタイミングが違うのは、次の 4 つです。
@@ -97,7 +97,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `typos` | リポジトリ全体。`.git` と、`typos.toml`・`pyproject.toml` など typos の設定ファイルと同じ名前のファイルは除く |
 | `yamllint` | リポジトリ全体の `.yml`・`.yaml`。`pnpm-lock.yaml` と、`.venv`・`node_modules` の下は除く |
 | `hadolint` | リポジトリ全体のうち、名前が `Dockerfile`・`Containerfile` のファイル。`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*`・`*.Containerfile` に一致するファイルも含む。`.git` は除く |
-| `devcontainer` | [`compose.yaml`](compose.yaml) の `nodejs`・`golang` のサービスのイメージ。ランナーと同じ arm64 のイメージだけをビルドする |
+| `devcontainer` | [`compose.yaml`](compose.yaml) の `node`・`golang` のサービスのイメージ。ランナーと同じ arm64 のイメージだけをビルドする |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
 - 範囲の決め方と除く理由は、各ワークフローと、[`.yamllint.yaml`](.github/yamllint/.yamllint.yaml)・[`.github/lychee.toml`](.github/lychee.toml)・[`.github/typos.toml`](.github/typos.toml) のコメントに書いている
@@ -198,7 +198,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 - `429`・`502`・`503`・`504` は成功として扱う
 - `mise.lock` と `uv.lock` の URL は、[`.github/lychee.toml`](.github/lychee.toml) で検査から除く
-- nodejs と golang のサーバーのアドレス（`http://localhost:3000` など）も、`.github/lychee.toml` で検査から除く
+- node と golang のサーバーのアドレス（`http://localhost:3000` など）も、`.github/lychee.toml` で検査から除く
 - 理由は、[`lychee.yml`](.github/workflows/lychee.yml) と `.github/lychee.toml` のコメントに書いている
 - HTTPS で開けるリンクを `http://` で書いていると、失敗する（`require_https`、[lychee.example.toml](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee.example.toml#L98-L99)）。PR の検査は `--offline` でネットワークを使わないため、この検査は効かない
 - 通らないリンクがあると、[`report-broken-links.sh`](.github/scripts/report-broken-links/report-broken-links.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える

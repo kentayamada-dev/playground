@@ -5,7 +5,7 @@ setup() {
 
   # スクリプトはリポジトリのルートを自分の場所から決めるため、偽物のリポジトリにコピーして実行する
   # shellcheck disable=SC2154 # BATS_TEST_TMPDIR は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
-  mkdir -p "${BATS_TEST_TMPDIR}/repo/.devcontainer/scripts/open-devcontainer" "${BATS_TEST_TMPDIR}/repo/.devcontainer/golang" "${BATS_TEST_TMPDIR}/repo/.devcontainer/nodejs"
+  mkdir -p "${BATS_TEST_TMPDIR}/repo/.devcontainer/scripts/open-devcontainer" "${BATS_TEST_TMPDIR}/repo/.devcontainer/golang" "${BATS_TEST_TMPDIR}/repo/.devcontainer/node"
   repo=$(cd "${BATS_TEST_TMPDIR}/repo" && pwd -P)
   script="${repo}/.devcontainer/scripts/open-devcontainer/open-devcontainer.sh"
   # shellcheck disable=SC2154 # BATS_TEST_DIRNAME は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
@@ -17,10 +17,10 @@ setup() {
   "workspaceFolder": "/workspace/golang"
 }
 EOF
-  cat >"${repo}/.devcontainer/nodejs/devcontainer.json" <<'EOF'
+  cat >"${repo}/.devcontainer/node/devcontainer.json" <<'EOF'
 {
-  "name": "nodejs",
-  "workspaceFolder": "/workspace/nodejs"
+  "name": "node",
+  "workspaceFolder": "/workspace/node"
 }
 EOF
 
@@ -67,14 +67,14 @@ EOF
 @test "名前を渡さなければ、使い方と設定の名前を出して失敗する" {
   run -1 --separate-stderr "${script}"
 
-  [[ ${stderr} == "使い方: ${script} <名前>（名前: golang nodejs）" ]]
+  [[ ${stderr} == "使い方: ${script} <名前>（名前: golang node）" ]]
   [[ ! -e ${STUB_DIR}/code-args ]]
 }
 
 @test "設定のない名前を渡すと、設定の名前を出して失敗する" {
   run -1 --separate-stderr "${script}" db
 
-  [[ ${stderr} == "エラー: db の設定がありません（名前: golang nodejs）" ]]
+  [[ ${stderr} == "エラー: db の設定がありません（名前: golang node）" ]]
   [[ ! -e ${STUB_DIR}/code-args ]]
 }
 
