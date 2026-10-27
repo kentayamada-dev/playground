@@ -220,7 +220,7 @@ sync_security() {
     report_defined_drift 'CodeQL のデフォルトセットアップ' "${desired}" "${current}"
     return 0
   fi
-  # 同じ設定を送っても新しい解析は始まらない（202 で前回の run_id が返る）ため、ほかの設定と同じく比べずに送る
+  # 同じ設定を送っても新しい解析は始まらない（202 で前回の run_id が返る）ため、比べずに送る
   # https://github.com/kentayamada-dev/playground/pull/190
   gh_api 'CodeQL のデフォルトセットアップの反映' --method PATCH 'repos/{owner}/{repo}/code-scanning/default-setup' --input - --silent <<<"${desired}"
 }

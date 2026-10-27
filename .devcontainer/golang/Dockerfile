@@ -5,7 +5,7 @@ LABEL org.opencontainers.image.title="golang" \
   org.opencontainers.image.source="https://github.com/kentayamada-dev/playground" \
   org.opencontainers.image.licenses="MIT"
 
-# 値は compose.yaml の golang の build.args から渡す
+# 次の ARG を足すときは、compose.yaml の golang の build.args にも値を足す
 ARG USER_NAME
 ARG HISTORY_DIR
 ARG GO_CACHE_DIR

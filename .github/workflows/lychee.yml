@@ -20,7 +20,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # 必須チェック。外部のサイトの障害やレート制限で PR をマージできなくならないよう、ネットワークを使わずリポジトリ内のリンクだけを検査する
+  # 外部のサイトの障害やレート制限で PR の検査が落ちないよう、ネットワークを使わずリポジトリ内のリンクだけを検査する
   lychee:
     name: lychee
     if: github.event_name == 'pull_request' || github.event_name == 'push'
