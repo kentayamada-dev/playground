@@ -28,12 +28,11 @@ jobs:
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
-          # https://github.com/jdx/mise-action/blob/v5.0.0/src/index.ts#L724-L745
+          # https://github.com/jdx/mise-action/blob/v5.1.2/src/index.ts#L882-L903
           version: 2026.10.8
           working_directory: .github
           install_args: uv
       - run: uv sync --locked
         working-directory: .github/yamllint
-      # .venv など、git で管理していないファイルを除く設定は .github/yamllint/.yamllint.yaml にある
       - run: >-
           .github/yamllint/.venv/bin/yamllint --strict --format github --config-file .github/yamllint/.yamllint.yaml .

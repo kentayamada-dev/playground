@@ -27,7 +27,6 @@ EOF
   # 手元の環境に同じ変数があると、スクリプトが付けなくてもテストが通るため消す
   unset BUILDX_BAKE_ENTITLEMENTS_FS
 
-  # code の偽物。渡された引数を 1 行に 1 つずつ $STUB_DIR/code-args に、BUILDX_BAKE_ENTITLEMENTS_FS の値を $STUB_DIR/code-env に残す
   export STUB_DIR="${BATS_TEST_TMPDIR}/stub"
   mkdir -p "${STUB_DIR}/bin"
   PATH="${STUB_DIR}/bin:${PATH}"

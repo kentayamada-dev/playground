@@ -20,7 +20,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # 必須チェック。外部のサイトの障害やレート制限で PR をマージできなくならないよう、ネットワークを使わずリポジトリ内のリンクだけを検査する
+  # 外部のサイトの障害やレート制限で PR の検査が落ちないよう、ネットワークを使わずリポジトリ内のリンクだけを検査する
   lychee:
     name: lychee
     if: github.event_name == 'pull_request' || github.event_name == 'push'
@@ -36,14 +36,13 @@ jobs:
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
-          # https://github.com/jdx/mise-action/blob/v5.0.0/src/index.ts#L724-L745
+          # https://github.com/jdx/mise-action/blob/v5.1.2/src/index.ts#L882-L903
           version: 2026.10.8
           working_directory: .github
           install_args: lychee
       # ディレクトリを渡すと .md・.html などの拡張子のファイルしか読まず、ワークフローや設定のコメントにある URL を見落とすため、拡張子で絞らないグロブで渡す
       # https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L456-L467
       # https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee-lib/src/types/input/resolver.rs#L140-L144
-      # 隠しファイルを読み、.git を除く設定は .github/lychee.toml にある
       - run: lychee --config .github/lychee.toml --offline '**/*'
   lychee-external:
     name: lychee-external
@@ -61,7 +60,7 @@ jobs:
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
-          # https://github.com/jdx/mise-action/blob/v5.0.0/src/index.ts#L724-L745
+          # https://github.com/jdx/mise-action/blob/v5.1.2/src/index.ts#L882-L903
           version: 2026.10.8
           working_directory: .github
           install_args: lychee

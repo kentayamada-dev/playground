@@ -6,7 +6,6 @@ setup() {
   # shellcheck disable=SC2154 # BATS_TEST_DIRNAME は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
   script="${BATS_TEST_DIRNAME}/check-host-os.sh"
 
-  # uname の偽物。STUB_OS をホストの OS 名として返す
   # shellcheck disable=SC2154 # BATS_TEST_TMPDIR は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
   mkdir -p "${BATS_TEST_TMPDIR}/bin"
   PATH="${BATS_TEST_TMPDIR}/bin:${PATH}"
