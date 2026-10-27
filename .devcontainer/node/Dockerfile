@@ -1,7 +1,7 @@
 FROM node:26.12.0-trixie@sha256:1b84b89ada025e3b14543cbb837ffaa1c1b5273b841c5b94dd1a8f9c1d8cf7fe
 
-LABEL org.opencontainers.image.title="nodejs" \
-  org.opencontainers.image.description="nodejs の Dev Container" \
+LABEL org.opencontainers.image.title="node" \
+  org.opencontainers.image.description="node の Dev Container" \
   org.opencontainers.image.source="https://github.com/kentayamada-dev/playground" \
   org.opencontainers.image.licenses="MIT"
 
@@ -12,7 +12,7 @@ ARG PNPM_VERSION=12.12.1
 # Takumi Guard のレジストリから取得する
 RUN npm install --global --registry=https://npm.flatt.tech/ "pnpm@${PNPM_VERSION}"
 
-# 次の ARG を足すときは、compose.yaml の nodejs の build.args にも値を足す
+# 次の ARG を足すときは、compose.yaml の node の build.args にも値を足す
 ARG USER_NAME
 ARG HISTORY_DIR
 ARG NODE_MODULES_DIR

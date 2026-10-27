@@ -41,7 +41,7 @@ https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-
 - 書く:「`429`・`502`・`503`・`504` は成功として扱う」（挙動）
 - 書かない:「レート制限の `429` は、リンク切れとは限らないため」（理由。コメントにある）
 - 書かない:「`USER_NAME` を変えるときは、両方の `devcontainer.json` の `remoteUser` も合わせる」（編集する人向け。コメントにある）
-- 書く:「版は nodejs の Dockerfile だけで管理し、Renovate が更新する」（pnpm の版。使う人と編集する人の両方が要る）
+- 書く:「版は node の Dockerfile だけで管理し、Renovate が更新する」（pnpm の版。使う人と編集する人の両方が要る）
 - 書く: mise の設定を `.github` に置く理由（複数のワークフローにまたがり、1 か所のコードに結びつかない）
 - 書かない: ターゲットごとの動作やコマンドを並べた表（ファイルを見ればわかる）
 - 書く:「ほかのターゲットは、`golang/Makefile` にある」（ファイルへのリンク）

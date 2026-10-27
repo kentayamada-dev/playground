@@ -25,7 +25,7 @@
       "autoPort": false
     },
     {
-      "name": "nodejs",
+      "name": "node",
       "runtimeExecutable": "docker-compose",
       "runtimeArgs": [
         "run",
@@ -33,10 +33,10 @@
         "--publish",
         "3000:3000",
         "--workdir",
-        "/workspace/nodejs",
+        "/workspace/node",
         "--name",
-        "playground-nodejs-preview",
-        "nodejs",
+        "playground-node-preview",
+        "node",
         "pnpm",
         "dev"
       ],

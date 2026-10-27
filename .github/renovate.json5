@@ -4,7 +4,7 @@
     "config:best-practices",
     "security:openssf-scorecard",
     "helpers:pinGitHubActionDigestsToSemver",
-    // nodejs の Dockerfile で入れる pnpm の版を、renovate: のコメントを付けた ARG から更新させる。dockerfile マネージャーは、RUN で入れるパッケージを apk と apt のものしか拾わないため
+    // node の Dockerfile で入れる pnpm の版を、renovate: のコメントを付けた ARG から更新させる。dockerfile マネージャーは、RUN で入れるパッケージを apk と apt のものしか拾わないため
     // https://docs.renovatebot.com/modules/manager/dockerfile/ https://docs.renovatebot.com/presets-customManagers/#custommanagersdockerfileversions
     "customManagers:dockerfileVersions"
   ],

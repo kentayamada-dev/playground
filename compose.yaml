@@ -4,14 +4,14 @@ x-build-args: &build-args
   HISTORY_DIR: &history-dir /commandhistory
 
 services:
-  nodejs:
+  node:
     build:
-      context: .devcontainer/nodejs
+      context: .devcontainer/node
       args:
         <<: *build-args
-        NODE_MODULES_DIR: &node-modules-dir /workspace/nodejs/node_modules
+        NODE_MODULES_DIR: &node-modules-dir /workspace/node/node_modules
     # 既定のホスト名はコンテナ ID で、端末のプロンプトからどちらのコンテナかわからないため
-    hostname: nodejs
+    hostname: node
     volumes:
       # コンテナのなかでも git を使えるよう、.git のあるリポジトリのルートをマウントする
       # https://code.visualstudio.com/remote/advancedcontainers/connect-multiple-containers
@@ -19,14 +19,14 @@ services:
       # macOS のバインドマウントは、インストールのように書き込みの多い処理が遅いため
       # https://code.visualstudio.com/remote/advancedcontainers/improve-performance
       - type: volume
-        source: nodejs-node-modules
+        source: node-node-modules
         target: *node-modules-dir
       # コンテナを作り直しても bash の履歴を残すため
       # https://code.visualstudio.com/remote/advancedcontainers/persist-bash-history
       - type: volume
-        source: nodejs-history
+        source: node-history
         target: *history-dir
-    # Compose では overrideCommand が既定で false で、イメージの CMD（nodejs は node、golang は bash）は端末がないとすぐ終了するため
+    # Compose では overrideCommand が既定で false で、イメージの CMD（node のイメージは node、golang のイメージは bash）は端末がないとすぐ終了するため
     # https://containers.dev/implementors/json_reference/
     command: sleep infinity
     environment:
@@ -52,7 +52,7 @@ services:
     command: sleep infinity
 
 volumes:
-  nodejs-node-modules:
-  nodejs-history:
+  node-node-modules:
+  node-history:
   golang-go-cache:
   golang-history:
