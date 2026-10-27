@@ -1,6 +1,7 @@
 ---
 name: review-comments
-description: リポジトリのすべてのコメントを CONTRIBUTING.md の「コメント」の規約で精査し、問題と直し方をまとめる。コメントの見直し・精査・定期的な点検を明示的に頼まれたときに使う。PR の差分のコメントは create-pr スキルが確認するので、その目的では使わない
+description: リポジトリのすべてのコメントを CONTRIBUTING.md の「コメント」の規約で精査し、問題と直し方をまとめる
+disable-model-invocation: true
 ---
 
 リポジトリのすべてのコメントを、CONTRIBUTING.md の「コメント」の規約で精査する。
