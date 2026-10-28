@@ -233,7 +233,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - oxlint は、型情報を使う規則も動かす。型情報は `oxlint-tsgolint` が [`node/tsconfig.json`](node/tsconfig.json) から作る
 - oxlint は、Tailwind CSS のクラスも [eslint-plugin-better-tailwindcss](https://github.com/schoero/eslint-plugin-better-tailwindcss) の規則で検査する
   - ESLint のプラグインを、oxlint の JS プラグインとして動かす。JS プラグインは、まだ alpha の機能（[JS Plugins](https://oxc.rs/docs/guide/usage/linter/js-plugins.html)）
-  - クラスの正規の形は Tailwind CSS 本体が決めるため、`tailwindcss` を更新すると指摘が変わることがある
+  - クラスの正規の形は Tailwind CSS 本体で決まるため、`tailwindcss` を更新すると指摘が変わることがある
 - 外した規則と、デフォルトのオプションを変えた規則の理由は、[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) のコメントに書いている
 - node の Dev Container には Oxc の VS Code 拡張機能を入れ、保存すると oxfmt で整形し、oxlint で直せる指摘を直す設定にしている
 - Renovate は、`oxlint`・`oxfmt`・`oxlint-tsgolint`・`eslint-plugin-better-tailwindcss` の minor・patch も自動マージする。指摘や整形の結果が変わる更新を入れないため、必須チェックにしている
