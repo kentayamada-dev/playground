@@ -31,6 +31,5 @@ jobs:
       - run: docker compose run --rm --workdir /workspace/node node pnpm install --frozen-lockfile
       # コンテナの dev の uid はランナーの uid と一致するとは限らないため、どの uid でも .next などを作れるようにする
       # https://github.com/kentayamada-dev/playground/pull/335
-      - run: chmod a+w node
       - run: docker compose run --rm node id
       - run: docker compose run --rm --workdir /workspace/node node pnpm typecheck
