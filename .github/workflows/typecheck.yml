@@ -29,4 +29,7 @@ jobs:
       # Dockerfile の ARG の値は compose.yaml から渡すため、docker build ではなく Compose でビルドする
       - run: docker compose build node
       - run: docker compose run --rm --workdir /workspace/node node pnpm install --frozen-lockfile
+      # コンテナの dev の uid はランナーの uid と一致するとは限らないため、どの uid でも .next などを作れるようにする
+      # https://github.com/kentayamada-dev/playground/pull/335
+      - run: chmod a+w node
       - run: docker compose run --rm --workdir /workspace/node node pnpm typecheck
