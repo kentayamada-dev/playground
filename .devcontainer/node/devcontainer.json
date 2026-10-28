@@ -24,7 +24,10 @@
           "strings": "on"
         },
         "editor.defaultFormatter": "oxc.oxc-vscode",
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll.oxc": "explicit"
+        }
       },
       "extensions": [
         "TypeScriptTeam.native-preview",

@@ -126,7 +126,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | yamllint | `--strict` を付け、warning の指摘でも失敗する（[Errors and warnings](https://yamllint.readthedocs.io/en/stable/configuration.html#errors-and-warnings)） |
 | hadolint | [`.github/hadolint.yaml`](.github/hadolint.yaml) の `failure-threshold: style` で、重大度が style の指摘でも失敗する。`label-schema` のラベルがないときと、`strict-labels` でそれ以外のラベルがあるときも失敗する（[Linting Labels](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#linting-labels)） |
 | staticcheck | [`golang/staticcheck.conf`](golang/staticcheck.conf) の `checks = ["all"]` で、デフォルトでは無効のスタイルの検査もすべて有効にする（[Configuration](https://staticcheck.dev/docs/configuration/)） |
-| oxlint | [`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) で、開発中の `nursery` を除くすべてのカテゴリの規則をエラーにする。warning と、使われていない無効化のコメントでも失敗する（[`options`](https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#options)） |
+| oxlint | [`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) で、開発中の `nursery` を除くすべてのカテゴリの規則をエラーにする。Tailwind CSS のクラスの規則も、行の折り返しを除いてすべてエラーにする。warning と、使われていない無効化のコメントでも失敗する（[`options`](https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#options)） |
 
 #### 指摘を無視する方法
 
@@ -231,9 +231,12 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - `pnpm lint` は、`pnpm typecheck` と同じく、Next.js が生成するルートの型を作ってから検査する。その型がないと、型情報を使う規則が `LayoutProps` などを解決できず、誤った指摘を出す
 - oxfmt のインデントや改行の設定は、リポジトリのルートの [`.editorconfig`](.editorconfig) から読む
 - oxlint は、型情報を使う規則も動かす。型情報は `oxlint-tsgolint` が [`node/tsconfig.json`](node/tsconfig.json) から作る
+- oxlint は、Tailwind CSS のクラスも [eslint-plugin-better-tailwindcss](https://github.com/schoero/eslint-plugin-better-tailwindcss) の規則で検査する
+  - ESLint のプラグインを、oxlint の JS プラグインとして動かす。JS プラグインは、まだ alpha の機能（[JS Plugins](https://oxc.rs/docs/guide/usage/linter/js-plugins.html)）
+  - クラスの正規の形は Tailwind CSS 本体が決めるため、`tailwindcss` を更新すると指摘が変わることがある
 - 外した規則と、デフォルトのオプションを変えた規則の理由は、[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) のコメントに書いている
-- node の Dev Container には Oxc の VS Code 拡張機能を入れ、保存すると oxfmt で整形する設定にしている
-- Renovate は、`oxlint`・`oxfmt`・`oxlint-tsgolint` の minor・patch の更新も自動マージする。指摘や整形の結果が変わる更新を入れないため、必須チェックにしている
+- node の Dev Container には Oxc の VS Code 拡張機能を入れ、保存すると oxfmt で整形し、oxlint で直せる指摘を直す設定にしている
+- Renovate は、`oxlint`・`oxfmt`・`oxlint-tsgolint`・`eslint-plugin-better-tailwindcss` の minor・patch も自動マージする。指摘や整形の結果が変わる更新を入れないため、必須チェックにしている
 - イメージのビルドと依存関係の取得では、Docker Hub・Takumi Guard のレジストリから取得する。どちらかに接続できないと、どの PR もマージできない
 - Dev Container と同じイメージで検査する理由は、[`node-check.yml`](.github/workflows/node-check.yml) のコメントに書いている
 

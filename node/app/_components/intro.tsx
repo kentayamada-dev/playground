@@ -12,15 +12,15 @@ const text = {
 };
 
 export const Intro = (): JSX.Element => (
-  <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-    <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
+  <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-start">
+    <h1 className="text-3xl/10 font-semibold tracking-tight text-black max-inline-xs dark:text-zinc-50">
       {text.getStarted}{" "}
-      <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
+      <code className="rounded-sm bg-black/6 px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/8">
         {text.fileName}
       </code>{" "}
       {text.file}
     </h1>
-    <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
+    <p className="text-lg/8 text-zinc-600 max-inline-md dark:text-zinc-400">
       {text.headOver}{" "}
       <a
         href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"

@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 const RootLayout = ({ children }: LayoutProps<"/">): JSX.Element => (
-  <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-    <body className="min-h-full flex flex-col">{children}</body>
+  <html lang="en" className={`${geistSans.variable} ${geistMono.variable} antialiased block-full`}>
+    <body className="flex flex-col min-block-full">{children}</body>
   </html>
 );
 
