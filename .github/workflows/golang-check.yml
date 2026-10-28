@@ -29,7 +29,9 @@ jobs:
       # Go とツールの版を golang の Dockerfile と tools の go.mod だけで管理するため、Dev Container と同じイメージのなかで検査する。
       # Dockerfile の ARG の値は compose.yaml から渡すため、docker build ではなく Compose でビルドする
       - run: docker compose build golang
-      - run: docker compose run --rm --workdir /workspace/golang golang go build ./...
+      # コンテナの dev とランナーの uid が違い、git がリポジトリの所有者の違いで止まって VCS の情報を埋め込めず、checkout にも書き込めないため、
+      # 埋め込みを切り、実行ファイルを一時ディレクトリに書く https://pkg.go.dev/cmd/go@go1.27.3#hdr-Compile_packages_and_dependencies
+      - run: docker compose run --rm --workdir /workspace/golang golang sh -c 'go build -buildvcs=false -o "$(mktemp -d)" ./...'
       - run: docker compose run --rm --workdir /workspace/golang golang go vet ./...
       # -l は整形との差分があっても終了コード 0 を返すため、差分で 1 を返す -d を使う
       # https://github.com/mvdan/gofumpt/blob/v0.12.0/gofmt.go
