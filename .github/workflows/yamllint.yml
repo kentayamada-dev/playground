@@ -20,19 +20,17 @@ jobs:
     name: yamllint
     runs-on: ubuntu-26.04-arm
     timeout-minutes: 5
+    env:
+      yamllint_dir: .github/yamllint
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
           persist-credentials: false
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+      - uses: ./.github/actions/setup-mise
         with:
-          # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
-          # https://github.com/jdx/mise-action/blob/v5.1.2/src/index.ts#L882-L903
-          version: 2026.10.9
-          working_directory: .github
           install_args: uv
       - run: uv sync --locked
-        working-directory: .github/yamllint
+        working-directory: ${{ env.yamllint_dir }}
       - run: >-
-          .github/yamllint/.venv/bin/yamllint --strict --format github --config-file .github/yamllint/.yamllint.yaml .
+          "$yamllint_dir/.venv/bin/yamllint" --strict --format github --config-file "$yamllint_dir/.yamllint.yaml" .

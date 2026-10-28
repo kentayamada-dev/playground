@@ -12,6 +12,8 @@ services:
         NODE_MODULES_DIR: &node-modules-dir /workspace/node/node_modules
     # 既定のホスト名はコンテナ ID で、端末のプロンプトからどちらのコンテナかわからないため
     hostname: node
+    # docker compose run を、--workdir を付けなくてもプロジェクトのディレクトリで動かすため
+    working_dir: /workspace/node
     volumes:
       # コンテナのなかでも git を使えるよう、.git のあるリポジトリのルートをマウントする
       # https://code.visualstudio.com/remote/advancedcontainers/connect-multiple-containers
@@ -40,6 +42,7 @@ services:
         <<: *build-args
         GO_CACHE_DIR: &go-cache-dir /gocache
     hostname: golang
+    working_dir: /workspace/golang
     volumes:
       - .:/workspace
       # コンテナを作り直しても、ダウンロードしたモジュールとビルドの結果を使い回すため

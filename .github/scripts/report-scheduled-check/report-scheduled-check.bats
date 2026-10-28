@@ -1,4 +1,6 @@
 #!/usr/bin/env bats
+# 期待する issue の本文は Markdown のバッククォートを含むため、展開させないようにシングルクォートで書いている
+# shellcheck disable=SC2016
 # bats はテストごとに別のプロセスで動かすので、テスト内で変えた変数がほかのテストに漏れないのは意図どおり https://bats-core.readthedocs.io/en/v1.14.0/writing-tests.html
 # shellcheck disable=SC2030,SC2031
 
@@ -6,7 +8,7 @@ setup() {
   bats_require_minimum_version 1.5.0
 
   # shellcheck disable=SC2154 # BATS_TEST_DIRNAME は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
-  script="${BATS_TEST_DIRNAME}/report-broken-links.sh"
+  script="${BATS_TEST_DIRNAME}/report-scheduled-check.sh"
   # shellcheck disable=SC2154 # BATS_TEST_TMPDIR は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
   report="${BATS_TEST_TMPDIR}/lychee.md"
   echo '* [404] <https://example.com/gone>' >"${report}"
@@ -111,7 +113,7 @@ assert_github_issues() {
 @test "同じタイトルの issue が開いていなければ、実行の URL とレポートを本文にして issue を作る" {
   given_github_issues '[{"number": 22, "title": "chore(deps): 依存関係の更新状況", "state": "open", "body": "ダッシュボード"}]'
 
-  run -0 "${script}" "${report}"
+  run -0 "${script}" broken-links "${report}"
 
   assert_github_issues '[
     {"number": 22, "title": "chore(deps): 依存関係の更新状況", "state": "open", "body": "ダッシュボード"},
@@ -125,7 +127,7 @@ assert_github_issues() {
     {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}
   ]'
 
-  run -0 "${script}" "${report}"
+  run -0 "${script}" broken-links "${report}"
 
   assert_github_issues '[
     {"number": 22, "title": "chore(deps): 依存関係の更新状況", "state": "open", "body": "ダッシュボード"},
@@ -136,7 +138,7 @@ assert_github_issues() {
 @test "同じタイトルの issue が閉じていれば、書き換えずに新しく作る" {
   given_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "closed", "body": "前回の結果"}]'
 
-  run -0 "${script}" "${report}"
+  run -0 "${script}" broken-links "${report}"
 
   assert_github_issues '[
     {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "closed", "body": "前回の結果"},
@@ -147,7 +149,7 @@ assert_github_issues() {
 @test "タイトルの一部だけが一致する issue は書き換えずに、新しく作る" {
   given_github_issues '[{"number": 190, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す（README）", "state": "open", "body": "手で立てた issue"}]'
 
-  run -0 "${script}" "${report}"
+  run -0 "${script}" broken-links "${report}"
 
   assert_github_issues '[
     {"number": 190, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す（README）", "state": "open", "body": "手で立てた issue"},
@@ -161,7 +163,7 @@ assert_github_issues() {
     {"number": 190, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}
   ]'
 
-  run -0 "${script}" "${report}"
+  run -0 "${script}" broken-links "${report}"
 
   assert_github_issues '[
     {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前々回の結果"},
@@ -172,13 +174,13 @@ assert_github_issues() {
 @test "issue の一覧を取得できなければ、issue を作らずに失敗する" {
   export STUB_FAIL="issue list"
 
-  run -1 "${script}" "${report}"
+  run -1 "${script}" broken-links "${report}"
 
   assert_github_issues '[]'
 }
 
 @test "レポートのファイルがなければ、issue を作らずに失敗する" {
-  run -1 "${script}" "${BATS_TEST_TMPDIR}/missing.md"
+  run -1 "${script}" broken-links "${BATS_TEST_TMPDIR}/missing.md"
 
   assert_github_issues '[]'
 }
@@ -189,7 +191,7 @@ assert_github_issues() {
     {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}
   ]'
 
-  run -0 "${script}" --resolved
+  run -0 "${script}" broken-links --resolved
 
   assert_github_issues '[
     {"number": 22, "title": "chore(deps): 依存関係の更新状況", "state": "open", "body": "ダッシュボード"},
@@ -203,7 +205,7 @@ assert_github_issues() {
     {"number": 190, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}
   ]'
 
-  run -0 "${script}" --resolved
+  run -0 "${script}" broken-links --resolved
 
   assert_github_issues '[
     {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "closed", "body": "前々回の結果", "state_reason": "completed", "comments": ["[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、すべてのリンクが通りました。"]},
@@ -217,7 +219,7 @@ assert_github_issues() {
     {"number": 190, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す（README）", "state": "open", "body": "手で立てた issue"}
   ]'
 
-  run -0 "${script}" --resolved
+  run -0 "${script}" broken-links --resolved
 
   assert_github_issues '[
     {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "closed", "body": "前回の結果"},
@@ -229,7 +231,7 @@ assert_github_issues() {
   given_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
   export STUB_FAIL="issue list"
 
-  run -1 "${script}" --resolved
+  run -1 "${script}" broken-links --resolved
 
   assert_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
 }
@@ -238,7 +240,51 @@ assert_github_issues() {
   given_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
   export STUB_FAIL="issue close"
 
-  run -1 "${script}" --resolved
+  run -1 "${script}" broken-links --resolved
 
+  assert_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
+}
+
+@test "settings-drift では、設定のずれの issue を、検査の出力を diff のコードブロックに入れた本文で作る" {
+  echo 'ずれ: ラベル bug が GitHub にありません' >"${BATS_TEST_TMPDIR}/drift.txt"
+  given_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
+
+  run -0 "${script}" settings-drift "${BATS_TEST_TMPDIR}/drift.txt"
+
+  assert_github_issues '[
+    {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"},
+    {"number": 186, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "open", "body": "[GitHub の設定の定期検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。定義を直すか、`.github/scripts/sync-github-settings/sync-github-settings.sh` で GitHub を定義に揃えてください。\n\n```diff\nずれ: ラベル bug が GitHub にありません\n```\n"}
+  ]'
+}
+
+@test "settings-drift で検査が通ったとき（--resolved）、設定のずれの issue だけを、定義と一致したとコメントして閉じる" {
+  given_github_issues '[
+    {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"},
+    {"number": 190, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "open", "body": "前回の結果"}
+  ]'
+
+  run -0 "${script}" settings-drift --resolved
+
+  assert_github_issues '[
+    {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"},
+    {"number": 190, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "closed", "body": "前回の結果", "state_reason": "completed", "comments": ["[GitHub の設定の定期検査](https://example.com/owner/repo/actions/runs/123) で、GitHub の設定が定義と一致しました。"]}
+  ]'
+}
+
+@test "知らない検査の名前なら、使い方を出して issue に触れずに失敗する" {
+  given_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
+
+  run -1 --separate-stderr "${script}" broken-link --resolved
+
+  [[ ${stderr} == "使い方: ${script} {broken-links | settings-drift} {<検査の出力> | --resolved}" ]]
+  assert_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
+}
+
+@test "検査の名前を渡さなければ、使い方を出して issue に触れずに失敗する" {
+  given_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
+
+  run -1 --separate-stderr "${script}" --resolved
+
+  [[ ${stderr} == "使い方: ${script} {broken-links | settings-drift} {<検査の出力> | --resolved}" ]]
   assert_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
 }

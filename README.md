@@ -226,7 +226,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - node と golang のサーバーのアドレス（`http://localhost:3000` など）も、`.github/lychee.toml` で検査から除く
 - 理由は、[`lychee.yml`](.github/workflows/lychee.yml) と `.github/lychee.toml` のコメントに書いている
 - HTTPS で開けるリンクを `http://` で書いていると、失敗する（`require_https`、[lychee.example.toml](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee.example.toml#L98-L99)）。PR の検査は `--offline` でネットワークを使わないため、この検査は効かない
-- 通らないリンクがあると、[`report-broken-links.sh`](.github/scripts/report-broken-links/report-broken-links.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える
+- 通らないリンクがあると、[`report-scheduled-check.sh`](.github/scripts/report-scheduled-check/report-scheduled-check.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える
 - すべてのリンクが通ると、開いている issue に実行の URL をコメントして閉じる
 - リンクを直したら、次の検査を待つか、手動で実行して issue を閉じる
 
@@ -356,7 +356,7 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 
 ## 使うツール
 
-CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対象は、[ダウンロードするファイルの検証](#ダウンロードするファイルの検証) の表に並べたツールです。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、mise-action の `working_directory` で読ませています。
+CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対象は、[ダウンロードするファイルの検証](#ダウンロードするファイルの検証) の表に並べたツールです。[`.github/mise.toml`](.github/mise.toml) で版を、[`.github/mise.lock`](.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、[`setup-mise`](.github/actions/setup-mise/action.yml) が mise-action の `working_directory` で読ませています。
 
 ### `mise.lock` の更新
 
