@@ -93,8 +93,9 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `textlint`・`markdownlint` | リポジトリのすべての `.md` |
 | `test` | リポジトリ全体の `.sh`・`.bats`。`.git` は除く |
 | `editorconfig` | リポジトリ全体。`pnpm-lock.yaml` など、editorconfig-checker がデフォルトで除外するファイルは除く（[Default Excludes](https://github.com/editorconfig-checker/editorconfig-checker/blob/v4.0.2/README.md#default-excludes)） |
-| `actionlint`・`ghalint` | すべてのワークフロー |
+| `actionlint` | すべてのワークフロー |
 | `zizmor` | すべてのワークフローと、リポジトリ内のアクション（`action.yml`） |
+| `ghalint` | すべてのワークフローと、リポジトリのルートから 3 階層までのディレクトリにあるアクション（`action.yml`） |
 | `renovate-config-validator` | [`.github/renovate.json5`](.github/renovate.json5) |
 | `lychee` | リポジトリ全体。`.git` と、`.github/mise.lock`・`.github/yamllint/uv.lock` は除く |
 | `typos` | リポジトリ全体。`.git` と、`typos.toml`・`pyproject.toml` など typos の設定ファイルと同じ名前のファイルは除く |
