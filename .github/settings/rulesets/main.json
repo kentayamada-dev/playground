@@ -105,6 +105,10 @@
           {
             "context": "devcontainer",
             "integration_id": 15368
+          },
+          {
+            "context": "typecheck",
+            "integration_id": 15368
           }
         ]
       }

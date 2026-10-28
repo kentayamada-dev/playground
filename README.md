@@ -68,6 +68,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`yamllint.yml`](.github/workflows/yamllint.yml) | `.yml`・`.yaml` の構文と書式。キーの重複・インデント・コメントの書き方など。[yamllint](https://github.com/adrienverge/yamllint) で検査する。設定は [`.github/yamllint/.yamllint.yaml`](.github/yamllint/.yamllint.yaml) にある | `yamllint` |
 | [`hadolint.yml`](.github/workflows/hadolint.yml) | Dockerfile の書き方。ベースイメージのタグの指定・`apt-get install` の版の固定など。[hadolint](https://github.com/hadolint/hadolint) で検査し、`RUN` のスクリプトは hadolint に組み込まれた ShellCheck にかける。設定は [`.github/hadolint.yaml`](.github/hadolint.yaml) にある | `hadolint` |
 | [`devcontainer.yml`](.github/workflows/devcontainer.yml) | [開発環境](#開発環境) の 2 つのイメージを、[`compose.yaml`](compose.yaml) のとおりにビルドできるか。golang では gopls と gofumpt が、node では pnpm が起動するかも確認する。詳しくは [devcontainer](#devcontainer) | `devcontainer` |
+| [`typecheck.yml`](.github/workflows/typecheck.yml) | [`node`](node) の TypeScript の型。node の Dev Container と同じイメージのなかで、`pnpm typecheck` で検査する。設定は [`node/tsconfig.json`](node/tsconfig.json) にある。詳しくは [typecheck](#typecheck) | `typecheck` |
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 
 どのワークフローも、PR と `main` への push で動きます。動くタイミングが違うのは、次の 4 つです。
@@ -98,6 +99,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `yamllint` | リポジトリ全体の `.yml`・`.yaml`。`pnpm-lock.yaml` と、`.venv`・`node_modules` の下は除く |
 | `hadolint` | リポジトリ全体のうち、名前が `Dockerfile`・`Containerfile` のファイル。`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*`・`*.Containerfile` に一致するファイルも含む。`.git` は除く |
 | `devcontainer` | [`compose.yaml`](compose.yaml) の `node`・`golang` のサービスのイメージ。ランナーと同じ arm64 のイメージだけをビルドする |
+| `typecheck` | [`node/tsconfig.json`](node/tsconfig.json) の `include` に一致するファイル。`node_modules` の下は除く |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
 - 範囲の決め方と除く理由は、各ワークフローと、[`.yamllint.yaml`](.github/yamllint/.yamllint.yaml)・[`.github/lychee.toml`](.github/lychee.toml)・[`.github/typos.toml`](.github/typos.toml) のコメントに書いている
@@ -191,6 +193,14 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - Renovate は、ベースイメージ・pnpm・gopls・gofumpt の minor・patch・digest の更新を自動マージする。組み合わせによってはビルドが壊れるため、必須チェックにしている
 - ビルドのキャッシュは使わず、毎回すべての層をビルドする
 - ビルドでは、Docker Hub・Takumi Guard のレジストリ・Go のモジュールプロキシから取得する。どれかに接続できないと、どの PR もマージできない
+
+#### typecheck
+
+- 手元では、node のコンテナで `pnpm typecheck` を実行すると、CI と同じ検査ができる
+- `pnpm typecheck` は、Next.js が生成するルートの型（`.next/types`）を作ってから検査する。`tsc` だけでは、その型がないときに `LayoutProps` などが見つからずに失敗する
+- Renovate は、`next`・`typescript`・`@types/*` などの minor・patch の更新も自動マージする。型が合わなくなる更新を入れないため、必須チェックにしている
+- イメージのビルドと依存関係の取得では、Docker Hub・Takumi Guard のレジストリから取得する。どちらかに接続できないと、どの PR もマージできない
+- Dev Container と同じイメージで検査する理由は、[`typecheck.yml`](.github/workflows/typecheck.yml) のコメントに書いている
 
 ### 外部リンクの定期検査
 
