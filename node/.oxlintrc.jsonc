@@ -30,6 +30,12 @@
     // Next.js のグローバルな CSS は、値を受け取らない import で読み込むため
     // https://nextjs.org/docs/app/getting-started/css#global-css
     "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],
+    // CSS は import した順に並び、同じ詳細度なら後のものが勝つため、値を受け取らない import を最後に置かせ、グローバルな CSS をほかの import の CSS より優先させる
+    // https://nextjs.org/docs/app/getting-started/css#ordering-and-merging
+    "eslint/sort-imports": [
+      "error",
+      { "memberSyntaxSortOrder": ["all", "multiple", "single", "none"] },
+    ],
     // next/font の Geist などは、大文字で始まるが new を付けずに呼ぶ関数のため
     // https://nextjs.org/docs/app/api-reference/components/font
     "eslint/new-cap": ["error", { "capIsNew": false }],
