@@ -32,12 +32,11 @@ ${output}"
     resolved_comment="[GitHub の設定の定期検査](${run_url}) で、GitHub の設定が定義と一致しました。"
     body="[GitHub の設定の定期検査](${run_url}) が失敗しました。定義を直すか、\`.github/scripts/sync-github-settings/sync-github-settings.sh\` で GitHub を定義に揃えてください。
 
-\`\`\`diff
+\`\`\`
 ${output}
 \`\`\`"
     ;;
   *)
-    echo "${usage}" >&2
     exit 1
     ;;
 esac

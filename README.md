@@ -448,3 +448,5 @@ gh secret set RENOVATE_TOKEN --repo kentayamada-dev/playground
 | Repository access | Only select repositories で `kentayamada-dev/playground` を選ぶ |
 | Repository permissions | それぞれの節の表のとおりに設定し、ほかは No access のままにする |
 | Account permissions | すべて No access のままにする |
+
+検証用の違反です！

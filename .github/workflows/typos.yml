@@ -27,5 +27,5 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-mise
         with:
-          install_args: github:crate-ci/typos
+          install_args: does-not-exist
       - run: typos --config .github/typos.toml
