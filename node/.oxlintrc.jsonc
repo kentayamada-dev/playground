@@ -48,6 +48,9 @@
       "error",
       { "allow": [{ "from": "file", "name": "LayoutProps" }] },
     ],
+    // Promise を返す関数に async を求める typescript/promise-function-async と逆を求め、Next.js も page の params を await で読ませるため
+    // https://nextjs.org/docs/app/api-reference/file-conventions/page
+    "oxc/no-async-await": "off",
     // コメントは、小文字で始まる識別子から書き出すことがあるため
     "eslint/capitalized-comments": "off",
     // oxfmt が 16 進数の数字を小文字に整形し、大文字を求めるこの規則と食い違うため
