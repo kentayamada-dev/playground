@@ -231,7 +231,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - `pnpm lint` は、`pnpm typecheck` と同じく、Next.js が生成するルートの型を作ってから検査する。その型がないと、型情報を使う規則が `LayoutProps` などを解決できず、誤った指摘を出す
 - oxfmt のインデントや改行の設定は、リポジトリのルートの [`.editorconfig`](.editorconfig) から読む
 - oxlint は、型情報を使う規則も動かす。型情報は `oxlint-tsgolint` が [`node/tsconfig.json`](node/tsconfig.json) から作る
-- 外した規則と、既定のオプションを変えた規則の理由は、[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) のコメントに書いている
+- 外した規則と、デフォルトのオプションを変えた規則の理由は、[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) のコメントに書いている
 - node の Dev Container には Oxc の VS Code 拡張機能を入れ、保存すると oxfmt で整形する設定にしている
 - Renovate は、`oxlint`・`oxfmt`・`oxlint-tsgolint` の minor・patch の更新も自動マージする。指摘や整形の結果が変わる更新を入れないため、必須チェックにしている
 - イメージのビルドと依存関係の取得では、Docker Hub・Takumi Guard のレジストリから取得する。どちらかに接続できないと、どの PR もマージできない
