@@ -8,6 +8,7 @@ import (
 
 func main() {
 	mux := http.NewServeMux()
+	undefinedFunction()
 	mux.HandleFunc("GET /hello", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(map[string]string{"message": "hello from golang"}); err != nil {
