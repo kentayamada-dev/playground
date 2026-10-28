@@ -113,6 +113,10 @@
           {
             "context": "golang-check",
             "integration_id": 15368
+          },
+          {
+            "context": "node-check",
+            "integration_id": 15368
           }
         ]
       }

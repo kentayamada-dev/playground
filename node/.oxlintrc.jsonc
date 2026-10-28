@@ -1,0 +1,64 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // plugins を書くと既定のプラグインが外れるため、既定の eslint・typescript・unicorn・oxc も並べる
+  // https://oxc.rs/docs/guide/usage/linter/plugins.html
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "nextjs", "jsx-a11y", "import"],
+  // nursery は開発中の規則のため、有効にしない
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "pedantic": "error",
+    "perf": "error",
+    "style": "error",
+    "restriction": "error",
+  },
+  "rules": {
+    // Next.js は、page・layout・next.config に default export を、metadata やルートハンドラーに名前付きの export を求めるため
+    // https://nextjs.org/docs/app/api-reference/file-conventions/page https://nextjs.org/docs/app/api-reference/file-conventions/route
+    "import/no-default-export": "off",
+    "import/no-named-export": "off",
+    "import/prefer-default-export": "off",
+    // Next.js の page・layout は、コンポーネントと同じファイルから metadata などを export するため
+    // https://nextjs.org/docs/app/api-reference/functions/generate-metadata
+    "react/only-export-components": "off",
+    // tsconfig.json の jsx: react-jsx の変換では、JSX を書くために React を import しなくてよいため
+    // https://oxc.rs/docs/guide/usage/linter/rules/react/react-in-jsx-scope.html
+    "react/react-in-jsx-scope": "off",
+    // 既定では JSX を .jsx にしか書けないため、.tsx を指定する。JS を許すときは、tsconfig.json の allowJs も合わせる
+    "react/jsx-filename-extension": ["error", { "extensions": [".tsx"] }],
+    // Next.js のグローバルな CSS は、値を受け取らない import で読み込むため
+    // https://nextjs.org/docs/app/getting-started/css#global-css
+    "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],
+    // next/font の Geist などは、大文字で始まるが new を付けずに呼ぶ関数のため
+    // https://nextjs.org/docs/app/api-reference/components/font
+    "eslint/new-cap": ["error", { "capIsNew": false }],
+    // next/font の変換は const の最初の変数しか変換しないため、既定の always と逆に、1 つの const に 1 つの変数を書かせる
+    // https://github.com/vercel/next.js/blob/v16.4.2/crates/next-custom-transforms/src/transforms/fonts/font_imports_generator.rs#L89-L90
+    "eslint/one-var": ["error", "never"],
+    // 既定では、関数を式で書かせる func-style と、名前のないコンポーネントにアロー関数を使わせない prefer-arrow-callback に、逆を求めるため
+    "react/function-component-definition": [
+      "error",
+      { "namedComponents": "arrow-function", "unnamedComponents": "arrow-function" },
+    ],
+    // Tailwind CSS のクラスは、next/image などのコンポーネントにも className で渡すため
+    "react/forbid-component-props": ["error", { "forbid": ["style"] }],
+    // Next.js が生成する LayoutProps は、Readonly で包んでも readonly の型と判定されないため
+    // https://typescript-eslint.io/rules/prefer-readonly-parameter-types/
+    "typescript/prefer-readonly-parameter-types": [
+      "error",
+      { "allow": [{ "from": "file", "name": "LayoutProps" }] },
+    ],
+    // コメントは、小文字で始まる識別子から書き出すことがあるため
+    "eslint/capitalized-comments": "off",
+    // oxfmt が 16 進数の数字を小文字に整形し、大文字を求めるこの規則と食い違うため
+    // https://github.com/prettier/eslint-config-prettier/blob/v10.1.8/index.js#L254
+    "unicorn/number-literal-case": "off",
+  },
+  "options": {
+    // CLI の --type-aware ではなくここで有効にし、エディタの拡張機能にも型情報を使う規則を動かさせる
+    // https://oxc.rs/docs/guide/usage/linter/editors.html
+    "typeAware": true,
+    "denyWarnings": true,
+    "reportUnusedDisableDirectives": "error",
+  },
+}

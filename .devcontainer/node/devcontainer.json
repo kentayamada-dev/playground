@@ -22,12 +22,15 @@
         },
         "editor.quickSuggestions": {
           "strings": "on"
-        }
+        },
+        "editor.defaultFormatter": "oxc.oxc-vscode",
+        "editor.formatOnSave": true
       },
       "extensions": [
         "TypeScriptTeam.native-preview",
         "bradlc.vscode-tailwindcss",
-        "EditorConfig.EditorConfig"
+        "EditorConfig.EditorConfig",
+        "oxc.oxc-vscode"
       ]
     }
   }

@@ -70,6 +70,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`devcontainer.yml`](.github/workflows/devcontainer.yml) | [開発環境](#開発環境) の 2 つのイメージを、[`compose.yaml`](compose.yaml) のとおりにビルドできるか。golang では gopls・gofumpt・staticcheck が、node では pnpm が起動するかも確認する。詳しくは [devcontainer](#devcontainer) | `devcontainer` |
 | [`typecheck.yml`](.github/workflows/typecheck.yml) | [`node`](node) の TypeScript の型。node の Dev Container と同じイメージのなかで、`pnpm typecheck` で検査する。設定は [`node/tsconfig.json`](node/tsconfig.json) にある。詳しくは [typecheck](#typecheck) | `typecheck` |
 | [`golang-check.yml`](.github/workflows/golang-check.yml) | [`golang`](golang) の Go のコード。golang の Dev Container と同じイメージのなかで、ビルド・`go vet`・gofumpt の整形・[staticcheck](https://staticcheck.dev/)・`go test` を順に検査する。staticcheck の設定は [`golang/staticcheck.conf`](golang/staticcheck.conf) にある。詳しくは [golang-check](#golang-check) | `golang-check` |
+| [`node-check.yml`](.github/workflows/node-check.yml) | [`node`](node) のコードの整形と lint。node の Dev Container と同じイメージのなかで、[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) の整形に沿っているかと、[oxlint](https://oxc.rs/docs/guide/usage/linter.html) の検査を順に確認する。設定は [`node/.oxfmtrc.jsonc`](node/.oxfmtrc.jsonc)・[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) にある。詳しくは [node-check](#node-check) | `node-check` |
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 
 どのワークフローも、PR と `main` への push で動きます。動くタイミングが違うのは、次の 4 つです。
@@ -104,6 +105,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `devcontainer` | [`compose.yaml`](compose.yaml) の `node`・`golang` のサービスのイメージ。ランナーと同じ arm64 のイメージだけをビルドする |
 | `typecheck` | [`node/tsconfig.json`](node/tsconfig.json) の `include` に一致するファイル。`node_modules` の下は除く |
 | `golang-check` | [`golang`](golang) のモジュールのすべてのパッケージ（`./...`）。gofumpt は、その下のすべての `.go`（`vendor`・`testdata` は除く） |
+| `node-check` | [`node`](node) の下のファイル。`.gitignore` に一致するファイルは除く。oxfmt は、対応する形式のうち `.md`・`.yml`・`.yaml` とロックファイルを除く。oxlint は、JavaScript と TypeScript のファイル |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
 - 範囲の決め方と除く理由は、各ワークフローと、[`.yamllint.yaml`](.github/yamllint/.yamllint.yaml)・[`.github/lychee.toml`](.github/lychee.toml)・[`.github/typos.toml`](.github/typos.toml) のコメントに書いている
@@ -124,6 +126,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | yamllint | `--strict` を付け、warning の指摘でも失敗する（[Errors and warnings](https://yamllint.readthedocs.io/en/stable/configuration.html#errors-and-warnings)） |
 | hadolint | [`.github/hadolint.yaml`](.github/hadolint.yaml) の `failure-threshold: style` で、重大度が style の指摘でも失敗する。`label-schema` のラベルがないときと、`strict-labels` でそれ以外のラベルがあるときも失敗する（[Linting Labels](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#linting-labels)） |
 | staticcheck | [`golang/staticcheck.conf`](golang/staticcheck.conf) の `checks = ["all"]` で、デフォルトでは無効のスタイルの検査もすべて有効にする（[Configuration](https://staticcheck.dev/docs/configuration/)） |
+| oxlint | [`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) で、開発中の `nursery` を除くすべてのカテゴリの規則をエラーにする。warning と、使われていない無効化のコメントでも失敗する（[`options`](https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#options)） |
 
 #### 指摘を無視する方法
 
@@ -135,6 +138,8 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | yamllint | 該当する行に `# yamllint disable-line rule:<ルール名>` と書く（[Disable with comments](https://yamllint.readthedocs.io/en/stable/disable_with_comments.html#disabling-checks-for-a-specific-line)） |
 | hadolint | 該当する命令の前の行に `# hadolint ignore=<ルール名>` と書く（[Inline ignores](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#inline-ignores)） |
 | staticcheck | 該当する行の前に `//lint:ignore <チェック名> <理由>` と書く。理由は省略できない（[Ignoring problems with linter directives](https://staticcheck.dev/docs/configuration/#ignoring-problems)） |
+| oxlint | 該当する行の前に `// oxlint-disable-next-line <規則名>` と書く（[Inline suppressions](https://oxc.rs/docs/guide/usage/linter/ignore-comments.html)） |
+| oxfmt | 整形させない文の前に `// oxfmt-ignore` と書く。JSX のなかでは `{/* oxfmt-ignore */}` と書く。JavaScript と TypeScript のほかのファイルでは、`prettier-ignore` を使う（[Ignore comments](https://oxc.rs/docs/guide/usage/formatter/ignore-comments.html)） |
 | Betterleaks | その行のコメントに `betterleaks:allow` と書く。書けないときは、[シークレットの検査](#シークレットの検査) のとおり `.betterleaksignore` を使う |
 
 #### actionlint
@@ -218,6 +223,19 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - Renovate は、golang のベースイメージと gofumpt・staticcheck の minor・patch・digest の更新を自動マージする。コードが検査に通らなくなる更新を入れないため、必須チェックにしている
 - イメージのビルドとツールチェーン・モジュールの取得では、Docker Hub と Go のモジュールプロキシから取得する。どちらかに接続できないと、どの PR もマージできない
 - Dev Container と同じイメージで検査する理由と、ビルドと gofumpt に付けるオプションの理由は、[`golang-check.yml`](.github/workflows/golang-check.yml) のコメントに書いている
+
+#### node-check
+
+- 手元では、node のコンテナで `pnpm fmt:check` と `pnpm lint` を実行すると、CI と同じ検査ができる。`pnpm fmt` を実行すると整形し直す
+- 検査は順に実行し、失敗したところで止まる。後の検査は実行しない
+- `pnpm lint` は、`pnpm typecheck` と同じく、Next.js が生成するルートの型を作ってから検査する。その型がないと、型情報を使う規則が `LayoutProps` などを解決できず、誤った指摘を出す
+- oxfmt のインデントや改行の設定は、リポジトリのルートの [`.editorconfig`](.editorconfig) から読む
+- oxlint は、型情報を使う規則も動かす。型情報は `oxlint-tsgolint` が [`node/tsconfig.json`](node/tsconfig.json) から作る
+- 外した規則と、既定のオプションを変えた規則の理由は、[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) のコメントに書いている
+- node の Dev Container には Oxc の VS Code 拡張機能を入れ、保存すると oxfmt で整形する設定にしている
+- Renovate は、`oxlint`・`oxfmt`・`oxlint-tsgolint` の minor・patch の更新も自動マージする。指摘や整形の結果が変わる更新を入れないため、必須チェックにしている
+- イメージのビルドと依存関係の取得では、Docker Hub・Takumi Guard のレジストリから取得する。どちらかに接続できないと、どの PR もマージできない
+- Dev Container と同じイメージで検査する理由は、[`node-check.yml`](.github/workflows/node-check.yml) のコメントに書いている
 
 ### 外部リンクの定期検査
 
