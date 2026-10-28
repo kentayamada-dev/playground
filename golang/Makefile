@@ -1,4 +1,4 @@
-.PHONY: run build test fmt vet
+.PHONY: run build test fmt vet staticcheck
 
 run:
 	go run .
@@ -14,3 +14,6 @@ fmt:
 
 vet:
 	go vet ./...
+
+staticcheck:
+	staticcheck ./...

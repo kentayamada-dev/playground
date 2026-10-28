@@ -24,7 +24,7 @@ node と golang を、別々の Dev Container で開発します。ホストの 
 - `devEngines.packageManager` には版を書かず、pnpm の版は Dockerfile の 1 か所で管理する。pnpm は `onFail` を省くと `download` として扱うため、`error` を明示している（[pmOnFail](https://pnpm.io/settings/cli#pmonfail)）
 - node と textlint の pnpm は、本体とパッケージを Takumi Guard のレジストリ（`https://npm.flatt.tech/`）から取得する。`npmjs:` と `@jsr` スコープも同じレジストリに向け、`gh:`（GitHub Packages）は使えないようにしている（[Registries](https://pnpm.io/registries)）
 - 公開から 1 日（`minimumReleaseAge: 1440` 分）経っていない版は入れない。待機期間を満たす版がないときと、レジストリが公開日時を返さないときは、インストールが失敗する。以前の版より信頼のレベルが下がった版も入れない（`trustPolicy: no-downgrade`）。どれも [pnpm の設定](https://pnpm.io/settings/dependency-resolution) による
-- golang は、gopls と gofumpt をイメージに入れている。版は [`.devcontainer/golang/tools`](.devcontainer/golang/tools) のツールごとの `go.mod` で管理し、Renovate が更新する
+- golang は、gopls・gofumpt・staticcheck をイメージに入れている。版は [`.devcontainer/golang/tools`](.devcontainer/golang/tools) のツールごとの `go.mod` で管理し、Renovate が更新する
 - bash の履歴、node の `node_modules`・pnpm のストア、golang のモジュールとビルドのキャッシュは、名前付きボリュームに置く。コンテナを作り直しても、履歴とキャッシュは残る。手元の `node/node_modules` は空のディレクトリになる
 - node のコンテナを作ると、`node` で `pnpm install` を実行する。インストールが終わってから、VS Code がコンテナに接続する
 - ウィンドウを閉じても、コンテナは止めない（`shutdownAction: "none"`）
@@ -67,8 +67,9 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`markdownlint.yml`](.github/workflows/markdownlint.yml) | すべての `.md` の書式。見出しのレベル・リストの記号・表の列数・空行・コードブロックの言語の指定など。[markdownlint](https://github.com/DavidAnson/markdownlint) で検査する。設定は [`.github/markdownlint-cli2.jsonc`](.github/markdownlint-cli2.jsonc) にある | `markdownlint` |
 | [`yamllint.yml`](.github/workflows/yamllint.yml) | `.yml`・`.yaml` の構文と書式。キーの重複・インデント・コメントの書き方など。[yamllint](https://github.com/adrienverge/yamllint) で検査する。設定は [`.github/yamllint/.yamllint.yaml`](.github/yamllint/.yamllint.yaml) にある | `yamllint` |
 | [`hadolint.yml`](.github/workflows/hadolint.yml) | Dockerfile の書き方。ベースイメージのタグの指定・`apt-get install` の版の固定など。[hadolint](https://github.com/hadolint/hadolint) で検査し、`RUN` のスクリプトは hadolint に組み込まれた ShellCheck にかける。設定は [`.github/hadolint.yaml`](.github/hadolint.yaml) にある | `hadolint` |
-| [`devcontainer.yml`](.github/workflows/devcontainer.yml) | [開発環境](#開発環境) の 2 つのイメージを、[`compose.yaml`](compose.yaml) のとおりにビルドできるか。golang では gopls と gofumpt が、node では pnpm が起動するかも確認する。詳しくは [devcontainer](#devcontainer) | `devcontainer` |
+| [`devcontainer.yml`](.github/workflows/devcontainer.yml) | [開発環境](#開発環境) の 2 つのイメージを、[`compose.yaml`](compose.yaml) のとおりにビルドできるか。golang では gopls・gofumpt・staticcheck が、node では pnpm が起動するかも確認する。詳しくは [devcontainer](#devcontainer) | `devcontainer` |
 | [`typecheck.yml`](.github/workflows/typecheck.yml) | [`node`](node) の TypeScript の型。node の Dev Container と同じイメージのなかで、`pnpm typecheck` で検査する。設定は [`node/tsconfig.json`](node/tsconfig.json) にある。詳しくは [typecheck](#typecheck) | `typecheck` |
+| [`golang-check.yml`](.github/workflows/golang-check.yml) | [`golang`](golang) の Go のコード。golang の Dev Container と同じイメージのなかで、ビルド・`go vet`・gofumpt の整形・[staticcheck](https://staticcheck.dev/)・`go test` を順に検査する。staticcheck の設定は [`golang/staticcheck.conf`](golang/staticcheck.conf) にある。詳しくは [golang-check](#golang-check) | `golang-check` |
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 
 どのワークフローも、PR と `main` への push で動きます。動くタイミングが違うのは、次の 4 つです。
@@ -100,6 +101,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `hadolint` | リポジトリ全体のうち、名前が `Dockerfile`・`Containerfile` のファイル。`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*`・`*.Containerfile` に一致するファイルも含む。`.git` は除く |
 | `devcontainer` | [`compose.yaml`](compose.yaml) の `node`・`golang` のサービスのイメージ。ランナーと同じ arm64 のイメージだけをビルドする |
 | `typecheck` | [`node/tsconfig.json`](node/tsconfig.json) の `include` に一致するファイル。`node_modules` の下は除く |
+| `golang-check` | [`golang`](golang) のモジュールのすべてのパッケージ（`./...`）。gofumpt は、その下のすべての `.go`（`vendor`・`testdata` は除く） |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
 - 範囲の決め方と除く理由は、各ワークフローと、[`.yamllint.yaml`](.github/yamllint/.yamllint.yaml)・[`.github/lychee.toml`](.github/lychee.toml)・[`.github/typos.toml`](.github/typos.toml) のコメントに書いている
@@ -119,6 +121,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | shfmt | [`.editorconfig`](.editorconfig) の `simplify = true` で、もっと簡単に書けるコードも差分として出す |
 | yamllint | `--strict` を付け、warning の指摘でも失敗する（[Errors and warnings](https://yamllint.readthedocs.io/en/stable/configuration.html#errors-and-warnings)） |
 | hadolint | [`.github/hadolint.yaml`](.github/hadolint.yaml) の `failure-threshold: style` で、重大度が style の指摘でも失敗する。`label-schema` のラベルがないときと、`strict-labels` でそれ以外のラベルがあるときも失敗する（[Linting Labels](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#linting-labels)） |
+| staticcheck | [`golang/staticcheck.conf`](golang/staticcheck.conf) の `checks = ["all"]` で、デフォルトでは無効のスタイルの検査もすべて有効にする（[Configuration](https://staticcheck.dev/docs/configuration/)） |
 
 #### 指摘を無視する方法
 
@@ -129,6 +132,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | markdownlint | 該当する行の前に `<!-- markdownlint-disable-next-line <ルール名> -->` と書く（[Configuration](https://github.com/DavidAnson/markdownlint/blob/v0.41.1/README.md#configuration)） |
 | yamllint | 該当する行に `# yamllint disable-line rule:<ルール名>` と書く（[Disable with comments](https://yamllint.readthedocs.io/en/stable/disable_with_comments.html#disabling-checks-for-a-specific-line)） |
 | hadolint | 該当する命令の前の行に `# hadolint ignore=<ルール名>` と書く（[Inline ignores](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#inline-ignores)） |
+| staticcheck | 該当する行の前に `//lint:ignore <チェック名> <理由>` と書く。理由は省略できない（[Ignoring problems with linter directives](https://staticcheck.dev/docs/configuration/#ignoring-problems)） |
 | Betterleaks | その行のコメントに `betterleaks:allow` と書く。書けないときは、[シークレットの検査](#シークレットの検査) のとおり `.betterleaksignore` を使う |
 
 #### actionlint
@@ -190,7 +194,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 #### devcontainer
 
-- Renovate は、ベースイメージ・pnpm・gopls・gofumpt の minor・patch・digest の更新を自動マージする。組み合わせによってはビルドが壊れるため、必須チェックにしている
+- Renovate は、ベースイメージ・pnpm・gopls・gofumpt・staticcheck の minor・patch・digest の更新を自動マージする。組み合わせによってはビルドが壊れるため、必須チェックにしている
 - ビルドのキャッシュは使わず、毎回すべての層をビルドする
 - ビルドでは、Docker Hub・Takumi Guard のレジストリ・Go のモジュールプロキシから取得する。どれかに接続できないと、どの PR もマージできない
 
@@ -201,6 +205,17 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - Renovate は、`next`・`typescript`・`@types/*` などの minor・patch の更新も自動マージする。型が合わなくなる更新を入れないため、必須チェックにしている
 - イメージのビルドと依存関係の取得では、Docker Hub・Takumi Guard のレジストリから取得する。どちらかに接続できないと、どの PR もマージできない
 - Dev Container と同じイメージで検査する理由は、[`typecheck.yml`](.github/workflows/typecheck.yml) のコメントに書いている
+
+#### golang-check
+
+- 手元では、golang のコンテナで CI と同じ検査ができる。実行のしかたは [`golang/Makefile`](golang/Makefile) にある
+- 検査は順に実行し、失敗したところで止まる。後の検査は実行しない
+- staticcheck は、エディタの gopls と同じく、すべての検査を有効にしている
+- `go test` は、テストのファイルがないパッケージを `[no test files]` と出して成功として扱う
+- ビルドは、VCS の情報を埋め込まず、実行ファイルを一時ディレクトリに書いて捨てる。手元の `make build` とは出力が違う
+- Renovate は、golang のベースイメージと gofumpt・staticcheck の minor・patch・digest の更新を自動マージする。コードが検査に通らなくなる更新を入れないため、必須チェックにしている
+- イメージのビルドとツールチェーン・モジュールの取得では、Docker Hub と Go のモジュールプロキシから取得する。どちらかに接続できないと、どの PR もマージできない
+- Dev Container と同じイメージで検査する理由と、ビルドと gofumpt に付けるオプションの理由は、[`golang-check.yml`](.github/workflows/golang-check.yml) のコメントに書いている
 
 ### 外部リンクの定期検査
 

@@ -26,7 +26,7 @@ RUN useradd --create-home --user-group --shell /bin/bash "$USER_NAME" \
   && echo "export PROMPT_COMMAND='history -a' HISTFILE=$HISTORY_DIR/.bash_history" >>"/home/$USER_NAME/.bashrc"
 USER $USER_NAME
 
-# gopls と gofumpt の版は tools のツールごとの go.mod で管理し、Renovate の gomod マネージャーが更新する
+# gopls・gofumpt・staticcheck の版は tools のツールごとの go.mod で管理し、Renovate の gomod マネージャーが更新する
 # gopls は golang.org/x/tools の内部パッケージを使い、自身の go.mod と違う版の x/tools ではビルドできないことがあるため、go.mod を分け、依存だけを上げずに gopls ごと上げる
 # 例: gopls v0.23.0 が使う packagepath.IsStdPackage は、gopls v0.24.0 の時点の x/tools にない https://github.com/golang/tools/blob/gopls/v0.23.0/gopls/internal/analysis/unusedfunc/unusedfunc.go#L22-L77
 COPY tools /tmp/tools
@@ -35,4 +35,5 @@ COPY tools /tmp/tools
 # https://github.com/golang/go/blob/go1.27.3/src/cmd/go/internal/modfetch/sumdb.go#L250-L261
 RUN go install -C /tmp/tools/gopls tool \
   && go install -C /tmp/tools/gofumpt tool \
+  && go install -C /tmp/tools/staticcheck tool \
   && go clean -cache -modcache

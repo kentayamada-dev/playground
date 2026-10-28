@@ -109,6 +109,10 @@
           {
             "context": "typecheck",
             "integration_id": 15368
+          },
+          {
+            "context": "golang-check",
+            "integration_id": 15368
           }
         ]
       }
