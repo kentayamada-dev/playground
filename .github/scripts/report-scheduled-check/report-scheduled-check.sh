@@ -20,26 +20,26 @@ fi
 run_url="${GITHUB_SERVER_URL:?}/${GITHUB_REPOSITORY:?}/actions/runs/${GITHUB_RUN_ID:?}"
 
 case ${check} in
-  broken-links)
-    title='docs: 外部リンクの定期検査で見つかったリンク切れを直す'
-    resolved_comment="[外部リンクの定期検査](${run_url}) で、すべてのリンクが通りました。"
-    body="[外部リンクの定期検査](${run_url}) で、次のリンクが通りませんでした。
+broken-links)
+  title='docs: 外部リンクの定期検査で見つかったリンク切れを直す'
+  resolved_comment="[外部リンクの定期検査](${run_url}) で、すべてのリンクが通りました。"
+  body="[外部リンクの定期検査](${run_url}) で、次のリンクが通りませんでした。
 
 ${output}"
-    ;;
-  settings-drift)
-    title='chore: 定期検査で見つかった GitHub の設定と定義のずれを直す'
-    resolved_comment="[GitHub の設定の定期検査](${run_url}) で、GitHub の設定が定義と一致しました。"
-    body="[GitHub の設定の定期検査](${run_url}) が失敗しました。定義を直すか、\`.github/scripts/sync-github-settings/sync-github-settings.sh\` で GitHub を定義に揃えてください。
+  ;;
+settings-drift)
+  title='chore: 定期検査で見つかった GitHub の設定と定義のずれを直す'
+  resolved_comment="[GitHub の設定の定期検査](${run_url}) で、GitHub の設定が定義と一致しました。"
+  body="[GitHub の設定の定期検査](${run_url}) が失敗しました。定義を直すか、\`.github/scripts/sync-github-settings/sync-github-settings.sh\` で GitHub を定義に揃えてください。
 
 \`\`\`diff
 ${output}
 \`\`\`"
-    ;;
-  *)
-    echo "${usage}" >&2
-    exit 1
-    ;;
+  ;;
+*)
+  echo "${usage}" >&2
+  exit 1
+  ;;
 esac
 
 if ${resolved}; then

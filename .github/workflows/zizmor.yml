@@ -25,7 +25,7 @@ jobs:
         with:
           # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
           persist-credentials: false
-      - uses: ./.github/actions/setup-mise
+      - uses: $/.github/actions/setup-mise
         with:
           install_args: zizmor
       # 注釈は 1 ステップで最初の 10 件しか表示されず、残りはログにだけ出る https://docs.zizmor.sh/usage/#output-formats
