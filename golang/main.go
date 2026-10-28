@@ -2,12 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 )
 
 func main() {
 	mux := http.NewServeMux()
+	log.Println(fmt.Sprintf("hello"))
 	mux.HandleFunc("GET /hello", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(map[string]string{"message": "hello from golang"}); err != nil {
