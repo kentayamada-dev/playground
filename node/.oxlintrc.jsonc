@@ -25,6 +25,7 @@
     // https://oxc.rs/docs/guide/usage/linter/rules/react/react-in-jsx-scope.html
     "react/react-in-jsx-scope": "off",
     // 既定では JSX を .jsx にしか書けないため、.tsx を指定する。JS を許すときは、tsconfig.json の allowJs も合わせる
+    // https://oxc.rs/docs/guide/usage/linter/rules/react/jsx-filename-extension.html
     "react/jsx-filename-extension": ["error", { "extensions": [".tsx"] }],
     // Next.js のグローバルな CSS は、値を受け取らない import で読み込むため
     // https://nextjs.org/docs/app/getting-started/css#global-css
@@ -35,7 +36,9 @@
     // next/font の変換は const の最初の変数しか変換しないため、既定の always と逆に、1 つの const に 1 つの変数を書かせる
     // https://github.com/vercel/next.js/blob/v16.4.2/crates/next-custom-transforms/src/transforms/fonts/font_imports_generator.rs#L89-L90
     "eslint/one-var": ["error", "never"],
-    // 既定では、関数を式で書かせる func-style と、名前のないコンポーネントにアロー関数を使わせない prefer-arrow-callback に、逆を求めるため
+    // 既定では名前付きのコンポーネントに function 宣言を、名前のないコンポーネントに function 式を求め、
+    // 関数を式で書かせる func-style と、コールバックにアロー関数を求める prefer-arrow-callback と逆になるため
+    // https://github.com/oxc-project/oxc/blob/oxlint_v1.90.0/crates/oxc_linter/src/rules/react/function_component_definition.rs#L40-L64
     "react/function-component-definition": [
       "error",
       { "namedComponents": "arrow-function", "unnamedComponents": "arrow-function" },
