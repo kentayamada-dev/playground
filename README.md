@@ -211,10 +211,11 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - 手元では、golang のコンテナで同じ検査を実行できる。実行のしかたは [`golang/Makefile`](golang/Makefile) にある
 - 検査は順に実行し、失敗したところで止まる。後の検査は実行しない
 - staticcheck は、エディタの gopls と同じく、すべての検査を有効にしている
-- `go test` は、テストのファイルがないパッケージでは何も検査しない
+- `go test` は、テストのファイルがないパッケージを `[no test files]` と出して成功として扱う
+- ビルドは、VCS の情報を埋め込まず、実行ファイルを一時ディレクトリに書いて捨てる。手元の `make build` とは出力が違う
 - Renovate は、golang のベースイメージと gofumpt・staticcheck の minor・patch・digest の更新を自動マージする。コードが検査に通らなくなる更新を入れないため、必須チェックにしている
 - イメージのビルドとツールチェーン・モジュールの取得では、Docker Hub と Go のモジュールプロキシから取得する。どちらかに接続できないと、どの PR もマージできない
-- Dev Container と同じイメージで検査する理由と、gofumpt に `-d` を付ける理由は、[`golang-check.yml`](.github/workflows/golang-check.yml) のコメントに書いている
+- Dev Container と同じイメージで検査する理由と、ビルドと gofumpt に付けるオプションの理由は、[`golang-check.yml`](.github/workflows/golang-check.yml) のコメントに書いている
 
 ### 外部リンクの定期検査
 
