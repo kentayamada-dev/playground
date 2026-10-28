@@ -30,7 +30,7 @@ jobs:
         with:
           # sha256 を渡すと、署名付きの SHASUMS256.txt での mise 本体の照合を飛ばすため、version だけを渡す
           # https://github.com/jdx/mise-action/blob/v5.1.2/src/index.ts#L882-L903
-          version: 2026.10.8
+          version: 2026.10.9
           working_directory: .github
           install_args: jq
       # gh のエラーは標準エラー出力に出るため、issue の本文にも残す
