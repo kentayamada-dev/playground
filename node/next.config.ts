@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  agentRules: false,
+  agentRules:   false,
   cacheComponents: true,
   experimental: {
     // babel-plugin-react-compiler を入れずに React Compiler を動かすため
