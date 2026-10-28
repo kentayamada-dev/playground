@@ -208,7 +208,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 #### golang-check
 
-- 手元では、golang のコンテナで同じ検査を実行できる。実行のしかたは [`golang/Makefile`](golang/Makefile) にある
+- 手元では、golang のコンテナで CI と同じ検査ができる。実行のしかたは [`golang/Makefile`](golang/Makefile) にある
 - 検査は順に実行し、失敗したところで止まる。後の検査は実行しない
 - staticcheck は、エディタの gopls と同じく、すべての検査を有効にしている
 - `go test` は、テストのファイルがないパッケージを `[no test files]` と出して成功として扱う
