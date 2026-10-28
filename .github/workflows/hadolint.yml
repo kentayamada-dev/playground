@@ -27,7 +27,7 @@ jobs:
         with:
           # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
           persist-credentials: false
-      - uses: ./.github/actions/setup-mise
+      - uses: $/.github/actions/setup-mise
         with:
           install_args: hadolint
       # 設定ファイルを読めないと、hadolint はエラーを出すだけで既定の info のまま検査を続け、style の指摘で失敗しなくなるため、先に確かめる

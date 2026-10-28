@@ -36,7 +36,7 @@ jobs:
         with:
           # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
           persist-credentials: false
-      - uses: ./.github/actions/setup-mise
+      - uses: $/.github/actions/setup-mise
         with:
           install_args: lychee
       # ディレクトリを渡すと .md・.html などの拡張子のファイルしか読まず、ワークフローや設定のコメントにある URL を見落とすため、拡張子で絞らないグロブで渡す
@@ -59,7 +59,7 @@ jobs:
         with:
           # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
           persist-credentials: false
-      - uses: ./.github/actions/setup-mise
+      - uses: $/.github/actions/setup-mise
         with:
           install_args: lychee
       # 429 はレート制限でリンク切れとは限らず、リンクが 1 件だけの www.gnu.org も返したため、成功として扱う https://github.com/kentayamada-dev/playground/pull/184

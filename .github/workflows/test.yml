@@ -25,7 +25,7 @@ jobs:
         with:
           # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
           persist-credentials: false
-      - uses: ./.github/actions/setup-mise
+      - uses: $/.github/actions/setup-mise
         with:
           # bats のテストは gh をスタブに置き換えるが、スクリプトとスタブが使う jq は本物なので入れる
           install_args: shellcheck github:mvdan/sh bats jq
