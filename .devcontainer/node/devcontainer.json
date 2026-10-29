@@ -16,11 +16,7 @@
       "settings": {
         "remote.restoreForwardedPorts": false,
         "js/ts.experimental.useTsgo": true,
-        "js/ts.tsdk.path": "./node_modules/typescript",
-        "editor.defaultFormatter": "oxc.oxc-vscode",
-        "editor.codeActionsOnSave": {
-          "source.format.oxc": "always"
-        }
+        "js/ts.tsdk.path": "./node_modules/typescript"
       },
       "extensions": ["TypeScriptTeam.native-preview", "EditorConfig.EditorConfig", "oxc.oxc-vscode"]
     }

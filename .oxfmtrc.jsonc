@@ -1,5 +1,3 @@
 {
   "$schema": "./.github/oxfmt/node_modules/oxfmt/configuration_schema.json",
-  // node/ は node-check が node/.oxfmtrc.jsonc の設定で検査するため、ここでは整形しない
-  "ignorePatterns": ["/node/"],
 }

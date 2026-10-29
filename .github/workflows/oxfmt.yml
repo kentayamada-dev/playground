@@ -45,6 +45,4 @@ jobs:
           node-version: 24
       - run: pnpm install --frozen-lockfile
         working-directory: ${{ env.oxfmt_dir }}
-      # -c で設定を渡し、ネストした設定の探索を止める。止めないと node/ のファイルに node/.oxfmtrc.jsonc が使われ、ルートの設定の ignorePatterns が効かない
-      # https://oxc.rs/docs/guide/usage/formatter/config.html https://oxc.rs/docs/guide/usage/formatter/ignore-files.html
-      - run: '"$oxfmt_dir/node_modules/.bin/oxfmt" --check -c .oxfmtrc.jsonc'
+      - run: '"$oxfmt_dir/node_modules/.bin/oxfmt" --check'

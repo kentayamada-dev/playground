@@ -7,9 +7,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit",
-    "lint": "next typegen && oxlint",
-    "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check"
+    "lint": "next typegen && oxlint"
   },
   "dependencies": {
     "next": "16.4.2",
@@ -22,7 +20,6 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "eslint-plugin-better-tailwindcss": "4.10.0",
-    "oxfmt": "0.75.0",
     "oxlint": "1.90.0",
     "oxlint-tsgolint": "7.0.2005",
     "tailwindcss": "4.3.3",
