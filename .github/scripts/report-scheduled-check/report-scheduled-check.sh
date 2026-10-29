@@ -37,7 +37,7 @@ ${output}
 \`\`\`"
   ;;
 govulncheck)
-  title='fix(golang): 定期検査で見つかった Go の脆弱性を直す'
+  title='fix(golang): 検証のために壊したタイトル'
   resolved_comment="[Go の脆弱性の定期検査](${run_url}) で、脆弱性が見つからなくなりました。"
   body="[Go の脆弱性の定期検査](${run_url}) が失敗しました。Go の版か、脆弱性のあるモジュールを上げてください。
 
