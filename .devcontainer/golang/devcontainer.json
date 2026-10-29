@@ -1,6 +1,8 @@
 {
   "name": "golang",
-  "dockerComposeFile": ["../../compose.yaml"],
+  "dockerComposeFile": [
+    "../../compose.yaml"
+  ],
   "service": "golang",
   "initializeCommand": "bash \"${localWorkspaceFolder}/.devcontainer/scripts/check-host-os/check-host-os.sh\"",
   // Compose の既定の stopCompose は、ウィンドウを閉じると node のコンテナも止め、node で開いているウィンドウが切れるため
@@ -14,7 +16,6 @@
         "remote.restoreForwardedPorts": false,
         "gopls": {
           "formatting.gofumpt": true,
-          // ui.diagnostic.staticcheck を変えるときは、golang/staticcheck.conf の checks も合わせる
           "ui.diagnostic.staticcheck": true
         }
       },
