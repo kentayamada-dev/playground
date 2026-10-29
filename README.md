@@ -216,7 +216,8 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 #### devcontainer
 
-- Renovate は、ベースイメージ・pnpm・gopls・gofumpt・staticcheck・gosec・govulncheck の minor・patch・digest の更新を自動マージする。組み合わせによってはビルドが壊れるため、必須チェックにしている
+- Renovate は、次の minor・patch・digest の更新を自動マージする。組み合わせによってはビルドが壊れるため、必須チェックにしている
+  - ベースイメージ・pnpm・gopls・gofumpt・staticcheck・gosec・govulncheck
 - ビルドのキャッシュは使わず、毎回すべての層をビルドする
 - ビルドでは、Docker Hub・Takumi Guard のレジストリ・Go のモジュールプロキシから取得する。どれかに接続できないと、どの PR もマージできない
 

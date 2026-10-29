@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 )
 
 func main() {
@@ -15,6 +16,11 @@ func main() {
 		}
 	})
 
+	server := &http.Server{
+		Addr:              ":8080",
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
 	log.Println("http://localhost:8080 で待ち受けています")
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	log.Fatal(server.ListenAndServe())
 }
