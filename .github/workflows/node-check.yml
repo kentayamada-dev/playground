@@ -35,3 +35,4 @@ jobs:
       - run: docker compose run --rm node pnpm typecheck
       - run: docker compose run --rm node pnpm fmt:check
       - run: docker compose run --rm node pnpm lint
+      - run: docker compose run --rm node pnpm knip
