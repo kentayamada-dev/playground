@@ -29,4 +29,4 @@ jobs:
         with:
           config: .github/markdownlint-cli2.jsonc
           # 未指定時の *.{md,markdown} はリポジトリ直下しか検査しないため https://github.com/DavidAnson/markdownlint-cli2-action/blob/v24.2.0/action.yml
-          globs: '**/*.md'
+          globs: "**/*.md"

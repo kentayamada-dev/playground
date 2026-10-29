@@ -4,10 +4,7 @@ require_https = true
 
 # node と golang のサーバーがコンテナのなかで待ち受けるアドレスで、CI からは接続できないため
 # このファイルも検査の対象で、localhost の行からは http://localhost/ が拾われるため、ポートの有無によらず一致させる
-exclude = [
-  '^http://localhost\b',
-  '^http://golang:8080\b',
-]
+exclude = ['^http://localhost\b', '^http://golang:8080\b']
 
 # 渡したグロブの * と ** は、デフォルトでは . で始まるファイルとディレクトリに一致せず、.github などを見落とすため
 # https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee-lib/src/types/input/resolver.rs#L121-L123

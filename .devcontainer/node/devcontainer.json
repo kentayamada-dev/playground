@@ -1,8 +1,6 @@
 {
   "name": "node",
-  "dockerComposeFile": [
-    "../../compose.yaml"
-  ],
+  "dockerComposeFile": ["../../compose.yaml"],
   "service": "node",
   "initializeCommand": "bash \"${localWorkspaceFolder}/.devcontainer/scripts/check-host-os/check-host-os.sh\"",
   // Compose の既定の stopCompose は、ウィンドウを閉じると golang のコンテナも止め、golang で開いているウィンドウが切れるため
@@ -24,11 +22,7 @@
           "source.format.oxc": "always"
         }
       },
-      "extensions": [
-        "TypeScriptTeam.native-preview",
-        "EditorConfig.EditorConfig",
-        "oxc.oxc-vscode"
-      ]
+      "extensions": ["TypeScriptTeam.native-preview", "EditorConfig.EditorConfig", "oxc.oxc-vscode"]
     }
   }
 }

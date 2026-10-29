@@ -1,8 +1,6 @@
 {
   "name": "golang",
-  "dockerComposeFile": [
-    "../../compose.yaml"
-  ],
+  "dockerComposeFile": ["../../compose.yaml"],
   "service": "golang",
   "initializeCommand": "bash \"${localWorkspaceFolder}/.devcontainer/scripts/check-host-os/check-host-os.sh\"",
   // Compose の既定の stopCompose は、ウィンドウを閉じると node のコンテナも止め、node で開いているウィンドウが切れるため
@@ -20,10 +18,7 @@
           "ui.diagnostic.staticcheck": true
         }
       },
-      "extensions": [
-        "golang.Go",
-        "EditorConfig.EditorConfig"
-      ]
+      "extensions": ["golang.Go", "EditorConfig.EditorConfig"]
     }
   }
 }
