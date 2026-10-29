@@ -3,7 +3,6 @@
   // plugins を書くと既定のプラグインが外れるため、既定の eslint・typescript・unicorn・oxc も並べる
   // https://oxc.rs/docs/guide/usage/linter/plugins.html
   "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "nextjs", "jsx-a11y", "import"],
-  "jsPlugins": ["eslint-plugin-better-tailwindcss"],
   // nursery は開発中の規則のため、有効にしない
   "categories": {
     "correctness": "error",
