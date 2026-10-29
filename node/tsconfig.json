@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     // 書かないと Next.js が allowJs: true を足すため、false を明示する。JS を許すときは next.config.ts の pageExtensions と、.oxlintrc.jsonc の react/jsx-filename-extension も合わせる
     // https://github.com/vercel/next.js/blob/v16.4.2/packages/next/src/lib/typescript/writeConfigurationDefaults.ts
     "allowJs": false,
