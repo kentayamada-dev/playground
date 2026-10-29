@@ -68,9 +68,8 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`yamllint.yml`](.github/workflows/yamllint.yml) | `.yml`・`.yaml` の構文と書式。キーの重複・インデント・コメントの書き方など。[yamllint](https://github.com/adrienverge/yamllint) で検査する。設定は [`.github/yamllint/.yamllint.yaml`](.github/yamllint/.yamllint.yaml) にある | `yamllint` |
 | [`hadolint.yml`](.github/workflows/hadolint.yml) | Dockerfile の書き方。ベースイメージのタグの指定・`apt-get install` の版の固定など。[hadolint](https://github.com/hadolint/hadolint) で検査し、`RUN` のスクリプトは hadolint に組み込まれた ShellCheck にかける。設定は [`.github/hadolint.yaml`](.github/hadolint.yaml) にある | `hadolint` |
 | [`devcontainer.yml`](.github/workflows/devcontainer.yml) | [開発環境](#開発環境) の 2 つのイメージを、[`compose.yaml`](compose.yaml) のとおりにビルドできるか。golang では gopls・gofumpt・staticcheck が、node では pnpm が起動するかも確認する。詳しくは [devcontainer](#devcontainer) | `devcontainer` |
-| [`typecheck.yml`](.github/workflows/typecheck.yml) | [`node`](node) の TypeScript の型。node の Dev Container と同じイメージのなかで、`pnpm typecheck` で検査する。設定は [`node/tsconfig.json`](node/tsconfig.json) にある。詳しくは [typecheck](#typecheck) | `typecheck` |
 | [`golang-check.yml`](.github/workflows/golang-check.yml) | [`golang`](golang) の Go のコード。golang の Dev Container と同じイメージのなかで、ビルド・`go vet`・gofumpt の整形・[staticcheck](https://staticcheck.dev/)・`go test` を順に検査する。staticcheck の設定は [`golang/staticcheck.conf`](golang/staticcheck.conf) にある。詳しくは [golang-check](#golang-check) | `golang-check` |
-| [`node-check.yml`](.github/workflows/node-check.yml) | [`node`](node) のコードの整形と lint。node の Dev Container と同じイメージのなかで、[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) の整形に沿っているかと、[oxlint](https://oxc.rs/docs/guide/usage/linter.html) の検査を順に確認する。設定は [`node/.oxfmtrc.jsonc`](node/.oxfmtrc.jsonc)・[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) にある。詳しくは [node-check](#node-check) | `node-check` |
+| [`node-check.yml`](.github/workflows/node-check.yml) | [`node`](node) のコード。node の Dev Container と同じイメージのなかで、TypeScript の型・[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) の整形・[oxlint](https://oxc.rs/docs/guide/usage/linter.html) の規則を順に検査する。設定は [`node/tsconfig.json`](node/tsconfig.json)・[`node/.oxfmtrc.jsonc`](node/.oxfmtrc.jsonc)・[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) にある。詳しくは [node-check](#node-check) | `node-check` |
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 
 どのワークフローも、PR と `main` への push で動きます。動くタイミングが違うのは、次の 4 つです。
@@ -103,9 +102,8 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `yamllint` | リポジトリ全体の `.yml`・`.yaml`。`pnpm-lock.yaml` と、`.venv`・`node_modules` の下は除く |
 | `hadolint` | リポジトリ全体のうち、名前が `Dockerfile`・`Containerfile` のファイル。`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*`・`*.Containerfile` に一致するファイルも含む。`.git` は除く |
 | `devcontainer` | [`compose.yaml`](compose.yaml) の `node`・`golang` のサービスのイメージ。ランナーと同じ arm64 のイメージだけをビルドする |
-| `typecheck` | [`node/tsconfig.json`](node/tsconfig.json) の `include` に一致するファイル。`node_modules` の下は除く |
 | `golang-check` | [`golang`](golang) のモジュールのすべてのパッケージ（`./...`）。gofumpt は、その下のすべての `.go`（`vendor`・`testdata` は除く） |
-| `node-check` | [`node`](node) の下のファイル。`.gitignore` に一致するファイルは除く。oxfmt は、対応する形式のうち `.md`・`.yml`・`.yaml` とロックファイルを除く。oxlint は、JavaScript と TypeScript のファイル |
+| `node-check` | [`node`](node) の下のファイル。`.gitignore` に一致するファイルは除く。tsc は、[`node/tsconfig.json`](node/tsconfig.json) の `include` に一致するファイルで、`node_modules` の下を除く。oxfmt は、対応する形式のうち `.md`・`.yml`・`.yaml` とロックファイルを除く。oxlint は、JavaScript と TypeScript のファイル |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
 - 範囲の決め方と除く理由は、各ワークフローと、[`.yamllint.yaml`](.github/yamllint/.yamllint.yaml)・[`.github/lychee.toml`](.github/lychee.toml)・[`.github/typos.toml`](.github/typos.toml) のコメントに書いている
@@ -205,14 +203,6 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - ビルドのキャッシュは使わず、毎回すべての層をビルドする
 - ビルドでは、Docker Hub・Takumi Guard のレジストリ・Go のモジュールプロキシから取得する。どれかに接続できないと、どの PR もマージできない
 
-#### typecheck
-
-- 手元では、node のコンテナで `pnpm typecheck` を実行すると、CI と同じ検査ができる
-- `pnpm typecheck` は、Next.js が生成するルートの型（`.next/types`）を作ってから検査する。`tsc` だけでは、その型がないときに `LayoutProps` などが見つからずに失敗する
-- Renovate は、`next`・`typescript`・`@types/*` などの minor・patch の更新も自動マージする。型が合わなくなる更新を入れないため、必須チェックにしている
-- イメージのビルドと依存関係の取得では、Docker Hub・Takumi Guard のレジストリから取得する。どちらかに接続できないと、どの PR もマージできない
-- Dev Container と同じイメージで検査する理由は、[`typecheck.yml`](.github/workflows/typecheck.yml) のコメントに書いている
-
 #### golang-check
 
 - 手元では、golang のコンテナで CI と同じ検査ができる。実行のしかたは [`golang/Makefile`](golang/Makefile) にある
@@ -226,8 +216,9 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 #### node-check
 
-- 手元では、node のコンテナで `pnpm fmt:check` と `pnpm lint` を実行すると、CI と同じ検査ができる。`pnpm fmt` を実行すると整形し直す
+- 手元では、node のコンテナで `pnpm typecheck`・`pnpm fmt:check`・`pnpm lint` を実行すると、CI と同じ検査ができる。`pnpm fmt` を実行すると整形し直す
 - 検査は順に実行し、失敗したところで止まる。後の検査は実行しない
+- `pnpm typecheck` は、Next.js が生成するルートの型（`.next/types`）を作ってから検査する。`tsc` だけでは、その型がないときに `LayoutProps` などが見つからずに失敗する
 - `pnpm lint` は、`pnpm typecheck` と同じく、Next.js が生成するルートの型を作ってから検査する。その型がないと、型情報を使う規則が `LayoutProps` などを解決できず、誤った指摘を出す
 - oxfmt のインデントや改行の設定は、リポジトリのルートの [`.editorconfig`](.editorconfig) から読む
 - oxlint は、型情報を使う規則も動かす。型情報は `oxlint-tsgolint` が [`node/tsconfig.json`](node/tsconfig.json) から作る
@@ -236,6 +227,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
   - クラスの正規の形は Tailwind CSS 本体が決める。そのため `tailwindcss` を更新すると、指摘の内容も変わりうる
 - 外した規則と、デフォルトのオプションを変えた規則の理由は、[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) のコメントに書いている
 - node の Dev Container には Oxc の VS Code 拡張機能を入れ、保存すると oxfmt で整形し、oxlint で直せる指摘を直す設定にしている
+- Renovate は、`next`・`typescript`・`@types/*` などの minor・patch の更新も自動マージする。型が合わなくなる更新を入れないため、必須チェックにしている
 - Renovate は、`oxlint`・`oxfmt`・`oxlint-tsgolint`・`eslint-plugin-better-tailwindcss` の minor・patch も自動マージする。指摘や整形の結果が変わる更新を入れないため、必須チェックにしている
 - イメージのビルドと依存関係の取得では、Docker Hub・Takumi Guard のレジストリから取得する。どちらかに接続できないと、どの PR もマージできない
 - Dev Container と同じイメージで検査する理由は、[`node-check.yml`](.github/workflows/node-check.yml) のコメントに書いている
