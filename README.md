@@ -124,7 +124,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | yamllint | `--strict` を付け、warning の指摘でも失敗する（[Errors and warnings](https://yamllint.readthedocs.io/en/stable/configuration.html#errors-and-warnings)） |
 | hadolint | [`.github/hadolint.yaml`](.github/hadolint.yaml) の `failure-threshold: style` で、重大度が style の指摘でも失敗する。`label-schema` のラベルがないときと、`strict-labels` でそれ以外のラベルがあるときも失敗する（[Linting Labels](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#linting-labels)） |
 | staticcheck | [`golang/staticcheck.conf`](golang/staticcheck.conf) の `checks = ["all"]` で、デフォルトでは無効のスタイルの検査もすべて有効にする（[Configuration](https://staticcheck.dev/docs/configuration/)） |
-| oxlint | [`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) で、開発中の `nursery` を除くすべてのカテゴリの規則をエラーにする。Tailwind CSS のクラスの規則も、行の折り返しを除いてすべてエラーにする。warning と、使われていない無効化のコメントでも失敗する（[`options`](https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#options)） |
+| oxlint | [`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) で、開発中の `nursery` を除くすべてのカテゴリの規則をエラーにする。Tailwind CSS のクラスの規則も、行の折り返しと、正規の形の規則に重なる 3 つを除き、すべてエラーにする。warning と、使われていない無効化のコメントでも失敗する（[`options`](https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#options)） |
 
 #### 指摘を無視する方法
 
