@@ -1,5 +1,3 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  // .md と YAML は、リポジトリ全体を検査するほかのツールに任せ、oxfmt では整形しない
-  "ignorePatterns": ["*.md", "*.yml", "*.yaml"],
 }
