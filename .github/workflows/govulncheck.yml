@@ -1,0 +1,51 @@
+name: govulncheck
+
+on:
+  # 脆弱性は、コードや依存関係を変えていなくても後から公開されるため、PR の検査にせず、毎日検査する
+  schedule:
+    - cron: "53 21 * * *"
+  workflow_dispatch:
+
+# 書き込み権限はジョブごとに与え、あとから足したジョブに引き継がせない https://docs.zizmor.sh/audits/#excessive-permissions
+permissions: {}
+
+# 同時に動くと、どちらも開いている issue がないと判断して issue を 2 件作ることがあるため、実行を重ねない
+concurrency:
+  group: ${{ github.workflow }}
+
+jobs:
+  govulncheck:
+    name: govulncheck
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write # report-scheduled-check.sh が、脆弱性を見つけたら issue を作るか書き換え、なくなったら閉じるため
+    env:
+      report_script: .github/scripts/report-scheduled-check/report-scheduled-check.sh
+      report_name: govulncheck.txt
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
+          persist-credentials: false
+      # 標準ライブラリの脆弱性は、govulncheck が呼ぶ go の版で判定されるため、Go の版を決める Dev Container と同じイメージのなかで検査する。
+      # Dockerfile の ARG の値は compose.yaml から渡すため、docker build ではなく Compose でビルドする
+      # https://pkg.go.dev/golang.org/x/vuln@v1.9.0/cmd/govulncheck
+      - run: docker compose build golang
+      # 脆弱性のデータベースを取得できなかったときの理由も issue の本文に残すため、コンテナのなかで標準エラー出力もまとめる
+      - id: check
+        run: docker compose run --rm golang sh -c 'govulncheck ./... 2>&1' | tee "$RUNNER_TEMP/$report_name"
+        # 未指定時の bash -e {0} は pipefail がなく、tee の前の失敗を見逃す https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#defaultsrunshell
+        shell: bash
+      - if: failure() && steps.check.outcome == 'failure'
+        run: >-
+          "$report_script" govulncheck "$RUNNER_TEMP/$report_name"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+      - run: >-
+          "$report_script" govulncheck --resolved
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}

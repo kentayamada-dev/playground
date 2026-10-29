@@ -271,12 +271,38 @@ assert_github_issues() {
   ]'
 }
 
+@test "govulncheck では、脆弱性の issue を、検査の出力を text のコードブロックに入れた本文で作る" {
+  echo 'Vulnerability #1: GO-2026-0001' >"${BATS_TEST_TMPDIR}/govulncheck.txt"
+  given_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
+
+  run -0 "${script}" govulncheck "${BATS_TEST_TMPDIR}/govulncheck.txt"
+
+  assert_github_issues '[
+    {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"},
+    {"number": 186, "title": "fix(golang): 定期検査で見つかった Go の脆弱性を直す", "state": "open", "body": "[Go の脆弱性の定期検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。Go の版か、脆弱性のあるモジュールを上げてください。\n\n```text\nVulnerability #1: GO-2026-0001\n```\n"}
+  ]'
+}
+
+@test "govulncheck で検査が通ったとき（--resolved）、脆弱性の issue だけを、見つからなくなったとコメントして閉じる" {
+  given_github_issues '[
+    {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"},
+    {"number": 190, "title": "fix(golang): 定期検査で見つかった Go の脆弱性を直す", "state": "open", "body": "前回の結果"}
+  ]'
+
+  run -0 "${script}" govulncheck --resolved
+
+  assert_github_issues '[
+    {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"},
+    {"number": 190, "title": "fix(golang): 定期検査で見つかった Go の脆弱性を直す", "state": "closed", "body": "前回の結果", "state_reason": "completed", "comments": ["[Go の脆弱性の定期検査](https://example.com/owner/repo/actions/runs/123) で、脆弱性が見つからなくなりました。"]}
+  ]'
+}
+
 @test "知らない検査の名前なら、使い方を出して issue に触れずに失敗する" {
   given_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
 
   run -1 --separate-stderr "${script}" broken-link --resolved
 
-  [[ ${stderr} == "使い方: ${script} {broken-links | settings-drift} {<検査の出力> | --resolved}" ]]
+  [[ ${stderr} == "使い方: ${script} {broken-links | settings-drift | govulncheck} {<検査の出力> | --resolved}" ]]
   assert_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
 }
 
@@ -285,6 +311,6 @@ assert_github_issues() {
 
   run -1 --separate-stderr "${script}" --resolved
 
-  [[ ${stderr} == "使い方: ${script} {broken-links | settings-drift} {<検査の出力> | --resolved}" ]]
+  [[ ${stderr} == "使い方: ${script} {broken-links | settings-drift | govulncheck} {<検査の出力> | --resolved}" ]]
   assert_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
 }

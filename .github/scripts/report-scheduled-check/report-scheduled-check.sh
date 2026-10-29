@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-usage="使い方: $0 {broken-links | settings-drift} {<検査の出力> | --resolved}"
+usage="使い方: $0 {broken-links | settings-drift | govulncheck} {<検査の出力> | --resolved}"
 if [[ $# -ne 2 ]]; then
   echo "${usage}" >&2
   exit 1
@@ -33,6 +33,15 @@ settings-drift)
   body="[GitHub の設定の定期検査](${run_url}) が失敗しました。定義を直すか、\`.github/scripts/sync-github-settings/sync-github-settings.sh\` で GitHub を定義に揃えてください。
 
 \`\`\`diff
+${output}
+\`\`\`"
+  ;;
+govulncheck)
+  title='fix(golang): 定期検査で見つかった Go の脆弱性を直す'
+  resolved_comment="[Go の脆弱性の定期検査](${run_url}) で、脆弱性が見つからなくなりました。"
+  body="[Go の脆弱性の定期検査](${run_url}) が失敗しました。Go の版か、脆弱性のあるモジュールを上げてください。
+
+\`\`\`text
 ${output}
 \`\`\`"
   ;;

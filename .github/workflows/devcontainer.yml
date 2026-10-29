@@ -30,4 +30,6 @@ jobs:
       - run: docker compose run --rm golang gopls version
       - run: docker compose run --rm golang gofumpt --version
       - run: docker compose run --rm golang staticcheck -version
+      - run: docker compose run --rm golang gosec -version
+      - run: docker compose run --rm golang govulncheck -version
       - run: docker compose run --rm node pnpm --version
