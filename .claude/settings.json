@@ -15,9 +15,7 @@
   "permissions": {
     "defaultMode": "default",
     "blockReadsOutsideWorkingDirectories": true,
-    "additionalDirectories": [
-      "~/.claude/projects"
-    ],
+    "additionalDirectories": ["~/.claude/projects"],
     "ask": [
       "Bash(git add:*)",
       "Bash(git commit:*)",
@@ -44,10 +42,7 @@
     "failIfUnavailable": true,
     "allowUnsandboxedCommands": false,
     "autoAllowBashIfSandboxed": true,
-    "excludedCommands": [
-      "gh *",
-      "git push *"
-    ],
+    "excludedCommands": ["gh *", "git push *"],
     "credentials": {
       "files": [
         {

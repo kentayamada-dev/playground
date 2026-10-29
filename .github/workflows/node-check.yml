@@ -1,4 +1,4 @@
-name: typecheck
+name: node-check
 
 on:
   pull_request:
@@ -16,8 +16,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  typecheck:
-    name: typecheck
+  node-check:
+    name: node-check
     runs-on: ubuntu-26.04-arm
     timeout-minutes: 15
     steps:
@@ -33,3 +33,5 @@ jobs:
       # https://github.com/kentayamada-dev/playground/pull/335
       - run: chmod a+w node
       - run: docker compose run --rm node pnpm typecheck
+      - run: docker compose run --rm node pnpm fmt:check
+      - run: docker compose run --rm node pnpm lint

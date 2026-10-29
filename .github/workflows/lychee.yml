@@ -7,7 +7,7 @@ on:
       - main
   # 外部のリンクは、こちらが何も変えなくても移動や削除で切れるため、定期的に検査する
   schedule:
-    - cron: '37 0 * * 1'
+    - cron: "37 0 * * 1"
   workflow_dispatch:
 
 # 書き込み権限はジョブごとに与え、あとから足したジョブに引き継がせない https://docs.zizmor.sh/audits/#excessive-permissions

@@ -1,12 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    // 書かないと Next.js が allowJs: true を足すため、false を明示する。JS を許すときは next.config.ts の pageExtensions も合わせる
+    "lib": ["dom", "dom.iterable", "esnext"],
+    // 書かないと Next.js が allowJs: true を足すため、false を明示する。JS を許すときは next.config.ts の pageExtensions と、.oxlintrc.jsonc の react/jsx-filename-extension も合わせる
     // https://github.com/vercel/next.js/blob/v16.4.2/packages/next/src/lib/typescript/writeConfigurationDefaults.ts
     "allowJs": false,
     // Next.js が生成する .next/types/link.d.ts が、グローバルの JSX を参照して型が見つからずに失敗するため、.d.ts を検査しない
@@ -41,9 +37,7 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
   "include": [
@@ -54,7 +48,5 @@
     "**/*.ts",
     "**/*.tsx"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

@@ -7,7 +7,7 @@ on:
       - main
   # 依存関係を変えていなくても、使っているバージョンが後から脆弱性やマルウェアと判定されるため毎日検査する
   schedule:
-    - cron: '41 21 * * *'
+    - cron: "41 21 * * *"
   workflow_dispatch:
 
 # 書き込み権限はジョブごとに与え、あとから足したジョブに引き継がせない https://docs.zizmor.sh/audits/#excessive-permissions

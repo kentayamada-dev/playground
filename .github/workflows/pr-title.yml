@@ -35,4 +35,4 @@ jobs:
           # 既定の headerPattern は「: 」の後の余分な空白も説明に含めるため、先頭の空白はここで弾く https://github.com/conventional-changelog/conventional-changelog/blob/conventional-changelog-conventionalcommits-v9.1.0/packages/conventional-changelog-conventionalcommits/src/parser.js#L3
           # u フラグなしで RegExp にされ \p{...} を使えないため、ひらがな・カタカナ・漢字はブロックの範囲で書く https://github.com/amannn/action-semantic-pull-request/blob/48f256284bd46cdaab1048c3721360e808335d50/src/validatePrTitle.js#L129
           subjectPattern: '^(?!\s)(?!(?:修正|改善)\s*$)(?=.*[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]).+$'
-          subjectPatternError: 'タイトル「{title}」の説明「{subject}」が CONTRIBUTING.md の規約に合いません。説明は「: 」の直後から日本語で書き、「修正」「改善」のような中身のわからない言葉だけにしないでください'
+          subjectPatternError: "タイトル「{title}」の説明「{subject}」が CONTRIBUTING.md の規約に合いません。説明は「: 」の直後から日本語で書き、「修正」「改善」のような中身のわからない言葉だけにしないでください"

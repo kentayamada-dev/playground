@@ -1,12 +1,5 @@
 {
   "private": true,
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "12.13.0",
-      "onFail": "download"
-    }
-  },
   "devDependencies": {
     "@textlint-ja/textlint-rule-no-synonyms": "1.3.0",
     "sudachi-synonyms-dictionary": "20.0.0",
@@ -25,5 +18,12 @@
     "textlint-rule-period-in-list-item": "1.0.1",
     "textlint-rule-preset-ja-technical-writing": "12.0.2",
     "textlint-rule-prh": "6.1.0"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.13.0",
+      "onFail": "download"
+    }
   }
 }

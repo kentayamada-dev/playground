@@ -1,0 +1,101 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // plugins を書くと既定のプラグインが外れるため、既定の eslint・typescript・unicorn・oxc も並べる
+  // https://oxc.rs/docs/guide/usage/linter/plugins.html
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "nextjs", "jsx-a11y", "import"],
+  "jsPlugins": ["eslint-plugin-better-tailwindcss"],
+  // nursery は開発中の規則のため、有効にしない
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "pedantic": "error",
+    "perf": "error",
+    "style": "error",
+    "restriction": "error",
+  },
+  "rules": {
+    // Next.js は、page・layout・next.config に default export を、metadata やルートハンドラーに名前付きの export を求めるため
+    // https://nextjs.org/docs/app/api-reference/file-conventions/page https://nextjs.org/docs/app/api-reference/file-conventions/route
+    "import/no-default-export": "off",
+    "import/no-named-export": "off",
+    "import/prefer-default-export": "off",
+    // Next.js の page・layout は、コンポーネントと同じファイルから metadata などを export するため
+    // https://nextjs.org/docs/app/api-reference/functions/generate-metadata
+    "react/only-export-components": "off",
+    // tsconfig.json の jsx: react-jsx の変換では、JSX を書くために React を import しなくてよいため
+    // https://oxc.rs/docs/guide/usage/linter/rules/react/react-in-jsx-scope.html
+    "react/react-in-jsx-scope": "off",
+    // 既定では JSX を .jsx にしか書けないため、.tsx を指定する。JS を許すときは、tsconfig.json の allowJs も合わせる
+    // https://oxc.rs/docs/guide/usage/linter/rules/react/jsx-filename-extension.html
+    "react/jsx-filename-extension": ["error", { "extensions": [".tsx"] }],
+    // Next.js のグローバルな CSS は、値を受け取らない import で読み込むため
+    // https://nextjs.org/docs/app/getting-started/css#global-css
+    "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],
+    // CSS は import した順に並び、同じ詳細度なら後のものが勝つため、値を受け取らない import を最後に置かせ、グローバルな CSS をほかの import の CSS より優先させる
+    // https://nextjs.org/docs/app/getting-started/css#ordering-and-merging
+    "eslint/sort-imports": [
+      "error",
+      { "memberSyntaxSortOrder": ["all", "multiple", "single", "none"] },
+    ],
+    // next/font の Geist などは、大文字で始まるが new を付けずに呼ぶ関数のため
+    // https://nextjs.org/docs/app/api-reference/components/font
+    "eslint/new-cap": ["error", { "capIsNew": false }],
+    // next/font の変換は const の最初の変数しか変換しないため、既定の always と逆に、1 つの const に 1 つの変数を書かせる
+    // https://github.com/vercel/next.js/blob/v16.4.2/crates/next-custom-transforms/src/transforms/fonts/font_imports_generator.rs#L89-L90
+    "eslint/one-var": ["error", "never"],
+    // 既定では名前付きのコンポーネントに function 宣言を、名前のないコンポーネントに function 式を求め、
+    // 関数を式で書かせる func-style と、コールバックにアロー関数を求める prefer-arrow-callback と逆になるため
+    // https://github.com/oxc-project/oxc/blob/oxlint_v1.90.0/crates/oxc_linter/src/rules/react/function_component_definition.rs#L40-L64
+    "react/function-component-definition": [
+      "error",
+      { "namedComponents": "arrow-function", "unnamedComponents": "arrow-function" },
+    ],
+    // Tailwind CSS のクラスは、next/image などのコンポーネントにも className で渡すため
+    "react/forbid-component-props": ["error", { "forbid": ["style"] }],
+    // Next.js が生成する LayoutProps は、Readonly で包んでも readonly の型と判定されないため
+    // https://typescript-eslint.io/rules/prefer-readonly-parameter-types/
+    "typescript/prefer-readonly-parameter-types": [
+      "error",
+      { "allow": [{ "from": "file", "name": "LayoutProps" }] },
+    ],
+    // Promise を返す関数に async を求める typescript/promise-function-async と逆を求め、Next.js も page の params を await で読ませるため
+    // https://nextjs.org/docs/app/api-reference/file-conventions/page
+    "oxc/no-async-await": "off",
+    // コメントは、小文字で始まる識別子から書き出すことがあるため
+    "eslint/capitalized-comments": "off",
+    // oxfmt が 16 進数の数字を小文字に整形し、大文字を求めるこの規則と食い違うため
+    // https://github.com/prettier/eslint-config-prettier/blob/v10.1.8/index.js#L254
+    "unicorn/number-literal-case": "off",
+    // JS プラグインの規則は categories では有効にならないため、使う規則を並べる
+    // https://oxc.rs/docs/guide/usage/linter/js-plugins.html#using-js-plugins
+    // enforce-consistent-line-wrapping は、直したクラスを oxfmt が整形し直して指摘が戻るため、有効にしない
+    "better-tailwindcss/enforce-consistent-class-order": "error",
+    "better-tailwindcss/enforce-consistent-important-position": "error",
+    "better-tailwindcss/enforce-consistent-variant-order": "error",
+    "better-tailwindcss/enforce-consistent-variable-syntax": "error",
+    "better-tailwindcss/enforce-logical-properties": "error",
+    "better-tailwindcss/enforce-shorthand-classes": "error",
+    "better-tailwindcss/no-concatenated-classes": "error",
+    "better-tailwindcss/no-conflicting-classes": "error",
+    "better-tailwindcss/no-deprecated-classes": "error",
+    "better-tailwindcss/no-duplicate-classes": "error",
+    "better-tailwindcss/no-unnecessary-whitespace": "error",
+    "better-tailwindcss/no-unknown-classes": "error",
+    "better-tailwindcss/enforce-canonical-classes": "error",
+  },
+  "settings": {
+    "better-tailwindcss": {
+      "entryPoint": "app/globals.css",
+      // 指定しないと、h-[14px] を h-3.5 のように px から目盛りの値へ置き換えないため、ブラウザの既定の 16px を指定する
+      // https://github.com/schoero/eslint-plugin-better-tailwindcss/blob/v4.10.0/docs/rules/enforce-canonical-classes.md#rootfontsize
+      "rootFontSize": 16,
+    },
+  },
+  "options": {
+    // CLI の --type-aware ではなくここで有効にし、エディタの拡張機能にも型情報を使う規則を動かさせる
+    // https://oxc.rs/docs/guide/usage/linter/editors.html
+    "typeAware": true,
+    "denyWarnings": true,
+    "reportUnusedDisableDirectives": "error",
+  },
+}

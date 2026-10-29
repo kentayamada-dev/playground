@@ -71,6 +71,7 @@ main との差は確認しない。必須チェックは、main の最新を取�
    ```
 
    - `{owner}` を含むパスは引用符で囲む。囲まないと、`gh` がサンドボックスのなかで実行され、設定を読めずに失敗することがある
+
 2. 本文を一時ファイルに書く。前のコメントがあれば、`gh api "repos/{owner}/{repo}/issues/comments/<id>" --jq .body` で読み、「決めたこと」をそのまま引き継ぐ
 3. 前のコメントがなければ `gh pr comment <番号> --body-file <ファイル>` で投稿する。あれば `gh api --method PATCH "repos/{owner}/{repo}/issues/comments/<id>" -F body=@<ファイル>` で書き換える
 
