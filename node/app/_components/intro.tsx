@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 
-const text = {
+export const text = {
   center: "center.",
   file: "file.",
   fileName: "page.tsx",
