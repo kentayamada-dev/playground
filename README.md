@@ -267,7 +267,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 ### CodeQL
 
-ワークフローのほかに、CodeQL のデフォルトセットアップが GitHub Actions のワークフローを解析します。
+ワークフローのほかに、CodeQL のデフォルトセットアップが、GitHub Actions のワークフローと、Go・JavaScript・TypeScript のコードを解析します。クエリのスイートは `default` です（[`security.json`](.github/settings/security.json)）。
 
 - エラー・警告のアラートか、medium 以上の重大度のセキュリティアラートがあると、ルールセットの `code_scanning` ルールでマージできない
 - 解析は、`main` への push、`main` に向けた PR の作成と push、週 1 回の定期実行で動く。フォークからの PR は解析しない（[デフォルトセットアップ](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types)）
@@ -380,7 +380,7 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
   - 毎週の更新を待たずに直すときは、Dependency Dashboard の issue の「Awaiting Schedule」で、ロックファイルの更新を選ぶ。次の Renovate の実行で PR が作られる（[`dependency-dashboard.ts`](https://github.com/renovatebot/renovate/blob/44.151.1/lib/workers/repository/dependency-dashboard.ts#L515-L524)）
   - Dev Container の Go のツールの依存関係は、依存関係だけを上げず、ツールの新しい版で上げる。理由は、golang の Dockerfile のコメントに書いている
 - 次の脆弱性は、ロックファイルと同じディレクトリの `osv-scanner.toml` に、理由と期限（`ignoreUntil`）を付けて除外する。設定はそのディレクトリのロックファイルにだけ効く（[Configuration](https://google.github.io/osv-scanner/configuration/)）
-  - 修正版がなく、影響もない脆弱性（例: [`.github/textlint/osv-scanner.toml`](.github/textlint/osv-scanner.toml)）
+  - 修正版がなく、影響もない脆弱性（例: [`.devcontainer/golang/tools/gosec/osv-scanner.toml`](.devcontainer/golang/tools/gosec/osv-scanner.toml) の GO-2026-5932）
   - 修正版はあるが、すぐには取り込めない脆弱性。依存元が修正版を使う版を出すのを待つときや、公開後 14 日の待機が明けるのを待つときなど。期限は取り込める見込みの日にし、理由に何を待っているかを書く
 - 期限を過ぎると除外は切れ、また検出される（[`config.go`](https://github.com/google/osv-scanner/blob/v2.6.0/internal/config/config.go#L149-L157)）。除外が要らなくなると、OSV-Scanner のログに `has unused ignores` と出る（CI のログで確認した）
 

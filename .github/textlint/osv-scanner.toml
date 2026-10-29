@@ -1,4 +1,0 @@
-[[IgnoredVulns]]
-id = "GHSA-hp3w-g68c-fv3c"
-ignoreUntil = 2027-01-14
-reason = "修正版がない（1.1.3 以下がすべて対象）。prh → js-yaml@3 → argparse@1 経由で入り、js-yaml は argparse を CLI（bin/js-yaml.js）でしか読み込まないため、textlint からは使われない"
