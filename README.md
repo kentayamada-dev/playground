@@ -226,7 +226,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
   - ESLint のプラグインを、oxlint の JS プラグインとして動かす。JS プラグインは、まだ alpha の機能（[JS Plugins](https://oxc.rs/docs/guide/usage/linter/js-plugins.html)）
   - クラスの正規の形は Tailwind CSS 本体が決める。そのため `tailwindcss` を更新すると、指摘の内容も変わりうる
 - 外した規則と、デフォルトのオプションを変えた規則の理由は、[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) のコメントに書いている
-- node の Dev Container には Oxc の VS Code 拡張機能を入れ、保存すると oxfmt で整形し、oxlint で直せる指摘を直す設定にしている
+- node の Dev Container には Oxc の VS Code 拡張機能を入れ、保存すると oxfmt で整形する設定にしている
 - Renovate は、`next`・`typescript`・`@types/*` などの minor・patch の更新も自動マージする。型が合わなくなる更新を入れないため、必須チェックにしている
 - Renovate は、`oxlint`・`oxfmt`・`oxlint-tsgolint`・`eslint-plugin-better-tailwindcss` の minor・patch も自動マージする。指摘や整形の結果が変わる更新を入れないため、必須チェックにしている
 - イメージのビルドと依存関係の取得では、Docker Hub・Takumi Guard のレジストリから取得する。どちらかに接続できないと、どの PR もマージできない
