@@ -42,7 +42,7 @@ node と golang を、別々の Dev Container で開発します。ホストの 
 
 ### サーバーを起動する
 
-コンテナを開いても、サーバーは起動しません。それぞれのコンテナのターミナルで、[`golang/Makefile`](golang/Makefile)・[`node/Makefile`](node/Makefile) のターゲットを実行して起動します。
+コンテナを開いても、サーバーは起動しません。それぞれのコンテナのターミナルで、golang は [`golang/Makefile`](golang/Makefile) のターゲットを、node は [`node/package.json`](node/package.json) のスクリプトを `pnpm` で実行して起動します。
 
 サーバーが待ち受けているポートは、VS Code が手元に自動で転送します（`remote.autoForwardPorts`）。両方を起動したら、手元のブラウザで `http://localhost:3000` を開きます。
 
