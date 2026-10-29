@@ -173,7 +173,8 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 #### markdownlint
 
 - [markdownlint-cli2-action](https://github.com/DavidAnson/markdownlint-cli2-action) に同梱された markdownlint-cli2 で検査する。npm から依存関係を取得しないので、`package.json` とロックファイルはない。markdownlint-cli2 の版は、アクションの版で決まる
-- 行の長さと 1 行目の見出しのルールだけを無効にしている。editorconfig や lychee の検査と重なるルールも有効のままにしている
+- 行の長さ・1 行目の見出し・表の列のそろえ方のルールを無効にしている。理由は [`.github/markdownlint-cli2.jsonc`](.github/markdownlint-cli2.jsonc) のコメントに書いている
+- editorconfig や lychee の検査と重なるルールは、有効のままにしている
 
 #### textlint
 
@@ -183,7 +184,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 - [`node`](node) の外の、oxfmt が対応する形式（JSON・JSONC・JSON5・YAML・TOML・Markdown など）の整形を検査する。`node` の下は [node-check](#node-check) が検査する
 - ほかのリンターと規則がぶつかるときは、oxfmt の整形に合わせて、リンターの設定を変える
-- 手元では、`.github/oxfmt` に `pnpm install` で依存関係を入れ、リポジトリのルートから `.github/oxfmt/node_modules/.bin/oxfmt -c .oxfmtrc.jsonc` を実行すると整形し直す。`--check` を付けると、CI と同じ検査になる
+- 手元では、`.github/oxfmt` に `pnpm install` で依存関係を入れる。リポジトリのルートから `.github/oxfmt/node_modules/.bin/oxfmt -c .oxfmtrc.jsonc` を実行すると、整形し直す。`--check` を付けると、CI と同じ検査になる
 - `-c` で設定を渡す理由は、[`oxfmt.yml`](.github/workflows/oxfmt.yml) のコメントに書いている
 - pnpm の版は、[`.github/oxfmt/package.json`](.github/oxfmt/package.json) の `devEngines.packageManager` で管理し、Renovate が更新する。[`pnpm-workspace.yaml`](.github/oxfmt/pnpm-workspace.yaml) は、textlint のものとそろえている
 - Renovate は、`oxfmt` の minor・patch を自動マージする。整形の結果が変わる更新を入れないため、必須チェックにしている
