@@ -2,4 +2,13 @@
   "$schema": "./.github/oxfmt/node_modules/oxfmt/configuration_schema.json",
   // node/ は node-check が node/.oxfmtrc.jsonc の設定で検査するため、ここでは整形しない
   "ignorePatterns": ["/node/"],
+  // 見出しの行が 1 行に収まらない表の列を揃えさせず、セルを 1 つ変えただけで表のすべての行が変わらないようにする
+  // 段落の改行は、日本語の文字に隣り合うものだけが残る。proseWrap は YAML にも効くため、.md だけに指定する
+  // https://github.com/oxc-project/oxc/blob/oxfmt_v0.75.0/crates/oxc_formatter_markdown/src/print/table.rs https://github.com/oxc-project/oxc/blob/oxfmt_v0.75.0/crates/oxc_formatter_markdown/src/print/cjk.rs https://oxc.rs/docs/guide/usage/formatter/config-file-reference.html
+  "overrides": [
+    {
+      "files": ["**/*.md"],
+      "options": { "proseWrap": "never" },
+    },
+  ],
 }
