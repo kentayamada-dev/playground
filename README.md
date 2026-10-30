@@ -393,7 +393,7 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 依存関係のライセンスは、[`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-licenses` が、PR ごとと `main` への push で検査します。必須チェックなので、失敗するとマージできません。
 
 - 許可するライセンスは、ワークフローの `--licenses` に SPDX の識別子で並べている。今の依存関係にある種類をすべて許可していて、新しい種類のライセンスが入ると失敗する
-- 新しい種類を許可に足すかは、そのライセンスの条件を確かめてから決める
+- 新しい種類を許可に足すかは、そのライセンスの条件を確認してから決める
 - ライセンスを判定できないパッケージは、[`.github/osv-scanner-licenses.toml`](.github/osv-scanner-licenses.toml) でライセンスを上書きし、理由を書く
 - この検査では脆弱性を見ない。脆弱性は、[脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) のほかの検査が見る
 
