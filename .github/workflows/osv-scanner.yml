@@ -41,3 +41,92 @@ jobs:
       actions: read # 再利用ワークフローが SARIF を code scanning に上げるのに要る https://github.com/github/codeql-action/issues/2117
       contents: read
       security-events: write # 再利用ワークフローが SARIF を code scanning に上げるため
+  # 再利用ワークフローの PR の検査は、ライセンスの違反では失敗しないため、ジョブを分けて PR の中身をそのまま検査する
+  # https://github.com/google/osv-scanner/blob/v2.7.0/cmd/osv-reporter/main.go
+  # 必須チェックの名前はこのジョブ名のため、変えるときは rulesets/main.json も合わせる
+  osv-scanner-licenses:
+    name: osv-scanner-licenses
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      # 今の依存関係にある種類のライセンスをすべて許可し、新しい種類のライセンスが入ったときだけ失敗させる。
+      # 許可する一覧は設定ファイルに書けず、--licenses の値もカンマで分けるだけで空白を除かないため、ここに 1 行に 1 つ並べ、渡すときにつなげる
+      # https://github.com/google/osv-scanner/blob/v2.7.0/cmd/osv-scanner/internal/helper/flags.go
+      allowed_licenses: |-
+        [
+          "0BSD",
+          "Apache-2.0",
+          "BlueOak-1.0.0",
+          "BSD-2-Clause",
+          "BSD-3-Clause",
+          "CC-BY-3.0",
+          "CC-BY-4.0",
+          "CC0-1.0",
+          "GPL-3.0-or-later",
+          "ISC",
+          "LGPL-3.0-or-later",
+          "MIT",
+          "MIT-0",
+          "MPL-2.0",
+          "Python-2.0",
+          "WTFPL"
+        ]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
+          persist-credentials: false
+      # --config で渡す設定は、ディレクトリごとの osv-scanner.toml の代わりに使われる https://google.github.io/osv-scanner/configuration/
+      - uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            --config=.github/osv-scanner-licenses.toml
+            --licenses=${{ join(fromJSON(env.allowed_licenses), ',') }}
+            --recursive
+            ./
+  # Dev Container のイメージは、ベースイメージの OS パッケージに修正版のない脆弱性が多いため、見つかっても失敗させず、Code scanning に出すだけにする
+  osv-scanner-image:
+    name: osv-scanner-image (${{ matrix.service }})
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [node, golang]
+    # upload-sarif は、private のリポジトリでは actions: read も要る。リポジトリを private にするときは足す
+    # https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/integrate-with-existing-tools/uploading-a-sarif-file-to-github
+    permissions:
+      contents: read
+      security-events: write # SARIF を code scanning に上げるため
+    env:
+      service: ${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
+          persist-credentials: false
+      # Dockerfile の ARG の値は compose.yaml から渡すため、docker build ではなく Compose でビルドする
+      - run: docker compose build "$service"
+      - run: docker save "$(docker compose config --images "$service")" -o "$RUNNER_TEMP/image.tar"
+      # 脆弱性が見つかると終了コードが 1 になるため、ステップの失敗では止めず、次のステップで結果のファイルがあるかで判定する
+      - uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        continue-on-error: true
+        with:
+          scan-args: |-
+            scan
+            image
+            --format=sarif
+            --output-file=/github/runner_temp/results.sarif
+            --archive
+            /github/runner_temp/image.tar
+      # 検査そのものが失敗して結果を書けなかったときは、素通りさせずに失敗させる
+      - run: test -s "$RUNNER_TEMP/results.sarif"
+      - uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        with:
+          sarif_file: ${{ runner.temp }}/results.sarif
+          # Code scanning のアラートが、どのイメージのものか、ソースの検査のものと区別できるよう、イメージごとに分ける
+          category: osv-scanner-image-${{ matrix.service }}

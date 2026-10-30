@@ -55,7 +55,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`textlint.yml`](.github/workflows/textlint.yml) | リポジトリのすべての `.md` の表記。ルールは [`.github/textlint`](.github/textlint) にある | `textlint` |
 | [`test.yml`](.github/workflows/test.yml) | `.sh` と `.bats` を ShellCheck で検査し、[shfmt](https://github.com/mvdan/sh) の整形に沿っているかを確認し、bats のテストを実行する。shfmt の整形の設定は [`.editorconfig`](.editorconfig) から読む | `test` |
 | [`pr-title.yml`](.github/workflows/pr-title.yml) | PR タイトルが Conventional Commits 形式に沿い、説明を日本語で書いているか。規約は [CONTRIBUTING.md](CONTRIBUTING.md#タイトルとコミットメッセージ) | `pr-title` |
-| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | 依存関係の脆弱性とマルウェア。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) | `osv-scanner / osv-scan`（PR の検査だけ） |
+| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | 依存関係と Dev Container のイメージの脆弱性とマルウェア、依存関係のライセンス。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) と [ライセンスの検査](#ライセンスの検査) | `osv-scanner / osv-scan`（PR の検査だけ）・`osv-scanner-licenses` |
 | [`betterleaks.yml`](.github/workflows/betterleaks.yml) | コミットに含まれるシークレット。詳しくは [シークレットの検査](#シークレットの検査) | `betterleaks` |
 | [`editorconfig.yml`](.github/workflows/editorconfig.yml) | git で管理するファイルが [`.editorconfig`](.editorconfig) の文字コード・改行・インデント・末尾の空白に沿っているか。[editorconfig-checker](https://github.com/editorconfig-checker/editorconfig-checker) で検査する | `editorconfig` |
 | [`actionlint.yml`](.github/workflows/actionlint.yml) | GitHub Actions のワークフローのキー・式・`run:` のスクリプト。[actionlint](https://github.com/rhysd/actionlint) で検査し、`run:` のスクリプトは actionlint から ShellCheck にかける。設定は [`.github/actionlint.yaml`](.github/actionlint.yaml) にある | `actionlint` |
@@ -107,6 +107,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `golang-check` | [`golang`](golang) のモジュールのすべてのパッケージ（`./...`）。gofumpt は、その下のすべての `.go`（`vendor`・`testdata` は除く）。gosec は、テストのファイル（`_test.go`）も検査する |
 | `node-check` | [`node`](node) の下のファイル。`.gitignore` に一致するファイルは除く。tsc は、[`node/tsconfig.json`](node/tsconfig.json) の `include` に一致するファイルで、`node_modules` の下を除く。oxfmt は、対応する形式のファイルで、ロックファイルを除く。oxlint は、JavaScript と TypeScript のファイル。knip は、JavaScript と TypeScript のファイルと、`package.json` の依存関係 |
 | `oxfmt` | リポジトリ全体のうち、oxfmt が対応する形式のファイル。[`node`](node) の下・`.gitignore` に一致するファイル・ロックファイルは除く |
+| `osv-scanner-licenses` | リポジトリ全体のロックファイルと `go.mod` |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
 - 範囲の決め方と除く理由は、各ワークフローと、[`.yamllint.yaml`](.github/yamllint/.yamllint.yaml)・[`.github/lychee.toml`](.github/lychee.toml)・[`.github/typos.toml`](.github/typos.toml) のコメントに書いている
@@ -353,12 +354,13 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 
 ## 脆弱性とマルウェアの検査
 
-依存関係に既知の脆弱性やマルウェアがないかを、[OSV-Scanner](https://google.github.io/osv-scanner/) と Dependabot で検査しています。結果はどれも Security タブに出ます。Go のコードは、[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) でも検査し、結果を issue に出します。
+依存関係に既知の脆弱性やマルウェアがないかを、[OSV-Scanner](https://google.github.io/osv-scanner/) と Dependabot で検査しています。結果はどれも Security タブに出ます。Dev Container のイメージも、OSV-Scanner で検査します。Go のコードは、[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) でも検査し、結果を issue に出します。
 
 | 仕組み | 実行のタイミング | 結果 |
 | --- | --- | --- |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner` | PR ごと | PR のベースと比べて新しく入ったものがあると失敗する。必須チェックなので、失敗するとマージできない |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-full` | `main` への push と毎日 | 見つかったものを Code scanning に出し、1 件でもあれば失敗する |
+| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-image` | `main` への push と毎日 | node と golang の Dev Container のイメージで見つかったものを Code scanning に出す。見つかっても失敗しない |
 | Dependabot アラート | アドバイザリが公開されたときと、依存関係を変えて push したとき | 脆弱性を Dependabot のアラートに出す |
 | [`govulncheck.yml`](.github/workflows/govulncheck.yml) | 毎日と手動の実行 | [`golang`](golang) のコードが呼び出す関数に脆弱性があると失敗し、issue を作る。必須チェックではない |
 
@@ -368,7 +370,9 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
   - yamllint の `uv.lock` は、依存関係グラフが読むファイルの一覧にない（[Dependency graph supported package ecosystems](https://docs.github.com/en/code-security/reference/supply-chain-security/dependency-graph-supported-package-ecosystems)）
 - Dependabot のマルウェアアラートは有効にしていない。Dependabot が読むパッケージは、すべて OSV-Scanner でも検査しているため
 - Actions のアクションは SHA で固定しているため、Dependabot のアラートは出ない（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner もデフォルトでは Actions を検査しない
-- Go の標準ライブラリは、OSV-Scanner では検査しない。OSV-Scanner は go.mod の Go の版を読み取るが、デフォルトでは検査に使わない（[Scan Go Mod Version](https://google.github.io/osv-scanner/configuration/#scan-go-mod-version)）。代わりに Renovate が、[`golang/go.mod`](golang/go.mod) の `toolchain` の版で脆弱性を照会し、修正版への PR を作る
+- Go の標準ライブラリは、OSV-Scanner でも検査する。[`golang/osv-scanner.toml`](golang/osv-scanner.toml) の `ScanGoModVersion` で、[`golang/go.mod`](golang/go.mod) の `toolchain` の版を使う。OSV-Scanner は、デフォルトでは go.mod の Go の版を検査に使わない（[Scan Go Mod Version](https://google.github.io/osv-scanner/configuration/#scan-go-mod-version)）
+  - Renovate も、`toolchain` の版で脆弱性を照会し、修正版への PR を作る
+- Dev Container のイメージの検査では、イメージをビルドして、OS パッケージと、イメージに入っている Go のツールなどのバイナリを検査する。見つかっても失敗させない理由は、[`osv-scanner.yml`](.github/workflows/osv-scanner.yml) のコメントに書いている
 - govulncheck は、標準ライブラリも検査する。Go の脆弱性データベースには、標準ライブラリの脆弱性も載っている（例: [GO-2024-2687](https://pkg.go.dev/vuln/GO-2024-2687)）
   - 標準ライブラリの脆弱性は、golang の Dev Container の Go の版で判定する。理由は、[`govulncheck.yml`](.github/workflows/govulncheck.yml) のコメントに書いている
   - テストのファイルと、Dev Container の Go のツールは検査しない
@@ -383,6 +387,15 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
   - 修正版がなく、影響もない脆弱性（例: [`.devcontainer/golang/tools/gosec/osv-scanner.toml`](.devcontainer/golang/tools/gosec/osv-scanner.toml) の GO-2026-5932）
   - 修正版はあるが、すぐには取り込めない脆弱性。依存元が修正版を使う版を出すのを待つときや、公開後 14 日の待機が明けるのを待つときなど。期限は取り込める見込みの日にし、理由に何を待っているかを書く
 - 期限を過ぎると除外は切れ、また検出される（[`config.go`](https://github.com/google/osv-scanner/blob/v2.6.0/internal/config/config.go#L149-L157)）。除外が要らなくなると、OSV-Scanner のログに `has unused ignores` と出る（CI のログで確認した）
+
+## ライセンスの検査
+
+依存関係のライセンスは、[`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-licenses` が、PR ごとと `main` への push で検査します。必須チェックなので、失敗するとマージできません。
+
+- 許可するライセンスは、ワークフローの `allowed_licenses` に SPDX の識別子で 1 行に 1 つ並べている。今の依存関係にある種類をすべて許可していて、新しい種類のライセンスが入ると失敗する
+- 新しい種類を許可に足すかは、そのライセンスの条件を確認してから決める
+- ライセンスを判定できないパッケージは、[`.github/osv-scanner-licenses.toml`](.github/osv-scanner-licenses.toml) でライセンスを上書きし、理由を書く
+- この検査では脆弱性を見ない。脆弱性は、[脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) のほかの検査が見る
 
 ## シークレットの検査
 
