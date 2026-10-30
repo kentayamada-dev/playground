@@ -24,7 +24,7 @@ node と golang を、別々の Dev Container で開発します。ホストの 
 - `devEngines.packageManager` には版を書かず、pnpm の版は Dockerfile の 1 か所で管理する。pnpm は `onFail` を省くと `download` として扱うため、`error` を明示している（[pmOnFail](https://pnpm.io/settings/cli#pmonfail)）
 - node・textlint・oxfmt の pnpm は、本体とパッケージを Takumi Guard のレジストリ（`https://npm.flatt.tech/`）から取得する。`npmjs:` と `@jsr` スコープも同じレジストリに向け、`gh:`（GitHub Packages）は使えないようにしている（[Registries](https://pnpm.io/registries)）
 - 公開から 1 日（`minimumReleaseAge: 1440` 分）経っていない版は入れない。待機期間を満たす版がないときと、レジストリが公開日時を返さないときは、インストールが失敗する。以前の版より信頼のレベルが下がった版も入れない（`trustPolicy: no-downgrade`）。どれも [pnpm の設定](https://pnpm.io/settings/dependency-resolution) による
-- golang は、gopls・gofumpt・staticcheck をイメージに入れている。版は [`.devcontainer/golang/tools`](.devcontainer/golang/tools) のツールごとの `go.mod` で管理し、Renovate が更新する
+- golang は、gopls・gofumpt・staticcheck・gosec・govulncheck をイメージに入れている。版は [`.devcontainer/golang/tools`](.devcontainer/golang/tools) のツールごとの `go.mod` で管理し、Renovate が更新する
 - bash の履歴、node の `node_modules`・pnpm のストア、golang のモジュールとビルドのキャッシュは、名前付きボリュームに置く。コンテナを作り直しても、履歴とキャッシュは残る。手元の `node/node_modules` は空のディレクトリになる
 - node のコンテナを作ると、`node` で `pnpm install` を実行する。インストールが終わってから、VS Code がコンテナに接続する
 - ウィンドウを閉じても、コンテナは止めない（`shutdownAction: "none"`）
@@ -67,17 +67,18 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`markdownlint.yml`](.github/workflows/markdownlint.yml) | すべての `.md` の書式。見出しのレベル・リストの記号・表の列数・空行・コードブロックの言語の指定など。[markdownlint](https://github.com/DavidAnson/markdownlint) で検査する。設定は [`.github/markdownlint-cli2.jsonc`](.github/markdownlint-cli2.jsonc) にある | `markdownlint` |
 | [`yamllint.yml`](.github/workflows/yamllint.yml) | `.yml`・`.yaml` の構文と書式。キーの重複・インデント・コメントの書き方など。[yamllint](https://github.com/adrienverge/yamllint) で検査する。設定は [`.github/yamllint/.yamllint.yaml`](.github/yamllint/.yamllint.yaml) にある | `yamllint` |
 | [`hadolint.yml`](.github/workflows/hadolint.yml) | Dockerfile の書き方。ベースイメージのタグの指定・`apt-get install` の版の固定など。[hadolint](https://github.com/hadolint/hadolint) で検査し、`RUN` のスクリプトは hadolint に組み込まれた ShellCheck にかける。設定は [`.github/hadolint.yaml`](.github/hadolint.yaml) にある | `hadolint` |
-| [`devcontainer.yml`](.github/workflows/devcontainer.yml) | [開発環境](#開発環境) の 2 つのイメージを、[`compose.yaml`](compose.yaml) のとおりにビルドできるか。golang では gopls・gofumpt・staticcheck が、node では pnpm が起動するかも確認する。詳しくは [devcontainer](#devcontainer) | `devcontainer` |
-| [`golang-check.yml`](.github/workflows/golang-check.yml) | [`golang`](golang) の Go のコード。golang の Dev Container と同じイメージのなかで、ビルド・`go vet`・gofumpt の整形・[staticcheck](https://staticcheck.dev/)・`go test` を順に検査する。staticcheck の設定は [`golang/staticcheck.conf`](golang/staticcheck.conf) にある。詳しくは [golang-check](#golang-check) | `golang-check` |
+| [`devcontainer.yml`](.github/workflows/devcontainer.yml) | [開発環境](#開発環境) の 2 つのイメージを、[`compose.yaml`](compose.yaml) のとおりにビルドできるか。golang では gopls・gofumpt・staticcheck・gosec・govulncheck が、node では pnpm が起動するかも確認する。詳しくは [devcontainer](#devcontainer) | `devcontainer` |
+| [`golang-check.yml`](.github/workflows/golang-check.yml) | [`golang`](golang) の Go のコード。golang の Dev Container と同じイメージのなかで、ビルド・`go vet`・gofumpt の整形・[staticcheck](https://staticcheck.dev/)・[gosec](https://github.com/securego/gosec)・`go test` を順に検査する。staticcheck の設定は [`golang/staticcheck.conf`](golang/staticcheck.conf) にある。詳しくは [golang-check](#golang-check) | `golang-check` |
 | [`node-check.yml`](.github/workflows/node-check.yml) | [`node`](node) のコード。node の Dev Container と同じイメージのなかで、TypeScript の型・[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) の整形・[oxlint](https://oxc.rs/docs/guide/usage/linter.html) の規則を順に検査する。最後に [knip](https://knip.dev/) で、使われていないファイル・export・依存関係を探す。設定は [`node/tsconfig.json`](node/tsconfig.json)・[`node/.oxfmtrc.jsonc`](node/.oxfmtrc.jsonc)・[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) にある。詳しくは [node-check](#node-check) | `node-check` |
 | [`oxfmt.yml`](.github/workflows/oxfmt.yml) | [`node`](node) の外の JSON・YAML・TOML・Markdown などが、[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) の整形に沿っているか。設定は [`.oxfmtrc.jsonc`](.oxfmtrc.jsonc) にある。詳しくは [oxfmt](#oxfmt) | `oxfmt` |
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
+| [`govulncheck.yml`](.github/workflows/govulncheck.yml) | [`golang`](golang) の Go のコードが呼び出す、標準ライブラリと依存関係の既知の脆弱性。[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) で検査する。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) | なし |
 
-どのワークフローも、PR と `main` への push で動きます。動くタイミングが違うのは、次の 4 つです。
+どのワークフローも、PR と `main` への push で動きます。動くタイミングが違うのは、次の 5 つです。
 
 - `pr-title.yml` は、PR の作成・編集・push・再オープンで動く
 - `osv-scanner.yml` は毎日、`lychee.yml` は毎週も動く
-- `settings-drift.yml` は、毎日と手動の実行でだけ動く
+- `settings-drift.yml`・`govulncheck.yml` は、毎日と手動の実行でだけ動く
 
 ### マージの条件
 
@@ -103,7 +104,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `yamllint` | リポジトリ全体の `.yml`・`.yaml`。`pnpm-lock.yaml` と、`.venv`・`node_modules` の下は除く |
 | `hadolint` | リポジトリ全体のうち、名前が `Dockerfile`・`Containerfile` のファイル。`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*`・`*.Containerfile` に一致するファイルも含む。`.git` は除く |
 | `devcontainer` | [`compose.yaml`](compose.yaml) の `node`・`golang` のサービスのイメージ。ランナーと同じ arm64 のイメージだけをビルドする |
-| `golang-check` | [`golang`](golang) のモジュールのすべてのパッケージ（`./...`）。gofumpt は、その下のすべての `.go`（`vendor`・`testdata` は除く） |
+| `golang-check` | [`golang`](golang) のモジュールのすべてのパッケージ（`./...`）。gofumpt は、その下のすべての `.go`（`vendor`・`testdata` は除く）。gosec は、テストのファイル（`_test.go`）も検査する |
 | `node-check` | [`node`](node) の下のファイル。`.gitignore` に一致するファイルは除く。tsc は、[`node/tsconfig.json`](node/tsconfig.json) の `include` に一致するファイルで、`node_modules` の下を除く。oxfmt は、対応する形式のファイルで、ロックファイルを除く。oxlint は、JavaScript と TypeScript のファイル。knip は、JavaScript と TypeScript のファイルと、`package.json` の依存関係 |
 | `oxfmt` | リポジトリ全体のうち、oxfmt が対応する形式のファイル。[`node`](node) の下・`.gitignore` に一致するファイル・ロックファイルは除く |
 
@@ -138,6 +139,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | yamllint | 該当する行に `# yamllint disable-line rule:<ルール名>` と書く（[Disable with comments](https://yamllint.readthedocs.io/en/stable/disable_with_comments.html#disabling-checks-for-a-specific-line)） |
 | hadolint | 該当する命令の前の行に `# hadolint ignore=<ルール名>` と書く（[Inline ignores](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#inline-ignores)） |
 | staticcheck | 該当する行の前に `//lint:ignore <チェック名> <理由>` と書く。理由は省略できない（[Ignoring problems with linter directives](https://staticcheck.dev/docs/configuration/#ignoring-problems)） |
+| gosec | 指摘された行に `// #nosec <規則名> -- <理由>` と書く。理由は省略できる（[Annotating code](https://github.com/securego/gosec/blob/v2.30.0/README.md#annotating-code)） |
 | oxlint | 該当する行の前に `// oxlint-disable-next-line <規則名>` と書く（[Inline suppressions](https://oxc.rs/docs/guide/usage/linter/ignore-comments.html)） |
 | oxfmt | 整形させない文の前に `// oxfmt-ignore` と書く。JSX のなかでは `{/* oxfmt-ignore */}` と書く。JavaScript と TypeScript のほかのファイルでは、`prettier-ignore` を使う（[Ignore comments](https://oxc.rs/docs/guide/usage/formatter/ignore-comments.html)） |
 | knip | 使われていない export は、JSDoc で `@public` タグを付ける（[JSDoc & TSDoc Tags](https://knip.dev/reference/jsdoc-tsdoc-tags)）。依存関係は、`node` に `knip.json` を作り、`ignoreDependencies` に足す（[Configuration](https://knip.dev/reference/configuration)） |
@@ -214,7 +216,8 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 #### devcontainer
 
-- Renovate は、ベースイメージ・pnpm・gopls・gofumpt・staticcheck の minor・patch・digest の更新を自動マージする。組み合わせによってはビルドが壊れるため、必須チェックにしている
+- Renovate は、次の minor・patch・digest の更新を自動マージする。組み合わせによってはビルドが壊れるため、必須チェックにしている
+  - ベースイメージ・pnpm・gopls・gofumpt・staticcheck・gosec・govulncheck
 - ビルドのキャッシュは使わず、毎回すべての層をビルドする
 - ビルドでは、Docker Hub・Takumi Guard のレジストリ・Go のモジュールプロキシから取得する。どれかに接続できないと、どの PR もマージできない
 
@@ -225,7 +228,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - staticcheck は、エディタの gopls と同じく、すべての検査を有効にしている
 - `go test` は、テストのファイルがないパッケージを `[no test files]` と出して成功として扱う
 - ビルドは、VCS の情報を埋め込まず、実行ファイルを一時ディレクトリに書いて捨てる。手元の `make build` とは出力が違う
-- Renovate は、golang のベースイメージと gofumpt・staticcheck の minor・patch・digest の更新を自動マージする。コードが検査に通らなくなる更新を入れないため、必須チェックにしている
+- Renovate は、golang のベースイメージと gofumpt・staticcheck・gosec の minor・patch・digest の更新を自動マージする。コードが検査に通らなくなる更新を入れないため、必須チェックにしている
 - イメージのビルドとツールチェーン・モジュールの取得では、Docker Hub と Go のモジュールプロキシから取得する。どちらかに接続できないと、どの PR もマージできない
 - Dev Container と同じイメージで検査する理由と、ビルドと gofumpt に付けるオプションの理由は、[`golang-check.yml`](.github/workflows/golang-check.yml) のコメントに書いている
 
@@ -264,7 +267,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 ### CodeQL
 
-ワークフローのほかに、CodeQL のデフォルトセットアップが GitHub Actions のワークフローを解析します。
+ワークフローのほかに、CodeQL のデフォルトセットアップが、GitHub Actions のワークフローと、Go・JavaScript・TypeScript のコードを解析します。クエリのスイートは `default` です（[`security.json`](.github/settings/security.json)）。
 
 - エラー・警告のアラートか、medium 以上の重大度のセキュリティアラートがあると、ルールセットの `code_scanning` ルールでマージできない
 - 解析は、`main` への push、`main` に向けた PR の作成と push、週 1 回の定期実行で動く。フォークからの PR は解析しない（[デフォルトセットアップ](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types)）
@@ -350,13 +353,14 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 
 ## 脆弱性とマルウェアの検査
 
-依存関係に既知の脆弱性やマルウェアがないかを、[OSV-Scanner](https://google.github.io/osv-scanner/) と Dependabot で検査しています。結果はどれも Security タブに出ます。
+依存関係に既知の脆弱性やマルウェアがないかを、[OSV-Scanner](https://google.github.io/osv-scanner/) と Dependabot で検査しています。結果はどれも Security タブに出ます。Go のコードは、[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) でも検査し、結果を issue に出します。
 
 | 仕組み | 実行のタイミング | 結果 |
 | --- | --- | --- |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner` | PR ごと | PR のベースと比べて新しく入ったものがあると失敗する。必須チェックなので、失敗するとマージできない |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-full` | `main` への push と毎日 | 見つかったものを Code scanning に出し、1 件でもあれば失敗する |
 | Dependabot アラート | アドバイザリが公開されたときと、依存関係を変えて push したとき | 脆弱性を Dependabot のアラートに出す |
+| [`govulncheck.yml`](.github/workflows/govulncheck.yml) | 毎日と手動の実行 | [`golang`](golang) のコードが呼び出す関数に脆弱性があると失敗し、issue を作る。必須チェックではない |
 
 - 間接的な依存関係を検査しているのは OSV-Scanner だけ。GitHub の依存関係グラフは、どちらのロックファイルからも間接的な依存関係を読まないため
   - 依存関係グラフは、`pnpm-lock.yaml` の 1 つ目の文書しか読まない（文書の順番を入れ替えて確認した）
@@ -365,13 +369,18 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 - Dependabot のマルウェアアラートは有効にしていない。Dependabot が読むパッケージは、すべて OSV-Scanner でも検査しているため
 - Actions のアクションは SHA で固定しているため、Dependabot のアラートは出ない（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner もデフォルトでは Actions を検査しない
 - Go の標準ライブラリは、OSV-Scanner では検査しない。OSV-Scanner は go.mod の Go の版を読み取るが、デフォルトでは検査に使わない（[Scan Go Mod Version](https://google.github.io/osv-scanner/configuration/#scan-go-mod-version)）。代わりに Renovate が、[`golang/go.mod`](golang/go.mod) の `toolchain` の版で脆弱性を照会し、修正版への PR を作る
+- govulncheck は、標準ライブラリも検査する。Go の脆弱性データベースには、標準ライブラリの脆弱性も載っている（例: [GO-2024-2687](https://pkg.go.dev/vuln/GO-2024-2687)）
+  - 標準ライブラリの脆弱性は、golang の Dev Container の Go の版で判定する。理由は、[`govulncheck.yml`](.github/workflows/govulncheck.yml) のコメントに書いている
+  - テストのファイルと、Dev Container の Go のツールは検査しない
+  - 脆弱性が見つかると、[`report-scheduled-check.sh`](.github/scripts/report-scheduled-check/report-scheduled-check.sh) が issue「fix(golang): 定期検査で見つかった Go の脆弱性を直す」を作る。開いていれば、本文を最新の結果に書き換え、見つからなくなると閉じる
+  - PR の検査にしない理由は、`govulncheck.yml` のコメントに書いている
 - 見つかった脆弱性は、依存関係の種類ごとに次のように直す
   - 直接の依存関係は、Renovate が修正版への PR を作る（[Renovate](#renovate)）
   - pnpm のロックファイルにある間接的な依存関係には、Renovate は PR を作らない。毎週のロックファイルの更新で上がる（例: `fast-uri` は [#305](https://github.com/kentayamada-dev/playground/pull/305) で上がった）
   - 毎週の更新を待たずに直すときは、Dependency Dashboard の issue の「Awaiting Schedule」で、ロックファイルの更新を選ぶ。次の Renovate の実行で PR が作られる（[`dependency-dashboard.ts`](https://github.com/renovatebot/renovate/blob/44.151.1/lib/workers/repository/dependency-dashboard.ts#L515-L524)）
   - Dev Container の Go のツールの依存関係は、依存関係だけを上げず、ツールの新しい版で上げる。理由は、golang の Dockerfile のコメントに書いている
 - 次の脆弱性は、ロックファイルと同じディレクトリの `osv-scanner.toml` に、理由と期限（`ignoreUntil`）を付けて除外する。設定はそのディレクトリのロックファイルにだけ効く（[Configuration](https://google.github.io/osv-scanner/configuration/)）
-  - 修正版がなく、影響もない脆弱性（例: [`.github/textlint/osv-scanner.toml`](.github/textlint/osv-scanner.toml)）
+  - 修正版がなく、影響もない脆弱性（例: [`.devcontainer/golang/tools/gosec/osv-scanner.toml`](.devcontainer/golang/tools/gosec/osv-scanner.toml) の GO-2026-5932）
   - 修正版はあるが、すぐには取り込めない脆弱性。依存元が修正版を使う版を出すのを待つときや、公開後 14 日の待機が明けるのを待つときなど。期限は取り込める見込みの日にし、理由に何を待っているかを書く
 - 期限を過ぎると除外は切れ、また検出される（[`config.go`](https://github.com/google/osv-scanner/blob/v2.6.0/internal/config/config.go#L149-L157)）。除外が要らなくなると、OSV-Scanner のログに `has unused ignores` と出る（CI のログで確認した）
 
