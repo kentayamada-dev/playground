@@ -19,7 +19,14 @@ Renovate が作った依存更新の PR を、リリースノートと影響を�
 
 ## 1. 対象の PR を決める
 
-1. 番号や URL の指定がなければ、一覧から `AskUserQuestion` で選ばせる。一覧は `gh pr list --label dependencies --state open --json number,title,headRefName` で取得する
+1. 番号や URL の指定がなければ、一覧から `AskUserQuestion` で選ばせる。一覧は次のコマンドで取得し、自動マージを予約済みの PR は除く
+
+   ```bash
+   gh pr list --label dependencies --state open --json number,title,headRefName,autoMergeRequest --jq 'map(select(.autoMergeRequest == null))'
+   ```
+
+   - 一覧が空なら、選べる PR がないと伝えて終了する
+
 2. `headRefName` が `renovate/` で始まらない PR は扱わず、そう伝えて終了する
 3. `gh pr checkout <番号> --worktree <パス>` で、PR のブランチを worktree に取り出す。パスはセッションの scratchpad ディレクトリ（なければ `$TMPDIR`）の下にする
    - サンドボックスのなかの `git fetch` は、GitHub への接続を拒否される。`gh` はサンドボックスの外で動くので取り出せる
