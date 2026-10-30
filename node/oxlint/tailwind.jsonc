@@ -15,6 +15,6 @@
     "better-tailwindcss/no-duplicate-classes": "error",
     "better-tailwindcss/no-unnecessary-whitespace": "error",
     "better-tailwindcss/no-unknown-classes": "error",
-    "better-tailwindcss/enforce-canonical-classes": "error",
-  },
+    "better-tailwindcss/enforce-canonical-classes": "error"
+  }
 }
