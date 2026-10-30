@@ -3,7 +3,7 @@
   // plugins を書くと既定のプラグインが外れるため、既定の eslint・typescript・unicorn・oxc も並べる
   // https://oxc.rs/docs/guide/usage/linter/plugins.html
   "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "nextjs", "jsx-a11y", "import"],
-  "jsPlugins": ["eslint-plugin-better-tailwindcss"],
+  "jsPlugins": ["eslint-plugin-better-tailwindcss", "eslint-plugin-security"],
   // nursery は開発中の規則のため、有効にしない
   "categories": {
     "correctness": "error",
@@ -31,12 +31,11 @@
     // Next.js のグローバルな CSS は、値を受け取らない import で読み込むため
     // https://nextjs.org/docs/app/getting-started/css#global-css
     "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],
-    // CSS は import した順に並び、同じ詳細度なら後のものが勝つため、値を受け取らない import を最後に置かせ、グローバルな CSS をほかの import の CSS より優先させる
-    // https://nextjs.org/docs/app/getting-started/css#ordering-and-merging
-    "eslint/sort-imports": [
-      "error",
-      { "memberSyntaxSortOrder": ["all", "multiple", "single", "none"] },
-    ],
+    // import 文の順は oxfmt の sortImports が並べるため、名前付き import のメンバーの順だけを検査させる
+    "eslint/sort-imports": ["error", { "ignoreDeclarationSort": true }],
+    // 既定では未使用の import の修正が提案にとどまり、--fix で消えないため
+    // https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-unused-vars.html
+    "eslint/no-unused-vars": ["error", { "fix": { "imports": "safe-fix" } }],
     // next/font の Geist などは、大文字で始まるが new を付けずに呼ぶ関数のため
     // https://nextjs.org/docs/app/api-reference/components/font
     "eslint/new-cap": ["error", { "capIsNew": false }],
@@ -82,6 +81,21 @@
     "better-tailwindcss/no-unnecessary-whitespace": "error",
     "better-tailwindcss/no-unknown-classes": "error",
     "better-tailwindcss/enforce-canonical-classes": "error",
+    "security/detect-bidi-characters": "error",
+    "security/detect-buffer-noassert": "error",
+    "security/detect-child-process": "error",
+    "security/detect-disable-mustache-escape": "error",
+    "security/detect-eval-with-expression": "error",
+    "security/detect-invisible-characters": "error",
+    "security/detect-new-buffer": "error",
+    "security/detect-no-csrf-before-method-override": "error",
+    "security/detect-non-literal-fs-filename": "error",
+    "security/detect-non-literal-regexp": "error",
+    "security/detect-non-literal-require": "error",
+    "security/detect-object-injection": "error",
+    "security/detect-possible-timing-attacks": "error",
+    "security/detect-pseudoRandomBytes": "error",
+    "security/detect-unsafe-regex": "error",
   },
   "settings": {
     "better-tailwindcss": {
