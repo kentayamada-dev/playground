@@ -244,7 +244,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - oxlint は、Tailwind CSS のクラスも [eslint-plugin-better-tailwindcss](https://github.com/schoero/eslint-plugin-better-tailwindcss) の規則で検査する
   - ESLint のプラグインを、oxlint の JS プラグインとして動かす。JS プラグインは、まだ alpha の機能（[JS Plugins](https://oxc.rs/docs/guide/usage/linter/js-plugins.html)）
   - クラスの正規の形は Tailwind CSS 本体が決める。そのため `tailwindcss` を更新すると、指摘の内容も変わりうる
-- 外した規則と、デフォルトのオプションを変えた規則の理由は、[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) のコメントに書いている
+- 外した規則と、デフォルトのオプションを変えた規則の理由は、[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) と、その `extends` で読み込むファイルのコメントに書いている
 - knip は設定ファイルを置かず、デフォルトの設定で動かす。Next.js や oxlint のプラグインが、それぞれの設定からエントリーのファイルと使っている依存関係を読み取る（[Plugins](https://knip.dev/explanations/plugins)）
 - node の Dev Container には Oxc の VS Code 拡張機能を入れ、保存すると oxfmt で整形する設定にしている
 - Renovate は、`next`・`typescript`・`@types/*` などの minor・patch の更新も自動マージする。型が合わなくなる更新を入れないため、必須チェックにしている
