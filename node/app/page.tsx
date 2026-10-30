@@ -1,7 +1,8 @@
-import { Actions } from "./_components/actions";
 import Image from "next/image";
-import { Intro } from "./_components/intro";
 import type { JSX } from "react";
+
+import { Actions } from "./_components/actions";
+import { Intro } from "./_components/intro";
 
 const Home = (): JSX.Element => (
   <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
