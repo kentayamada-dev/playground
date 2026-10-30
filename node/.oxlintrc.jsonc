@@ -3,7 +3,7 @@
   // plugins を書くと既定のプラグインが外れるため、既定の eslint・typescript・unicorn・oxc も並べる
   // https://oxc.rs/docs/guide/usage/linter/plugins.html
   "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "nextjs", "jsx-a11y", "import"],
-  "jsPlugins": ["eslint-plugin-better-tailwindcss"],
+  "jsPlugins": ["eslint-plugin-better-tailwindcss", "eslint-plugin-security"],
   // nursery は開発中の規則のため、有効にしない
   "categories": {
     "correctness": "error",
@@ -82,6 +82,21 @@
     "better-tailwindcss/no-unnecessary-whitespace": "error",
     "better-tailwindcss/no-unknown-classes": "error",
     "better-tailwindcss/enforce-canonical-classes": "error",
+    "security/detect-bidi-characters": "error",
+    "security/detect-buffer-noassert": "error",
+    "security/detect-child-process": "error",
+    "security/detect-disable-mustache-escape": "error",
+    "security/detect-eval-with-expression": "error",
+    "security/detect-invisible-characters": "error",
+    "security/detect-new-buffer": "error",
+    "security/detect-no-csrf-before-method-override": "error",
+    "security/detect-non-literal-fs-filename": "error",
+    "security/detect-non-literal-regexp": "error",
+    "security/detect-non-literal-require": "error",
+    "security/detect-object-injection": "error",
+    "security/detect-possible-timing-attacks": "error",
+    "security/detect-pseudoRandomBytes": "error",
+    "security/detect-unsafe-regex": "error",
   },
   "settings": {
     "better-tailwindcss": {
