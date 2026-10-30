@@ -87,7 +87,8 @@ jobs:
             --licenses=${{ join(fromJSON(env.allowed_licenses), ',') }}
             --recursive
             ./
-  # Dev Container のイメージは、ベースイメージの OS パッケージに修正版のない脆弱性が多いため、見つかっても失敗させず、Code scanning に出すだけにする
+  # Dev Container のイメージは、ベースイメージの OS パッケージに修正版のない脆弱性が多いため、見つかっても失敗させない
+  # 結果はログに出すだけにする。Code scanning に上げると、名前と版が同じパッケージが別々の結果になってアラートが重複し、3,000 件を超えたため https://github.com/google/osv-scanner/blob/v2.7.0/internal/output/sarif.go#L334-L385
   osv-scanner-image:
     name: osv-scanner-image (${{ matrix.service }})
     if: github.event_name != 'pull_request'
@@ -97,11 +98,8 @@ jobs:
       fail-fast: false
       matrix:
         service: [node, golang]
-    # upload-sarif は、private のリポジトリでは actions: read も要る。リポジトリを private にするときは足す
-    # https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/integrate-with-existing-tools/uploading-a-sarif-file-to-github
     permissions:
       contents: read
-      security-events: write # SARIF を code scanning に上げるため
     env:
       service: ${{ matrix.service }}
     steps:
@@ -119,14 +117,9 @@ jobs:
           scan-args: |-
             scan
             image
-            --format=sarif
-            --output-file=/github/runner_temp/results.sarif
+            --output-file=/github/runner_temp/results.txt
             --archive
             /github/runner_temp/image.tar
       # 検査そのものが失敗して結果を書けなかったときは、素通りさせずに失敗させる
-      - run: test -s "$RUNNER_TEMP/results.sarif"
-      - uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
-        with:
-          sarif_file: ${{ runner.temp }}/results.sarif
-          # Code scanning のアラートが、どのイメージのものか、ソースの検査のものと区別できるよう、イメージごとに分ける
-          category: osv-scanner-image-${{ matrix.service }}
+      - run: test -s "$RUNNER_TEMP/results.txt"
+      - run: cat "$RUNNER_TEMP/results.txt"
