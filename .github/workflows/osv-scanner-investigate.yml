@@ -1,0 +1,63 @@
+name: osv-scanner-investigate
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  investigate:
+    name: investigate
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: docker compose build
+      - run: |
+          docker save playground-node:latest -o "$RUNNER_TEMP/node.tar"
+          docker save playground-golang:latest -o "$RUNNER_TEMP/golang.tar"
+          ls -la "$RUNNER_TEMP"/*.tar
+      - name: image node
+        continue-on-error: true
+        uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            scan
+            image
+            --archive
+            /github/runner_temp/node.tar
+      - name: image golang
+        continue-on-error: true
+        uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            scan
+            image
+            --archive
+            /github/runner_temp/golang.tar
+      - name: licenses summary
+        continue-on-error: true
+        uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            --licenses
+            --recursive
+            ./
+      - name: licenses allowlist MIT only
+        continue-on-error: true
+        uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            --licenses=MIT
+            --recursive
+            ./
+      - name: go version
+        continue-on-error: true
+        uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            --recursive
+            ./golang
