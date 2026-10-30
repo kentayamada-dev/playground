@@ -79,8 +79,6 @@
     }
   },
   "options": {
-    // CLI の --type-aware ではなくここで有効にし、エディタの拡張機能にも型情報を使う規則を動かさせる
-    // https://oxc.rs/docs/guide/usage/linter/editors.html
     "typeAware": true,
     "denyWarnings": true,
     "reportUnusedDisableDirectives": "error"
