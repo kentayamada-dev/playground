@@ -11,7 +11,15 @@
       ["parent", "sibling", "index"],
       "style",
       "unknown",
-      "side_effect_style",
-    ],
+      "side_effect_style"
+    ]
   },
+  // trailingComma の既定の all は JSONC にも末尾カンマを付け、VS Code がそれを警告するため、付けさせない。変えるときはルートの .oxfmtrc.jsonc も合わせる
+  // https://code.visualstudio.com/docs/languages/json#_json-with-comments
+  "overrides": [
+    {
+      "files": ["**/*.jsonc"],
+      "options": { "trailingComma": "none" }
+    }
+  ]
 }
