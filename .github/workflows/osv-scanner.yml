@@ -97,8 +97,9 @@ jobs:
       fail-fast: false
       matrix:
         service: [node, golang]
+    # upload-sarif は、private のリポジトリでは actions: read も要る。リポジトリを private にするときは足す
+    # https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/integrate-with-existing-tools/uploading-a-sarif-file-to-github
     permissions:
-      actions: read # upload-sarif が SARIF を code scanning に上げるのに要る https://github.com/github/codeql-action/issues/2117
       contents: read
       security-events: write # SARIF を code scanning に上げるため
     env:
