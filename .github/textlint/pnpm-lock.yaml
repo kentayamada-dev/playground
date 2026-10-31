@@ -197,8 +197,8 @@ importers:
         specifier: 3.0.4
         version: 3.0.4
       textlint-rule-ja-space-around-code:
-        specifier: 3.0.3
-        version: 3.0.3
+        specifier: 3.0.4
+        version: 3.0.4
       textlint-rule-ja-space-around-link:
         specifier: 3.0.4
         version: 3.0.4
@@ -1386,8 +1386,8 @@ packages:
   textlint-rule-ja-no-weak-phrase@2.0.0:
     resolution: {integrity: sha512-jZ1/3VnE8Bz/p0CCe/+BVOmWE1cZwpDkjKb6hnq39nGk3OD4XPW7biYavK/4/mZhk4bh2+Vtu1xV26lg8d+vBw==}
 
-  textlint-rule-ja-space-around-code@3.0.3:
-    resolution: {integrity: sha512-4MpPYuMoABeG/FLujjJ8+xldErMhjnmW9qWoOX8Dbblk3gWnzAW/yFYSLD2ofybpntzYCHWVLIY33Q4OrusffA==}
+  textlint-rule-ja-space-around-code@3.0.4:
+    resolution: {integrity: sha512-HlNSX72QX3fM+xr5InIn9BjagZ4k35dixs950ynbQ4ulSIZeph2PNncVvhiE0KlCEzmlqCfwqQedVETfjyyvmw==}
 
   textlint-rule-ja-space-around-link@3.0.4:
     resolution: {integrity: sha512-NsEgUPEEPbHZY5cn6JC3CUmjveJ0NvDcRvc5tIRW3e+nFzcM8w35PqUWiDKDEiPd67hp4u9nmdtYozPMC6PAFw==}
@@ -3126,7 +3126,7 @@ snapshots:
       morpheme-match: 2.0.4
       morpheme-match-all: 2.0.5
 
-  textlint-rule-ja-space-around-code@3.0.3:
+  textlint-rule-ja-space-around-code@3.0.4:
     dependencies:
       textlint-rule-helper: 2.5.0
 
