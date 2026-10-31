@@ -13,7 +13,7 @@
     "textlint-rule-ja-no-space-between-full-width": "3.0.4",
     "textlint-rule-ja-space-around-code": "3.0.4",
     "textlint-rule-ja-space-around-link": "3.0.4",
-    "textlint-rule-ja-space-between-half-and-full-width": "3.0.3",
+    "textlint-rule-ja-space-between-half-and-full-width": "3.0.4",
     "textlint-rule-no-mixed-zenkaku-and-hankaku-alphabet": "1.0.1",
     "textlint-rule-period-in-list-item": "1.0.1",
     "textlint-rule-preset-ja-technical-writing": "12.0.2",
