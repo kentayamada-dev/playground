@@ -188,8 +188,8 @@ importers:
         specifier: 2.0.0
         version: 2.0.0
       textlint-rule-ja-no-space-around-parentheses:
-        specifier: 3.0.3
-        version: 3.0.3
+        specifier: 3.0.4
+        version: 3.0.4
       textlint-rule-ja-no-space-around-slash:
         specifier: 3.0.3
         version: 3.0.3
@@ -1371,8 +1371,8 @@ packages:
   textlint-rule-ja-no-redundant-expression@4.0.1:
     resolution: {integrity: sha512-r8Qe6S7u9N97wD0gcrASqBUdZs5CMEVlgc8Ul+D2NQFiOi1BoseOMo5I9yUsEZMAL46yh/eaw9+EWz6IDlPWeA==}
 
-  textlint-rule-ja-no-space-around-parentheses@3.0.3:
-    resolution: {integrity: sha512-zH+tYMpOmjhdRbJ9OHoXSewmt7hHXTp+FF5ZfnARGzGJMzEXw+6kL1YjRoGkh8WHPvIrjOxaIh+H815eC4jZcw==}
+  textlint-rule-ja-no-space-around-parentheses@3.0.4:
+    resolution: {integrity: sha512-VYE5YXcI/DNvF67INXkJOmGYxqcGHcV9gpW2Fg9iW8cKzsEr36J1noVnjxynvSKMkSYK3m5oNhj2BIjcYNGUcw==}
 
   textlint-rule-ja-no-space-around-slash@3.0.3:
     resolution: {integrity: sha512-J9rJsX1W740P5GARSM78gD3rOnGuuTw/dQBvkbXymWVa+oqag6Z1+w+yzqLIzBhEz30fVzqO/645f7mDZFI2gw==}
@@ -3102,7 +3102,7 @@ snapshots:
       textlint-rule-helper: 2.5.0
       textlint-util-to-string: 3.3.4
 
-  textlint-rule-ja-no-space-around-parentheses@3.0.3:
+  textlint-rule-ja-no-space-around-parentheses@3.0.4:
     dependencies:
       textlint-rule-helper: 2.5.0
 
