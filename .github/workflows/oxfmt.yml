@@ -42,7 +42,7 @@ jobs:
           cache_dependency_path: ${{ env.oxfmt_dir }}/pnpm-lock.yaml
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version: 26
       - run: pnpm install --frozen-lockfile
         working-directory: ${{ env.oxfmt_dir }}
       # -c で設定を渡し、ネストした設定の探索を止める。止めないと node/ のファイルに node/.oxfmtrc.jsonc が使われ、ルートの設定の ignorePatterns が効かない
