@@ -194,8 +194,8 @@ importers:
         specifier: 3.0.3
         version: 3.0.3
       textlint-rule-ja-no-space-between-full-width:
-        specifier: 3.0.3
-        version: 3.0.3
+        specifier: 3.0.4
+        version: 3.0.4
       textlint-rule-ja-space-around-code:
         specifier: 3.0.3
         version: 3.0.3
@@ -1377,8 +1377,8 @@ packages:
   textlint-rule-ja-no-space-around-slash@3.0.3:
     resolution: {integrity: sha512-J9rJsX1W740P5GARSM78gD3rOnGuuTw/dQBvkbXymWVa+oqag6Z1+w+yzqLIzBhEz30fVzqO/645f7mDZFI2gw==}
 
-  textlint-rule-ja-no-space-between-full-width@3.0.3:
-    resolution: {integrity: sha512-fOobxsjnVLG05TdtOCnCbK/iFIE3crlVDkJN+QtbuysPT45wE0g2t4NW/NHmzvtpy8wF2I6cuMEPuAssjuEkpw==}
+  textlint-rule-ja-no-space-between-full-width@3.0.4:
+    resolution: {integrity: sha512-kIObqfsOYnaFS22nrLbVDXGl39J4J+GjM/UF4+qhSSlGY9V1wwvTxDe3q/NMFtLvu93kE+pFE2s7Bd8P3rNOgQ==}
 
   textlint-rule-ja-no-successive-word@2.0.1:
     resolution: {integrity: sha512-XKTXkHwMu86SnGaj73B67U4apDdTquDKF3SfG24tRbzMyJoGe/Iba5VMId8sp8QHeTonp1bYOSxjZsbkpGyCNw==}
@@ -3110,7 +3110,7 @@ snapshots:
     dependencies:
       textlint-rule-helper: 2.5.0
 
-  textlint-rule-ja-no-space-between-full-width@3.0.3:
+  textlint-rule-ja-no-space-between-full-width@3.0.4:
     dependencies:
       regx: 1.0.4
       textlint-rule-helper: 2.5.0
