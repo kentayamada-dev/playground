@@ -200,8 +200,8 @@ importers:
         specifier: 3.0.3
         version: 3.0.3
       textlint-rule-ja-space-around-link:
-        specifier: 3.0.3
-        version: 3.0.3
+        specifier: 3.0.4
+        version: 3.0.4
       textlint-rule-ja-space-between-half-and-full-width:
         specifier: 3.0.3
         version: 3.0.3
@@ -1389,8 +1389,8 @@ packages:
   textlint-rule-ja-space-around-code@3.0.3:
     resolution: {integrity: sha512-4MpPYuMoABeG/FLujjJ8+xldErMhjnmW9qWoOX8Dbblk3gWnzAW/yFYSLD2ofybpntzYCHWVLIY33Q4OrusffA==}
 
-  textlint-rule-ja-space-around-link@3.0.3:
-    resolution: {integrity: sha512-zNqRbu37idDDVOY227kKQtQDT7gyf/upBo0/wRbygLuBHYoU9H56Igxy0X+5isRTJd4FM21myb+pA+ZBqfizaA==}
+  textlint-rule-ja-space-around-link@3.0.4:
+    resolution: {integrity: sha512-NsEgUPEEPbHZY5cn6JC3CUmjveJ0NvDcRvc5tIRW3e+nFzcM8w35PqUWiDKDEiPd67hp4u9nmdtYozPMC6PAFw==}
 
   textlint-rule-ja-space-between-half-and-full-width@3.0.3:
     resolution: {integrity: sha512-mcVsMEKfAj4HLIoxEydHJpC4mFIG1BiU5WhVtnA9N8DZKj5HxywZcHXCSGAVL724cWg66ccAFfBy4g9hBKdOUg==}
@@ -3130,7 +3130,7 @@ snapshots:
     dependencies:
       textlint-rule-helper: 2.5.0
 
-  textlint-rule-ja-space-around-link@3.0.3:
+  textlint-rule-ja-space-around-link@3.0.4:
     dependencies:
       textlint-rule-helper: 2.5.0
 
