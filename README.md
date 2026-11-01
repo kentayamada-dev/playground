@@ -384,7 +384,7 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
   - 開いていれば、本文を最新の結果に書き換え、検査が通ると閉じる
   - 次の実行は、issue に触れない
     - `main` 以外のブランチでの手動実行
-    - 報告する前に `main` に新しいコミットが入った実行。報告は新しいコミットの実行に任せる
+    - 報告する前に `main` へ新しいコミットが入った実行。報告は新しいコミットの実行に任せる
   - issue で知らせる理由は、[`osv-scanner.yml`](.github/workflows/osv-scanner.yml) のコメントに書いている
 - 見つかった脆弱性は、依存関係の種類ごとに次のように直す
   - 直接の依存関係は、Renovate が修正版への PR を作る（[Renovate](#renovate)）
