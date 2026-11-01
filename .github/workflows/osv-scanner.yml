@@ -63,12 +63,26 @@ jobs:
       report_script: .github/scripts/report-scheduled-check/report-scheduled-check.sh
       report_name: osv-scanner-alerts.json
     steps:
+      # report ジョブは push の順ではなく検査が終わった順に動くため、古いコミットの結果で issue を書き換えないよう、ブランチの先頭のコミットの実行だけが報告する
+      # https://github.com/kentayamada-dev/playground/pull/398
+      - id: head
+        run: |
+          head_sha=$(gh api "repos/{owner}/{repo}/git/ref/${GITHUB_REF#refs/}" --jq .object.sha)
+          if [[ ${head_sha} == "${GITHUB_SHA}" ]]; then
+            echo latest=true >>"$GITHUB_OUTPUT"
+          else
+            echo "::notice::${GITHUB_REF_NAME} の先頭が ${head_sha} に進んでいるため、報告はそのコミットの実行に任せる"
+            echo latest=false >>"$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
           persist-credentials: false
       # 検査をやり直すと、その間に OSV のデータが変わって Code scanning と食い違うことがあるため、osv-scanner-full が上げた結果を読む
-      - if: needs.osv-scanner-full.result == 'failure'
+      - if: needs.osv-scanner-full.result == 'failure' && steps.head.outputs.latest == 'true'
         run: |
           gh api --paginate "repos/{owner}/{repo}/code-scanning/alerts?tool_name=osv-scanner&ref=${GITHUB_REF}&state=open&per_page=100" \
             --jq '.[]' >"$RUNNER_TEMP/$report_name"
@@ -76,7 +90,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-      - if: needs.osv-scanner-full.result == 'success'
+      - if: needs.osv-scanner-full.result == 'success' && steps.head.outputs.latest == 'true'
         run: >-
           "$report_script" osv-scanner --resolved
         env:
