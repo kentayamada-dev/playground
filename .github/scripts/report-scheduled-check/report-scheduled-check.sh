@@ -55,7 +55,7 @@ osv-scanner)
   alerts=$(jq -rs --arg package_pattern "^Package '(?<package>[^']+)'" '
     # セルの中の | で列が分かれないようにする
     def cell: gsub("\\|"; "\\|");
-    if length == 0 then
+    if false then
       "なし。検査そのものが失敗していないか、実行のログを確認してください。"
     else
       "| アラート | 重大度 | パッケージ | 概要 | ファイル |",
@@ -63,7 +63,7 @@ osv-scanner)
       (.[] | . as $alert | [
         "[\(.rule.id)](\(.html_url))",
         (.rule.security_severity_level // ""),
-        (.most_recent_instance.message.text | capture($package_pattern).package),
+        (.most_recent_instance.message.text | capture($package_pattern).package // .),
         (.rule.description | ltrimstr("\($alert.rule.id): ")),
         .most_recent_instance.location.path
       ] | map(cell) | "| \(join(" | ")) |")
