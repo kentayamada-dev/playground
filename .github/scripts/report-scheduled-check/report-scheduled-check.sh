@@ -64,7 +64,7 @@ osv-scanner)
         "[\(.rule.id)](\(.html_url))",
         (.rule.security_severity_level // ""),
         (.most_recent_instance.message.text | capture($package_pattern).package // .),
-        (.rule.description | ltrimstr("\($alert.rule.id): ")),
+        .rule.description,
         .most_recent_instance.location.path
       ] | map(cell) | "| \(join(" | ")) |")
     end' <<<"${output}")
