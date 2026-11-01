@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-usage="使い方: $0 {broken-links | settings-drift | govulncheck} {<検査の出力> | --resolved}"
+usage="使い方: $0 {broken-links | settings-drift | govulncheck | osv-scanner} {<検査の出力> | --resolved}"
 if [[ $# -ne 2 ]]; then
   echo "${usage}" >&2
   exit 1
@@ -44,6 +44,15 @@ govulncheck)
 \`\`\`text
 ${output}
 \`\`\`"
+  ;;
+osv-scanner)
+  title='fix: main の依存関係の検査で見つかった脆弱性を直す'
+  resolved_comment="[main の依存関係の検査](${run_url}) が通りました。"
+  body="[main の依存関係の検査](${run_url}) が失敗しました。脆弱性のあるパッケージを上げるか、すぐに上げられなければ、ロックファイルと同じディレクトリの \`osv-scanner.toml\` で理由と期限を付けて除外してください。
+
+Code scanning で開いているアラート:
+
+${output}"
   ;;
 *)
   echo "${usage}" >&2

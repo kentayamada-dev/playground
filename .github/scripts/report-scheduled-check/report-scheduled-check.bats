@@ -297,12 +297,38 @@ assert_github_issues() {
   ]'
 }
 
+@test "osv-scanner では、脆弱性の issue を、検査の出力をそのまま入れた本文で作る" {
+  echo '- [CVE-2026-0001](https://example.com/alerts/1): glob@13.0.6（`pnpm-lock.yaml`）' >"${BATS_TEST_TMPDIR}/osv-scanner.md"
+  given_github_issues '[{"number": 185, "title": "fix(golang): 定期検査で見つかった Go の脆弱性を直す", "state": "open", "body": "前回の結果"}]'
+
+  run -0 "${script}" osv-scanner "${BATS_TEST_TMPDIR}/osv-scanner.md"
+
+  assert_github_issues '[
+    {"number": 185, "title": "fix(golang): 定期検査で見つかった Go の脆弱性を直す", "state": "open", "body": "前回の結果"},
+    {"number": 186, "title": "fix: main の依存関係の検査で見つかった脆弱性を直す", "state": "open", "body": "[main の依存関係の検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。脆弱性のあるパッケージを上げるか、すぐに上げられなければ、ロックファイルと同じディレクトリの `osv-scanner.toml` で理由と期限を付けて除外してください。\n\nCode scanning で開いているアラート:\n\n- [CVE-2026-0001](https://example.com/alerts/1): glob@13.0.6（`pnpm-lock.yaml`）\n"}
+  ]'
+}
+
+@test "osv-scanner で検査が通ったとき（--resolved）、脆弱性の issue だけを、通ったとコメントして閉じる" {
+  given_github_issues '[
+    {"number": 185, "title": "fix(golang): 定期検査で見つかった Go の脆弱性を直す", "state": "open", "body": "前回の結果"},
+    {"number": 190, "title": "fix: main の依存関係の検査で見つかった脆弱性を直す", "state": "open", "body": "前回の結果"}
+  ]'
+
+  run -0 "${script}" osv-scanner --resolved
+
+  assert_github_issues '[
+    {"number": 185, "title": "fix(golang): 定期検査で見つかった Go の脆弱性を直す", "state": "open", "body": "前回の結果"},
+    {"number": 190, "title": "fix: main の依存関係の検査で見つかった脆弱性を直す", "state": "closed", "body": "前回の結果", "state_reason": "completed", "comments": ["[main の依存関係の検査](https://example.com/owner/repo/actions/runs/123) が通りました。"]}
+  ]'
+}
+
 @test "知らない検査の名前なら、使い方を出して issue に触れずに失敗する" {
   given_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
 
   run -1 --separate-stderr "${script}" broken-link --resolved
 
-  [[ ${stderr} == "使い方: ${script} {broken-links | settings-drift | govulncheck} {<検査の出力> | --resolved}" ]]
+  [[ ${stderr} == "使い方: ${script} {broken-links | settings-drift | govulncheck | osv-scanner} {<検査の出力> | --resolved}" ]]
   assert_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
 }
 
@@ -311,6 +337,6 @@ assert_github_issues() {
 
   run -1 --separate-stderr "${script}" --resolved
 
-  [[ ${stderr} == "使い方: ${script} {broken-links | settings-drift | govulncheck} {<検査の出力> | --resolved}" ]]
+  [[ ${stderr} == "使い方: ${script} {broken-links | settings-drift | govulncheck | osv-scanner} {<検査の出力> | --resolved}" ]]
   assert_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
 }

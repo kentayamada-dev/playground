@@ -41,6 +41,48 @@ jobs:
       actions: read # 再利用ワークフローが SARIF を code scanning に上げるのに要る https://github.com/github/codeql-action/issues/2117
       contents: read
       security-events: write # 再利用ワークフローが SARIF を code scanning に上げるため
+  # main に後から公開された脆弱性では PR の検査が落ちず、失敗の通知も起動した人（定期実行ならワークフローを作った人）にしか届かないため、issue で知らせる
+  # https://google.github.io/osv-scanner/github-action/#scan-on-pull-request https://docs.github.com/en/actions/concepts/workflows-and-actions/notifications-for-workflow-runs
+  osv-scanner-full-report:
+    name: osv-scanner-full-report
+    needs: osv-scanner-full
+    # main 以外で手動実行した結果で、main の issue を書き換えたり閉じたりしない。取り消されたときは結果がないため何もしない
+    if: >-
+      always() && github.ref == 'refs/heads/main'
+      && (needs.osv-scanner-full.result == 'success' || needs.osv-scanner-full.result == 'failure')
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 5
+    # 同時に動くと、どちらも開いている issue がないと判断して issue を 2 件作ることがあるため、実行を重ねない
+    concurrency:
+      group: ${{ github.workflow }}-report
+    permissions:
+      contents: read
+      issues: write # report-scheduled-check.sh が、検査が失敗したら issue を作るか書き換え、通ったら閉じるため
+      security-events: read # issue の本文に、Code scanning で開いているアラートを載せるため
+    env:
+      report_script: .github/scripts/report-scheduled-check/report-scheduled-check.sh
+      report_name: osv-scanner.md
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
+          persist-credentials: false
+      # 検査をやり直すと、その間に OSV のデータが変わって Code scanning と食い違うことがあるため、osv-scanner-full が上げた結果を読む
+      - if: needs.osv-scanner-full.result == 'failure'
+        run: |
+          alerts=$(gh api --paginate "repos/{owner}/{repo}/code-scanning/alerts?tool_name=osv-scanner&ref=${GITHUB_REF}&state=open&per_page=100" \
+            --jq '.[] | "- [\(.rule.id)](\(.html_url)): \(.most_recent_instance.message.text)（`\(.most_recent_instance.location.path)`）"')
+          echo "${alerts:-なし。検査そのものが失敗していないか、実行のログを確認してください。}" >"$RUNNER_TEMP/$report_name"
+          "$report_script" osv-scanner "$RUNNER_TEMP/$report_name"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+      - if: needs.osv-scanner-full.result == 'success'
+        run: >-
+          "$report_script" osv-scanner --resolved
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
   # 再利用ワークフローの PR の検査は、ライセンスの違反では失敗しないため、ジョブを分けて PR の中身をそのまま検査する
   # https://github.com/google/osv-scanner/blob/v2.7.0/cmd/osv-reporter/main.go
   # 必須チェックの名前はこのジョブ名のため、変えるときは rulesets/main.json も合わせる
