@@ -2,13 +2,3 @@
 id = "GO-2026-5932"
 ignoreUntil = 2027-01-29
 reason = "修正版がない（golang.org/x/crypto/openpgp は保守されておらず、パッケージ全体が対象）。gosec v2.30.0 の本体は openpgp を import しない（go list -deps で確認した）"
-
-[[IgnoredVulns]]
-id = "GO-2026-6860"
-ignoreUntil = 2027-01-29
-reason = "x/net 0.62.0 で直っているが、gosec v2.30.0 は 0.61.0 を使う。x/net/html は gosec のテストが gomega 経由で読み込むだけで、gosec の本体は import しない（go list -deps で確認した）"
-
-[[IgnoredVulns]]
-id = "GO-2026-6866"
-ignoreUntil = 2027-01-29
-reason = "x/net 0.62.0 で直っているが、gosec v2.30.0 は 0.61.0 を使う。x/net/html は gosec のテストが gomega 経由で読み込むだけで、gosec の本体は import しない（go list -deps で確認した）"

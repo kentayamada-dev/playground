@@ -46,9 +46,9 @@ description: GitHub Actions のワークフロー（.github/workflows 配下）�
 
 CI の成否だけで結論を出さない。検証項目ごとに、次のどれかを根拠にする。
 
-- ステップごとの結果: `gh api repos/<owner>/<repo>/actions/jobs/<job_id>` の `steps[].conclusion`
+- ステップごとの結果: `gh api "repos/{owner}/{repo}/actions/jobs/<job_id>"` の `steps[].conclusion`
 - ジョブのログ: `gh run view <run_id> --job <job_id> --log`。権限・キャッシュ・アクションのバージョンもここで確認する
-- チェックの報告元: `gh api repos/<owner>/<repo>/commits/<sha>/check-runs` の名前と app id
+- チェックの報告元: `gh api "repos/{owner}/{repo}/commits/<sha>/check-runs"` の名前と app id
 - マージ状態: `gh pr view <番号> --json mergeStateStatus,statusCheckRollup`
 
 期待と違う結果が出たら、検証を続けずにユーザーへ報告する。
@@ -56,8 +56,8 @@ CI の成否だけで結論を出さない。検証項目ごとに、次のど�
 ## 5. 後片付けをする
 
 - 検証用の PR は `gh pr close <番号> --delete-branch` で閉じ、ブランチを削除する
-- 一時的なルールセットは `gh api -X DELETE repos/<owner>/<repo>/rulesets/<id>` で削除する
-- `gh api repos/<owner>/<repo>/rulesets` で、一時的なルールセットが残っていないことを確認する
+- 一時的なルールセットは `gh api -X DELETE "repos/{owner}/{repo}/rulesets/<id>"` で削除する
+- `gh api "repos/{owner}/{repo}/rulesets"` で、一時的なルールセットが残っていないことを確認する
 - `git ls-remote --heads origin 'test/*'` で、検証用ブランチが残っていないことを確認する
 - 作業ブランチに戻り、`git status -sb` で未コミットの変更がないことを確認する
 
