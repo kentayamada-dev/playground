@@ -26,7 +26,7 @@ assert_killed() {
 
   run -1 bats "${work}/count-comments.bats"
 
-  sed 's/^/# /' <<<"${output}" >&3
+  printf '# %s\n' "${lines[@]}" >&3
   [[ ${output} == *"not ok ${expected} "* ]]
 }
 
