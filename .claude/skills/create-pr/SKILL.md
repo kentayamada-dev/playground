@@ -22,7 +22,10 @@ description: このリポジトリの規約に沿って PR を作成・更新す
 
 <!-- textlint-enable ja-technical-writing/no-exclamation-question-mark -->
 
-<!-- 埋め込んだ出力はコードブロックに入らず、先頭行の「## <ブランチ>」が見出しになるため、外側のコードブロックで囲む -->
+<!--
+埋め込んだ出力はコードブロックに入らず、先頭行の「## <ブランチ>」が見出しになるため、外側のコードブロックで囲む
+https://code.claude.com/docs/en/skills#inject-dynamic-context
+-->
 
 ````text
 ```!
