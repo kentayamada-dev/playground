@@ -33,7 +33,7 @@ gh pr list --state open --json number,title,headRefName,createdAt,autoMergeReque
 上から順に当てはめ、最初に当てはまったものをする。終えたら手順 1 に戻る。
 
 1. `failed` が 1 以上の PR がある: 止めて、手順 5 で報告する
-2. `pending` が 1 以上か、`checks` が 0 の PR がある: 手順 3 の 2 で、その PR のチェックが終わるのを待つ
+2. `pending` が 1 以上か、`checks` が 0 の PR がある: 手順 3 の 2 で、そのうちいちばん古い PR のチェックが終わるのを待つ
    - Renovate の実行などで、このスキルが追いつかせていない PR の CI が動いていることがある
    - 待たずにほかの PR を追いつかせても、マージされるのは CI が早く通った 1 件だけで、もう一方は追いつかせ直しとなる
 3. `mergeStateStatus` が `UNKNOWN` の PR がある: GitHub が状態を計算している。取り直す
@@ -60,32 +60,27 @@ gh pr list --state open --json number,title,headRefName,createdAt,autoMergeReque
    gh pr checks <番号> --required --watch --fail-fast
    ```
 
-   - 追いつかせた直後は、チェックがまだ登録されていない。`no required checks reported` で終わったら、もう一度実行する（[gh v2.102.0 の checks.go](https://github.com/cli/cli/blob/v2.102.0/pkg/cmd/pr/checks/checks.go#L184-L187)）
+   - 追いつかせた直後は、チェックがまだ登録されていない。`no checks reported` か `no required checks reported` で終わったら、もう一度実行する（[gh v2.102.0 の checks.go](https://github.com/cli/cli/blob/v2.102.0/pkg/cmd/pr/checks/checks.go#L184-L187)）
    - 終了コードが 0 なら通った。それ以外なら、`gh pr checks <番号> --required` で失敗したチェックを確認する
 
 3. 通ったら、`gh pr view <番号> --json state,mergedAt` で `MERGED` になったことを確認する
    - チェックが終わってからマージされるまで、30 秒ほどかかることがある。`OPEN` なら、もう一度確認する
+   - それでも `OPEN` なら、手順 1 に戻る。チェックの一部が、待ち始めた時点でまだ登録されていなかったことがある
 4. 失敗したら止めて、手順 5 で報告する。残りの PR には手を付けない
 
 ## 4. Renovate に作り直させる
 
 Renovate は、ほかの人がコミットしていないブランチなら、競合した PR を main から作り直す。
 
-1. Renovate のワークフローを手動で実行する
+1. Renovate のワークフローを手動で実行する。出力される run の URL の末尾の数字が、run の ID になる
 
    ```bash
    gh workflow run renovate.yml
    ```
 
-2. 次のコマンドで、実行した run の ID を取得する。`createdAt` が手順 4 の 1 を実行した時刻より後であることを確認する
-
-   ```bash
-   gh run list --workflow renovate.yml --event workflow_dispatch --limit 1 --json databaseId,status,createdAt
-   ```
-
-3. `gh run watch <run_id> --exit-status` で終了を待つ。このコマンドはバックグラウンドで実行する
-4. 手順 1 に戻る。Renovate は、main に遅れたほかの PR も追いつかせるので、手順 2 の 2 でそれらの CI を待つことになる
-5. Renovate の実行のあとも同じ PR が `DIRTY` のままなら、止めて手順 5 で報告する
+2. `gh run watch <run_id> --exit-status` で終了を待つ。このコマンドはバックグラウンドで実行する
+3. 手順 1 に戻る。作り直された PR では CI が動いているので、手順 2 の 2 で待つことになる
+4. Renovate の実行のあとも同じ PR が `DIRTY` のままなら、止めて手順 5 で報告する
 
 ## 5. 報告する
 
