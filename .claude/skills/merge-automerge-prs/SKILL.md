@@ -35,7 +35,7 @@ gh pr list --state open --json number,title,headRefName,createdAt,autoMergeReque
 1. `failed` が 1 以上の PR がある: 止めて、手順 5 で報告する
 2. `pending` が 1 以上か、`checks` が 0 の PR がある: 手順 3 の 2 で、その PR のチェックが終わるのを待つ
    - Renovate の実行などで、このスキルが追いつかせていない PR の CI が動いていることがある
-   - 待たずにほかの PR を追いつかせると、先にマージされたほうに遅れて、もう一方は追いつかせ直しになる
+   - 待たずにほかの PR を追いつかせても、マージされるのは CI が早く通った 1 件だけで、もう一方は追いつかせ直しとなる
 3. `mergeStateStatus` が `UNKNOWN` の PR がある: GitHub が状態を計算している。取り直す
 4. `BEHIND` の PR がある: いちばん古い PR を、手順 3 で追いつかせる
 5. `DIRTY` の PR だけが残っている: 手順 4 で、Renovate に作り直させる
