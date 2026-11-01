@@ -46,6 +46,16 @@ node と golang を、別々の Dev Container で開発します。ホストの 
 
 サーバーが待ち受けているポートは、VS Code が手元に自動で転送します（`remote.autoForwardPorts`）。両方を起動したら、手元のブラウザで `http://localhost:3000` を開きます。
 
+### データベース
+
+PostgreSQL を、[`compose.yaml`](compose.yaml) の `postgres` サービスとして動かします。Dev Container ではなく、node と golang のどちらのコンテナを開いても一緒に起動します。
+
+- イメージは [公式イメージ](https://hub.docker.com/_/postgres) をそのまま使う。版は `compose.yaml` で管理し、Renovate が更新する
+- node と golang のコンテナからは、ホスト名 `postgres`・ポート `5432` で接続する。ユーザーは `postgres` で、パスワードは `compose.yaml` の `POSTGRES_PASSWORD` にある
+- ホストにはポートを公開しない。psql は、手元のリポジトリのルートで `docker compose exec postgres psql --username=postgres` を実行して使う
+- データは名前付きボリュームに置く。コンテナを作り直しても、データは残る
+- major の更新を入れると、前の版のデータが残るボリュームでは起動に失敗する。`pg_upgrade` でデータを移すか、ボリュームを消してから起動する
+
 ## CI の検査
 
 GitHub Actions で、次のとおり検査します。必須チェックが通らない PR はマージできません。必須チェックは [`rulesets/main.json`](.github/settings/rulesets/main.json) に定義しています。
@@ -220,6 +230,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - Renovate は、次の minor・patch・digest の更新を自動マージする。組み合わせによってはビルドが壊れるため、必須チェックにしている
   - ベースイメージ・pnpm・gopls・gofumpt・staticcheck・gosec・govulncheck
 - ビルドのキャッシュは使わず、毎回すべての層をビルドする
+- postgres は、起動して healthcheck が通るまで待ってから、psql で版を表示する。Renovate が自動マージする postgres のイメージの更新も、この検査で起動できることを確認する
 - ビルドでは、Docker Hub・Takumi Guard のレジストリ・Go のモジュールプロキシから取得する。どれかに接続できないと、どの PR もマージできない
 
 #### golang-check
