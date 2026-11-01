@@ -354,12 +354,12 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 
 ## 脆弱性とマルウェアの検査
 
-依存関係に既知の脆弱性やマルウェアがないかを、[OSV-Scanner](https://google.github.io/osv-scanner/) と Dependabot で検査しています。結果はどれも Security タブに出ます。Dev Container のイメージも OSV-Scanner で検査しますが、結果はジョブのログにだけ出します。Go のコードは、[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) でも検査し、結果を issue に出します。
+依存関係に既知の脆弱性やマルウェアがないかを、[OSV-Scanner](https://google.github.io/osv-scanner/) と Dependabot で検査しています。結果はどれも Security タブに出ます。Dev Container のイメージも OSV-Scanner で検査しますが、結果はジョブのログにだけ出します。Go のコードは、[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) でも検査し、結果を issue に出します。`main` の OSV-Scanner の検査が失敗したときも、issue で知らせます。
 
 | 仕組み | 実行のタイミング | 結果 |
 | --- | --- | --- |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner` | PR ごと | PR のベースと比べて新しく入ったものがあると失敗する。必須チェックなので、失敗するとマージできない |
-| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-full` | `main` への push と毎日 | 見つかったものを Code scanning に出し、1 件でもあれば失敗する |
+| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-full` | `main` への push と毎日 | 見つかったものを Code scanning に出し、1 件でもあれば失敗する。失敗すると issue を作る |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-image` | `main` への push と毎日 | node と golang の Dev Container のイメージで見つかったものをジョブのログに出す。見つかっても失敗しない |
 | Dependabot アラート | アドバイザリが公開されたときと、依存関係を変えて push したとき | 脆弱性を Dependabot のアラートに出す |
 | [`govulncheck.yml`](.github/workflows/govulncheck.yml) | 毎日と手動の実行 | [`golang`](golang) のコードが呼び出す関数に脆弱性があると失敗し、issue を作る。必須チェックではない |
@@ -378,6 +378,14 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
   - テストのファイルと、Dev Container の Go のツールは検査しない
   - 脆弱性が見つかると、[`report-scheduled-check.sh`](.github/scripts/report-scheduled-check/report-scheduled-check.sh) が issue「fix(golang): 定期検査で見つかった Go の脆弱性を直す」を作る。開いていれば、本文を最新の結果に書き換え、見つからなくなると閉じる
   - PR の検査にしない理由は、`govulncheck.yml` のコメントに書いている
+- `main` の `osv-scanner-full` が失敗すると、`osv-scanner-full-report` が issue を作る
+  - issue のタイトルは「fix: main の依存関係の検査で見つかった脆弱性を直す」。作るのは [`report-scheduled-check.sh`](.github/scripts/report-scheduled-check/report-scheduled-check.sh)
+  - 本文には、Code scanning で開いている OSV-Scanner のアラートを表にして載せる
+  - 開いていれば、本文を最新の結果に書き換え、検査が通ると閉じる
+  - 次の実行は、issue に触れない
+    - `main` 以外のブランチでの手動実行
+    - 報告する前に `main` へ新しいコミットが入った実行。報告は新しいコミットの実行に任せる
+  - issue で知らせる理由は、[`osv-scanner.yml`](.github/workflows/osv-scanner.yml) のコメントに書いている
 - 見つかった脆弱性は、依存関係の種類ごとに次のように直す
   - 直接の依存関係は、Renovate が修正版への PR を作る（[Renovate](#renovate)）
   - pnpm のロックファイルにある間接的な依存関係には、Renovate は PR を作らない。毎週のロックファイルの更新で上がる（例: `fast-uri` は [#305](https://github.com/kentayamada-dev/playground/pull/305) で上がった）
