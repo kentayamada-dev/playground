@@ -27,7 +27,9 @@
       "Bash(gh run rerun:*)",
       "Bash(rm:*)",
       "Bash(git reset --hard:*)",
-      "Bash(git clean:*)"
+      "Bash(git clean:*)",
+      "Bash(git restore:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [
       "Bash(dangerouslyDisableSandbox:true)",
