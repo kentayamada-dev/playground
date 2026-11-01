@@ -18,6 +18,8 @@
   prHourlyLimit: 0,
   // CONTRIBUTING.md の issue タイトルの規約に合わせる
   dependencyDashboardTitle: "chore(deps): 依存関係の更新状況",
+  // labels はダッシュボードの issue には付かないため、PR と同じラベルを別に指定する https://github.com/renovatebot/renovate/blob/44.151.1/lib/workers/repository/dependency-dashboard.ts#L686
+  dependencyDashboardLabels: ["dependencies"],
   // デフォルトでは PR にラベルを付けないため、.github/settings/labels.json の dependencies を付ける https://docs.renovatebot.com/configuration-options/#labels
   labels: ["dependencies"],
   // GitHub の依存グラフに textlint の依存が出ず、Dependabot alerts からは脆弱性修正 PR が作られないため、OSV のデータベースでも照会させる

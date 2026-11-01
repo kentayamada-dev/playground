@@ -5,8 +5,23 @@
     "description": "期待どおりに動かない不具合"
   },
   {
+    "name": "configuration",
+    "color": "fbca04",
+    "description": "リポジトリやツールの設定"
+  },
+  {
     "name": "dependencies",
     "color": "0366d6",
     "description": "依存関係の更新"
+  },
+  {
+    "name": "documentation",
+    "color": "0e8a16",
+    "description": "ドキュメントの追加や修正"
+  },
+  {
+    "name": "security",
+    "color": "b60205",
+    "description": "脆弱性などのセキュリティの問題"
   }
 ]

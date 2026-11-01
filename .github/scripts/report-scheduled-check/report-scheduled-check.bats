@@ -16,7 +16,7 @@ setup() {
   # https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/README.md?plain=1#L175
   export GITHUB_SERVER_URL=https://example.com GITHUB_REPOSITORY=owner/repo GITHUB_RUN_ID=123
 
-  # gh issue の偽物。GitHub 上の issue を $STUB_DIR/issues.json として読み書きする
+  # gh issue の偽物。GitHub 上の issue を $STUB_DIR/issues.json、ラベルの名前を $STUB_DIR/labels.json として読み書きする
   export STUB_DIR="${BATS_TEST_TMPDIR}/stub"
   mkdir -p "${STUB_DIR}/bin"
   PATH="${STUB_DIR}/bin:${PATH}"
@@ -38,7 +38,7 @@ if [ -n "${STUB_FAIL-}" ] && [[ "issue $command" == $STUB_FAIL ]]; then
   exit 1
 fi
 
-number='' state=open fields='' filter=. title='' body_file='' reason='' comment=''
+number='' state=open fields='' filter=. title='' body_file='' add_label='' reason='' comment=''
 while [ $# -gt 0 ]; do
   case "$1" in
     --state) state=$2; shift 2 ;;
@@ -47,6 +47,7 @@ while [ $# -gt 0 ]; do
     --jq) filter=$2; shift 2 ;;
     --title) title=$2; shift 2 ;;
     --body-file) body_file=$2; shift 2 ;;
+    --add-label) add_label=$2; shift 2 ;;
     --reason) reason=$2; shift 2 ;;
     --comment) comment=$2; shift 2 ;;
     -*) echo "gh スタブ: 未対応のフラグ $1" >&2; exit 1 ;;
@@ -69,14 +70,28 @@ case "$command" in
       echo "gh: Could not resolve to an issue with the number of $number" >&2
       exit 1
     fi
-    jq --argjson number "$number" --rawfile body "$body_file" \
-      'map(if .number == $number then .body = $body else . end)' "$issues" >"$issues.new"
-    mv "$issues.new" "$issues"
+    # 本物と同じく、ないラベルがあれば何も変えずに失敗する
+    missing=$(jq -r --arg add "$add_label" '. as $existing | $add | split(",") | map(select(. as $name | $existing | index($name) | not)) | first // empty' "$STUB_DIR/labels.json")
+    if [ -n "$missing" ]; then
+      echo "'$missing' not found" >&2
+      exit 1
+    fi
+    if [ -n "$body_file" ]; then
+      jq --argjson number "$number" --rawfile body "$body_file" \
+        'map(if .number == $number then .body = $body else . end)' "$issues" >"$issues.new"
+      mv "$issues.new" "$issues"
+    fi
+    if [ -n "$add_label" ]; then
+      jq --argjson number "$number" --arg add "$add_label" \
+        'map(if .number == $number then .labels = ((.labels // []) + ($add | split(",")) | unique) else . end)' "$issues" >"$issues.new"
+      mv "$issues.new" "$issues"
+    fi
     ;;
   create)
     jq --arg title "$title" --rawfile body "$body_file" \
       '. + [{number: ((map(.number) | max // 0) + 1), title: $title, state: "open", body: $body}]' "$issues" >"$issues.new"
     mv "$issues.new" "$issues"
+    echo "https://example.com/owner/repo/issues/$(jq 'map(.number) | max' "$issues")"
     ;;
   close)
     if ! jq -e --argjson number "$number" 'any(.number == $number)' "$issues" >/dev/null; then
@@ -95,10 +110,15 @@ esac
 EOF
   chmod +x "${STUB_DIR}/bin/gh"
   echo '[]' >"${STUB_DIR}/issues.json"
+  echo '["bug", "configuration", "dependencies", "documentation", "security"]' >"${STUB_DIR}/labels.json"
 }
 
 given_github_issues() {
   echo "$1" >"${STUB_DIR}/issues.json"
+}
+
+given_github_labels() {
+  echo "$1" >"${STUB_DIR}/labels.json"
 }
 
 assert_github_issues() {
@@ -117,7 +137,7 @@ assert_github_issues() {
 
   assert_github_issues '[
     {"number": 22, "title": "chore(deps): 依存関係の更新状況", "state": "open", "body": "ダッシュボード"},
-    {"number": 23, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
+    {"number": 23, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n", "labels": ["documentation"]}
   ]'
 }
 
@@ -131,7 +151,7 @@ assert_github_issues() {
 
   assert_github_issues '[
     {"number": 22, "title": "chore(deps): 依存関係の更新状況", "state": "open", "body": "ダッシュボード"},
-    {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
+    {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n", "labels": ["documentation"]}
   ]'
 }
 
@@ -142,7 +162,7 @@ assert_github_issues() {
 
   assert_github_issues '[
     {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "closed", "body": "前回の結果"},
-    {"number": 186, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
+    {"number": 186, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n", "labels": ["documentation"]}
   ]'
 }
 
@@ -153,7 +173,7 @@ assert_github_issues() {
 
   assert_github_issues '[
     {"number": 190, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す（README）", "state": "open", "body": "手で立てた issue"},
-    {"number": 191, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
+    {"number": 191, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n", "labels": ["documentation"]}
   ]'
 }
 
@@ -167,7 +187,7 @@ assert_github_issues() {
 
   assert_github_issues '[
     {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前々回の結果"},
-    {"number": 190, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
+    {"number": 190, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n", "labels": ["documentation"]}
   ]'
 }
 
@@ -183,6 +203,37 @@ assert_github_issues() {
   run -1 "${script}" broken-links "${BATS_TEST_TMPDIR}/missing.md"
 
   assert_github_issues '[]'
+}
+
+@test "開いている issue を書き換えるとき、外されたラベルを付け直し、ほかのラベルは残す" {
+  given_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果", "labels": ["bug"]}]'
+
+  run -0 "${script}" broken-links "${report}"
+
+  assert_github_issues '[
+    {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n", "labels": ["bug", "documentation"]}
+  ]'
+}
+
+@test "ラベルが GitHub になければ、ラベルのない issue を作ってから失敗する" {
+  given_github_labels '["bug"]'
+
+  run -1 "${script}" broken-links "${report}"
+
+  assert_github_issues '[
+    {"number": 1, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
+  ]'
+}
+
+@test "ラベルが GitHub になければ、開いている issue の本文を書き換えてから失敗する" {
+  given_github_labels '["bug"]'
+  given_github_issues '[{"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"}]'
+
+  run -1 "${script}" broken-links "${report}"
+
+  assert_github_issues '[
+    {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "[外部リンクの定期検査](https://example.com/owner/repo/actions/runs/123) で、次のリンクが通りませんでした。\n\n* [404] <https://example.com/gone>\n"}
+  ]'
 }
 
 @test "検査が通ったとき（--resolved）、同じタイトルの開いている issue に実行の URL をコメントして、completed で閉じる" {
@@ -253,7 +304,7 @@ assert_github_issues() {
 
   assert_github_issues '[
     {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"},
-    {"number": 186, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "open", "body": "[GitHub の設定の定期検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。定義を直すか、`.github/scripts/sync-github-settings/sync-github-settings.sh` で GitHub を定義に揃えてください。\n\n```diff\nずれ: ラベル bug が GitHub にありません\n```\n"}
+    {"number": 186, "title": "chore: 定期検査で見つかった GitHub の設定と定義のずれを直す", "state": "open", "body": "[GitHub の設定の定期検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。定義を直すか、`.github/scripts/sync-github-settings/sync-github-settings.sh` で GitHub を定義に揃えてください。\n\n```diff\nずれ: ラベル bug が GitHub にありません\n```\n", "labels": ["configuration"]}
   ]'
 }
 
@@ -279,7 +330,7 @@ assert_github_issues() {
 
   assert_github_issues '[
     {"number": 185, "title": "docs: 外部リンクの定期検査で見つかったリンク切れを直す", "state": "open", "body": "前回の結果"},
-    {"number": 186, "title": "fix(golang): 定期検査で見つかった Go の脆弱性を直す", "state": "open", "body": "[Go の脆弱性の定期検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。Go の版か、脆弱性のあるモジュールを上げてください。\n\n```text\nVulnerability #1: GO-2026-0001\n```\n"}
+    {"number": 186, "title": "fix(golang): 定期検査で見つかった Go の脆弱性を直す", "state": "open", "body": "[Go の脆弱性の定期検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。Go の版か、脆弱性のあるモジュールを上げてください。\n\n```text\nVulnerability #1: GO-2026-0001\n```\n", "labels": ["dependencies", "security"]}
   ]'
 }
 
@@ -308,7 +359,7 @@ EOF
 
   assert_github_issues '[
     {"number": 185, "title": "fix(golang): 定期検査で見つかった Go の脆弱性を直す", "state": "open", "body": "前回の結果"},
-    {"number": 186, "title": "fix: main の依存関係の検査で見つかった脆弱性を直す", "state": "open", "body": "[main の依存関係の検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。脆弱性のあるパッケージを上げるか、すぐに上げられなければ、ロックファイルと同じディレクトリの `osv-scanner.toml` で理由と期限を付けて除外してください。\n\nCode scanning で開いているアラート:\n\n| アラート | 重大度 | パッケージ | 概要 | ファイル |\n| --- | --- | --- | --- | --- |\n| [CVE-2026-0001](https://example.com/alerts/1) | medium | glob@13.0.6 | glob の脆弱性 | .github/textlint/pnpm-lock.yaml |\n| [GHSA-dddd-eeee-ffff](https://example.com/alerts/2) | high | minimatch@10.2.6 | minimatch の脆弱性 | node/pnpm-lock.yaml |\n"}
+    {"number": 186, "title": "fix: main の依存関係の検査で見つかった脆弱性を直す", "state": "open", "body": "[main の依存関係の検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。脆弱性のあるパッケージを上げるか、すぐに上げられなければ、ロックファイルと同じディレクトリの `osv-scanner.toml` で理由と期限を付けて除外してください。\n\nCode scanning で開いているアラート:\n\n| アラート | 重大度 | パッケージ | 概要 | ファイル |\n| --- | --- | --- | --- | --- |\n| [CVE-2026-0001](https://example.com/alerts/1) | medium | glob@13.0.6 | glob の脆弱性 | .github/textlint/pnpm-lock.yaml |\n| [GHSA-dddd-eeee-ffff](https://example.com/alerts/2) | high | minimatch@10.2.6 | minimatch の脆弱性 | node/pnpm-lock.yaml |\n", "labels": ["dependencies", "security"]}
   ]'
 }
 
@@ -320,7 +371,7 @@ EOF
   run -0 "${script}" osv-scanner "${BATS_TEST_TMPDIR}/alerts.json"
 
   assert_github_issues '[
-    {"number": 1, "title": "fix: main の依存関係の検査で見つかった脆弱性を直す", "state": "open", "body": "[main の依存関係の検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。脆弱性のあるパッケージを上げるか、すぐに上げられなければ、ロックファイルと同じディレクトリの `osv-scanner.toml` で理由と期限を付けて除外してください。\n\nCode scanning で開いているアラート:\n\n| アラート | 重大度 | パッケージ | 概要 | ファイル |\n| --- | --- | --- | --- | --- |\n| [CVE-2026-0001](https://example.com/alerts/1) | medium | glob 13.0.6 に脆弱性がある | glob の脆弱性 | pnpm-lock.yaml |\n"}
+    {"number": 1, "title": "fix: main の依存関係の検査で見つかった脆弱性を直す", "state": "open", "body": "[main の依存関係の検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。脆弱性のあるパッケージを上げるか、すぐに上げられなければ、ロックファイルと同じディレクトリの `osv-scanner.toml` で理由と期限を付けて除外してください。\n\nCode scanning で開いているアラート:\n\n| アラート | 重大度 | パッケージ | 概要 | ファイル |\n| --- | --- | --- | --- | --- |\n| [CVE-2026-0001](https://example.com/alerts/1) | medium | glob 13.0.6 に脆弱性がある | glob の脆弱性 | pnpm-lock.yaml |\n", "labels": ["dependencies", "security"]}
   ]'
 }
 
@@ -332,7 +383,7 @@ EOF
   run -0 "${script}" osv-scanner "${BATS_TEST_TMPDIR}/alerts.json"
 
   assert_github_issues '[
-    {"number": 1, "title": "fix: main の依存関係の検査で見つかった脆弱性を直す", "state": "open", "body": "[main の依存関係の検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。脆弱性のあるパッケージを上げるか、すぐに上げられなければ、ロックファイルと同じディレクトリの `osv-scanner.toml` で理由と期限を付けて除外してください。\n\nCode scanning で開いているアラート:\n\n| アラート | 重大度 | パッケージ | 概要 | ファイル |\n| --- | --- | --- | --- | --- |\n| [CVE-2026-0001](https://example.com/alerts/1) | medium | glob@13.0.6 | a \\| b の脆弱性 | pnpm-lock.yaml |\n"}
+    {"number": 1, "title": "fix: main の依存関係の検査で見つかった脆弱性を直す", "state": "open", "body": "[main の依存関係の検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。脆弱性のあるパッケージを上げるか、すぐに上げられなければ、ロックファイルと同じディレクトリの `osv-scanner.toml` で理由と期限を付けて除外してください。\n\nCode scanning で開いているアラート:\n\n| アラート | 重大度 | パッケージ | 概要 | ファイル |\n| --- | --- | --- | --- | --- |\n| [CVE-2026-0001](https://example.com/alerts/1) | medium | glob@13.0.6 | a \\| b の脆弱性 | pnpm-lock.yaml |\n", "labels": ["dependencies", "security"]}
   ]'
 }
 
@@ -342,7 +393,7 @@ EOF
   run -0 "${script}" osv-scanner "${BATS_TEST_TMPDIR}/alerts.json"
 
   assert_github_issues '[
-    {"number": 1, "title": "fix: main の依存関係の検査で見つかった脆弱性を直す", "state": "open", "body": "[main の依存関係の検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。脆弱性のあるパッケージを上げるか、すぐに上げられなければ、ロックファイルと同じディレクトリの `osv-scanner.toml` で理由と期限を付けて除外してください。\n\nCode scanning で開いているアラート:\n\nなし。検査そのものが失敗していないか、実行のログを確認してください。\n"}
+    {"number": 1, "title": "fix: main の依存関係の検査で見つかった脆弱性を直す", "state": "open", "body": "[main の依存関係の検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。脆弱性のあるパッケージを上げるか、すぐに上げられなければ、ロックファイルと同じディレクトリの `osv-scanner.toml` で理由と期限を付けて除外してください。\n\nCode scanning で開いているアラート:\n\nなし。検査そのものが失敗していないか、実行のログを確認してください。\n", "labels": ["dependencies", "security"]}
   ]'
 }
 

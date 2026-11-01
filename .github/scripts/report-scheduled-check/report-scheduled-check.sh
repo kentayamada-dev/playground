@@ -19,9 +19,11 @@ fi
 # GITHUB_* は GitHub Actions が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定するため、:? で設定されている前提を示す
 run_url="${GITHUB_SERVER_URL:?}/${GITHUB_REPOSITORY:?}/actions/runs/${GITHUB_RUN_ID:?}"
 
+# labels に書くラベルは、.github/settings/labels.json にも定義する
 case ${check} in
 broken-links)
   title='docs: 外部リンクの定期検査で見つかったリンク切れを直す'
+  labels=documentation
   resolved_comment="[外部リンクの定期検査](${run_url}) で、すべてのリンクが通りました。"
   body="[外部リンクの定期検査](${run_url}) で、次のリンクが通りませんでした。
 
@@ -29,6 +31,7 @@ ${output}"
   ;;
 settings-drift)
   title='chore: 定期検査で見つかった GitHub の設定と定義のずれを直す'
+  labels=configuration
   resolved_comment="[GitHub の設定の定期検査](${run_url}) で、GitHub の設定が定義と一致しました。"
   body="[GitHub の設定の定期検査](${run_url}) が失敗しました。定義を直すか、\`.github/scripts/sync-github-settings/sync-github-settings.sh\` で GitHub を定義に揃えてください。
 
@@ -38,6 +41,7 @@ ${output}
   ;;
 govulncheck)
   title='fix(golang): 定期検査で見つかった Go の脆弱性を直す'
+  labels=dependencies,security
   resolved_comment="[Go の脆弱性の定期検査](${run_url}) で、脆弱性が見つからなくなりました。"
   body="[Go の脆弱性の定期検査](${run_url}) が失敗しました。Go の版か、脆弱性のあるモジュールを上げてください。
 
@@ -47,6 +51,7 @@ ${output}
   ;;
 osv-scanner)
   title='fix: main の依存関係の検査で見つかった脆弱性を直す'
+  labels=dependencies,security
   resolved_comment="[main の依存関係の検査](${run_url}) が通りました。"
   # 検査の出力は、Code scanning のアラートの JSON を 1 件ずつ並べたもの。
   # パッケージは OSV-Scanner のメッセージから取り出し、メッセージの形が違えばそのまま載せる。概要は rule.description から先頭の ID を除く
@@ -94,5 +99,9 @@ number=$(TITLE=${title} gh issue list --state open --limit 1000 --json number,ti
 if [[ -n ${number} ]]; then
   gh issue edit "${number}" --body-file - <<<"${body}"
 else
-  gh issue create --title "${title}" --body-file - <<<"${body}"
+  url=$(gh issue create --title "${title}" --body-file - <<<"${body}")
+  number=${url##*/}
 fi
+# --label を付けて作ると、ラベルが GitHub にないときに issue ごと作られず知らせが届かないため、作ったあとで付ける
+# https://github.com/cli/cli/blob/v2.102.0/pkg/cmd/issue/create/create.go#L460-L482 https://github.com/cli/cli/blob/v2.102.0/api/queries_repo.go#L809-L825
+gh issue edit "${number}" --add-label "${labels}"
