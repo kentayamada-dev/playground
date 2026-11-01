@@ -263,6 +263,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - 理由は、[`lychee.yml`](.github/workflows/lychee.yml) と `.github/lychee.toml` のコメントに書いている
 - HTTPS で開けるリンクを `http://` で書いていると、失敗する（`require_https`、[lychee.example.toml](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee.example.toml#L98-L99)）。PR の検査は `--offline` でネットワークを使わないため、この検査は効かない
 - 通らないリンクがあると、[`report-scheduled-check.sh`](.github/scripts/report-scheduled-check/report-scheduled-check.sh) が issue「docs: 外部リンクの定期検査で見つかったリンク切れを直す」を作る。開いていれば、本文を最新の結果に書き換える
+- issue には `documentation` ラベルを付ける
 - すべてのリンクが通ると、開いている issue に実行の URL をコメントして閉じる
 - リンクを直したら、次の検査を待つか、手動で実行して issue を閉じる
 
@@ -290,6 +291,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 | [`labels.json`](.github/settings/labels.json) | issue と PR のラベル | 名前が同じラベルの色と説明を更新し、なければ作成する。定義にないものは削除する |
 
 - 定義にないルールセットとラベルは、GitHub の画面で作ったものも削除される。消したラベルは issue や PR からも外れる。Organization のルールセットは対象外
+- 定期検査が issue に付けるラベルが GitHub になければ、issue を作ったあとでラベルを付けられずに失敗する
 - シークレットスキャンとプッシュ保護は、リポジトリの設定と同じ API で変えるため、`repository.json` の `security_and_analysis` に書く
 - CodeQL のデフォルトセットアップも毎回送る。設定が変わらなければ、新しい解析は始まらない（[#190](https://github.com/kentayamada-dev/playground/pull/190) で確認）
 - 環境変数 `GH_REPO` は使わない。どのディレクトリから実行しても、スクリプトはリポジトリのルートに移り、git の remote から反映先を決める
@@ -320,6 +322,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 [`settings-drift.yml`](.github/workflows/settings-drift.yml) が毎日これを実行し、ずれがあるか検査に失敗すると issue を作ります。開いている issue があれば、新しく作らずに本文を最新の結果に書き換えます。ずれは、定義を直すか、同期のコマンドで GitHub を定義に揃えて直します。直したあとの検査が通ると、開いている issue に実行の URL をコメントして閉じます。
 
 - 定義を変えた PR をマージしたら、同期のコマンドを実行する。実行し忘れると、次の検査で issue になる
+- issue には `configuration` ラベルを付ける
 
 #### 検査に使うトークン
 
@@ -377,10 +380,12 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
   - 標準ライブラリの脆弱性は、golang の Dev Container の Go の版で判定する。理由は、[`govulncheck.yml`](.github/workflows/govulncheck.yml) のコメントに書いている
   - テストのファイルと、Dev Container の Go のツールは検査しない
   - 脆弱性が見つかると、[`report-scheduled-check.sh`](.github/scripts/report-scheduled-check/report-scheduled-check.sh) が issue「fix(golang): 定期検査で見つかった Go の脆弱性を直す」を作る。開いていれば、本文を最新の結果に書き換え、見つからなくなると閉じる
+  - issue には `dependencies` と `security` のラベルを付ける
   - PR の検査にしない理由は、`govulncheck.yml` のコメントに書いている
 - `main` の `osv-scanner-full` が失敗すると、`osv-scanner-full-report` が issue を作る
   - issue のタイトルは「fix: main の依存関係の検査で見つかった脆弱性を直す」。作るのは [`report-scheduled-check.sh`](.github/scripts/report-scheduled-check/report-scheduled-check.sh)
   - 本文には、Code scanning で開いている OSV-Scanner のアラートを表にして載せる
+  - `dependencies` と `security` のラベルを付ける
   - 開いていれば、本文を最新の結果に書き換え、検査が通ると閉じる
   - 次の実行は、issue に触れない
     - `main` 以外のブランチでの手動実行
@@ -474,7 +479,7 @@ yamllint は Python のパッケージで、PyYAML と pathspec に依存しま�
 - [マージの条件](#マージの条件) のとおり `main` の最新を取り込む必要があるため、同じ実行で作った PR の 2 件目以降は、次の実行まで自動マージされない
 - 脆弱性アラートから作る PR は、公開後 14 日を待たずに作られる。minor・patch の更新なら、そのまま自動でマージされる（[Minimum Release Age](https://docs.renovatebot.com/key-concepts/minimum-release-age/)）。このとき Renovate は、`pnpm-workspace.yaml` の `minimumReleaseAgeExclude` に修正版を書き足す
   - 検証用ブランチで OSV の脆弱性情報から作らせた PR（[#141](https://github.com/kentayamada-dev/playground/pull/141)）で確認した
-- 更新の状況は、Dependency Dashboard の issue「chore(deps): 依存関係の更新状況」にまとまる
+- 更新の状況は、Dependency Dashboard の issue「chore(deps): 依存関係の更新状況」にまとまる。issue には `dependencies` ラベルを付ける
 
 ### トークンの準備
 
