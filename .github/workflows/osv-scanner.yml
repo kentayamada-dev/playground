@@ -61,7 +61,7 @@ jobs:
       security-events: read # issue の本文に、Code scanning で開いているアラートを載せるため
     env:
       report_script: .github/scripts/report-scheduled-check/report-scheduled-check.sh
-      report_name: osv-scanner.md
+      report_name: osv-scanner-alerts.json
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -70,9 +70,8 @@ jobs:
       # 検査をやり直すと、その間に OSV のデータが変わって Code scanning と食い違うことがあるため、osv-scanner-full が上げた結果を読む
       - if: needs.osv-scanner-full.result == 'failure'
         run: |
-          alerts=$(gh api --paginate "repos/{owner}/{repo}/code-scanning/alerts?tool_name=osv-scanner&ref=${GITHUB_REF}&state=open&per_page=100" \
-            --jq '.[] | "- [\(.rule.id)](\(.html_url)): \(.most_recent_instance.message.text)（\(.most_recent_instance.location.path)）"')
-          echo "${alerts:-なし。検査そのものが失敗していないか、実行のログを確認してください。}" >"$RUNNER_TEMP/$report_name"
+          gh api --paginate "repos/{owner}/{repo}/code-scanning/alerts?tool_name=osv-scanner&ref=${GITHUB_REF}&state=open&per_page=100" \
+            --jq '.[]' >"$RUNNER_TEMP/$report_name"
           "$report_script" osv-scanner "$RUNNER_TEMP/$report_name"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

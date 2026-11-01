@@ -48,11 +48,31 @@ ${output}
 osv-scanner)
   title='fix: main の依存関係の検査で見つかった脆弱性を直す'
   resolved_comment="[main の依存関係の検査](${run_url}) が通りました。"
+  # 検査の出力は、Code scanning のアラートの JSON を 1 件ずつ並べたもの。
+  # パッケージは OSV-Scanner のメッセージから取り出し、メッセージの形が違えばそのまま載せる。概要は rule.description から先頭の ID を除く
+  # https://github.com/google/osv-scanner/blob/v2.7.0/internal/output/sarif.go#L279-L298 https://github.com/google/osv-scanner/blob/v2.7.0/internal/output/sarif.go#L356-L363
+  # shellcheck disable=SC2016 # $alert と $package_pattern は jq の変数で、シェルに展開させない
+  alerts=$(jq -rs --arg package_pattern "^Package '(?<package>[^']+)'" '
+    # セルの中の | で列が分かれないようにする
+    def cell: gsub("\\|"; "\\|");
+    if length == 0 then
+      "なし。検査そのものが失敗していないか、実行のログを確認してください。"
+    else
+      "| アラート | 重大度 | パッケージ | 概要 | ファイル |",
+      "| --- | --- | --- | --- | --- |",
+      (.[] | . as $alert | [
+        "[\(.rule.id)](\(.html_url))",
+        (.rule.security_severity_level // ""),
+        (.most_recent_instance.message.text | capture($package_pattern).package // .),
+        (.rule.description | ltrimstr("\($alert.rule.id): ")),
+        .most_recent_instance.location.path
+      ] | map(cell) | "| \(join(" | ")) |")
+    end' <<<"${output}")
   body="[main の依存関係の検査](${run_url}) が失敗しました。脆弱性のあるパッケージを上げるか、すぐに上げられなければ、ロックファイルと同じディレクトリの \`osv-scanner.toml\` で理由と期限を付けて除外してください。
 
 Code scanning で開いているアラート:
 
-${output}"
+${alerts}"
   ;;
 *)
   echo "${usage}" >&2
