@@ -24,7 +24,7 @@ Renovate が作った依存更新の PR を、リリースノートと影響を�
    一覧は次のコマンドで取得し、自動マージを予約済みの PR と、`headRefName` が `renovate/` で始まらない PR を除く
 
    ```bash
-   gh pr list --label dependencies --state open --json number,title,headRefName,autoMergeRequest --jq 'map(select(.autoMergeRequest == null and (.headRefName | startswith("renovate/"))))'
+   gh pr list --label dependencies --state open --limit 100 --json number,title,headRefName,autoMergeRequest --jq 'map(select(.autoMergeRequest == null and (.headRefName | startswith("renovate/"))))'
    ```
 
    一覧が空なら、確認する PR がないことを伝えて終了する。
@@ -67,7 +67,7 @@ Renovate が作った依存更新の PR を、リリースノートと影響を�
   - `gh run view <run_id> --job <job_id> --log` で、新版が入って動いたことをログで確認する（npm なら `+ <パッケージ> <新版>` の行）
   - ログは長く、出力がファイルに保存されることがある。保存先は Bash からは読めないことがあるため、Read ツールで読む
 
-main との差は確認しない。必須チェックは、main の最新を取り込んだ状態で通す必要がある。
+main との差は確認しない。main のルールセットは、PR のブランチが main の最新を含むことを求める。
 
 ## 5. PR にコメントする
 

@@ -22,9 +22,16 @@ description: このリポジトリの規約に沿って PR を作成・更新す
 
 <!-- textlint-enable ja-technical-writing/no-exclamation-question-mark -->
 
+<!--
+埋め込んだ出力はコードブロックに入らず、先頭行の「## <ブランチ>」が見出しになるため、外側のコードブロックで囲む
+https://code.claude.com/docs/en/skills#inject-dynamic-context
+-->
+
+````text
 ```!
 git status -sb
 ```
+````
 
 1. 現在のブランチが `main` なら、作業ブランチを切るよう伝えて終了する
 2. `git status -sb` の先頭行で upstream の有無と `ahead` を確認する。upstream がない、または `ahead` があれば、push が必要なことを伝えて終了する
