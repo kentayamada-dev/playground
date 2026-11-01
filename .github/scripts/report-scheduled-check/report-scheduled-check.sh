@@ -54,7 +54,7 @@ osv-scanner)
   # shellcheck disable=SC2016 # $alert と $package_pattern は jq の変数で、シェルに展開させない
   alerts=$(jq -rs --arg package_pattern "^Package '(?<package>[^']+)'" '
     # セルの中の | で列が分かれないようにする
-    def cell: gsub("\\|"; "\\|");
+    def cell: .;
     if length == 0 then
       "なし。検査そのものが失敗していないか、実行のログを確認してください。"
     else
@@ -64,7 +64,7 @@ osv-scanner)
         "[\(.rule.id)](\(.html_url))",
         (.rule.security_severity_level // ""),
         (.most_recent_instance.message.text | capture($package_pattern).package // .),
-        .rule.description,
+        (.rule.description | ltrimstr("\($alert.rule.id): ")),
         .most_recent_instance.location.path
       ] | map(cell) | "| \(join(" | ")) |")
     end' <<<"${output}")
