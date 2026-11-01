@@ -298,14 +298,14 @@ assert_github_issues() {
 }
 
 @test "osv-scanner では、脆弱性の issue を、検査の出力をそのまま入れた本文で作る" {
-  echo '- [CVE-2026-0001](https://example.com/alerts/1): glob@13.0.6（`pnpm-lock.yaml`）' >"${BATS_TEST_TMPDIR}/osv-scanner.md"
+  echo '- [CVE-2026-0001](https://example.com/alerts/1): glob@13.0.6（pnpm-lock.yaml）' >"${BATS_TEST_TMPDIR}/osv-scanner.md"
   given_github_issues '[{"number": 185, "title": "fix(golang): 定期検査で見つかった Go の脆弱性を直す", "state": "open", "body": "前回の結果"}]'
 
   run -0 "${script}" osv-scanner "${BATS_TEST_TMPDIR}/osv-scanner.md"
 
   assert_github_issues '[
     {"number": 185, "title": "fix(golang): 定期検査で見つかった Go の脆弱性を直す", "state": "open", "body": "前回の結果"},
-    {"number": 186, "title": "fix: main の依存関係の検査で見つかった脆弱性を直す", "state": "open", "body": "[main の依存関係の検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。脆弱性のあるパッケージを上げるか、すぐに上げられなければ、ロックファイルと同じディレクトリの `osv-scanner.toml` で理由と期限を付けて除外してください。\n\nCode scanning で開いているアラート:\n\n- [CVE-2026-0001](https://example.com/alerts/1): glob@13.0.6（`pnpm-lock.yaml`）\n"}
+    {"number": 186, "title": "fix: main の依存関係の検査で見つかった脆弱性を直す", "state": "open", "body": "[main の依存関係の検査](https://example.com/owner/repo/actions/runs/123) が失敗しました。脆弱性のあるパッケージを上げるか、すぐに上げられなければ、ロックファイルと同じディレクトリの `osv-scanner.toml` で理由と期限を付けて除外してください。\n\nCode scanning で開いているアラート:\n\n- [CVE-2026-0001](https://example.com/alerts/1): glob@13.0.6（pnpm-lock.yaml）\n"}
   ]'
 }
 

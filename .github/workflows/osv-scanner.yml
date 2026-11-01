@@ -71,7 +71,7 @@ jobs:
       - if: needs.osv-scanner-full.result == 'failure'
         run: |
           alerts=$(gh api --paginate "repos/{owner}/{repo}/code-scanning/alerts?tool_name=osv-scanner&ref=${GITHUB_REF}&state=open&per_page=100" \
-            --jq '.[] | "- [\(.rule.id)](\(.html_url)): \(.most_recent_instance.message.text)（`\(.most_recent_instance.location.path)`）"')
+            --jq '.[] | "- [\(.rule.id)](\(.html_url)): \(.most_recent_instance.message.text)（\(.most_recent_instance.location.path)）"')
           echo "${alerts:-なし。検査そのものが失敗していないか、実行のログを確認してください。}" >"$RUNNER_TEMP/$report_name"
           "$report_script" osv-scanner "$RUNNER_TEMP/$report_name"
         env:
