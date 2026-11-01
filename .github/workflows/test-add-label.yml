@@ -1,0 +1,25 @@
+name: test-add-label
+
+# 検証用。GITHUB_TOKEN（issues: write）で、report-scheduled-check.sh が issue にラベルを付けられるかを確かめる。マージしない
+on:
+  pull_request:
+
+permissions: {}
+
+jobs:
+  test-add-label:
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: |
+          echo '検証用: GITHUB_TOKEN で gh issue edit --add-label が効くかの確認（#407）。確認したら閉じる' >"$RUNNER_TEMP/report.txt"
+          .github/scripts/report-scheduled-check/report-scheduled-check.sh govulncheck "$RUNNER_TEMP/report.txt"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
