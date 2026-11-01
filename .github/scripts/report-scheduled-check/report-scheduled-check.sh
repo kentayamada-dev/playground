@@ -46,7 +46,7 @@ ${output}
 \`\`\`"
   ;;
 osv-scanner)
-  title='fix: main の依存関係の検査で見つかった脆弱性を直す'
+  title='fix: 依存関係の検査で見つかった脆弱性を直す'
   resolved_comment="[main の依存関係の検査](${run_url}) が通りました。"
   body="[main の依存関係の検査](${run_url}) が失敗しました。脆弱性のあるパッケージを上げるか、すぐに上げられなければ、ロックファイルと同じディレクトリの \`osv-scanner.toml\` で理由と期限を付けて除外してください。
 
