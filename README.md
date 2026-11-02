@@ -297,7 +297,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 - シークレットスキャンとプッシュ保護は、リポジトリの設定と同じ API で変えるため、`repository.json` の `security_and_analysis` に書く
 - CodeQL のデフォルトセットアップも毎回送る。設定が変わらなければ、新しい解析は始まらない（[#190](https://github.com/kentayamada-dev/playground/pull/190) で確認）
 - 環境変数 `GH_REPO` は使わない。どのディレクトリから実行しても、スクリプトはリポジトリのルートに移り、git の remote から反映先を決める
-- [`renovate-app.json`](.github/settings/renovate-app.json) は反映も検査もしない。Renovate の GitHub App を作るときだけ使う。詳しくは [GitHub App の準備](#github-app-の準備)
+- [`renovate-app.json`](.github/settings/renovate-app.json) は、反映と検査の対象外。Renovate の GitHub App を作るときだけ使う。詳しくは [GitHub App の準備](#github-app-の準備)
 
 ### 実行に必要な権限
 
