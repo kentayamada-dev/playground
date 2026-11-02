@@ -297,6 +297,7 @@ GitHub の設定は [`.github/settings`](.github/settings) に JSON で定義し
 - シークレットスキャンとプッシュ保護は、リポジトリの設定と同じ API で変えるため、`repository.json` の `security_and_analysis` に書く
 - CodeQL のデフォルトセットアップも毎回送る。設定が変わらなければ、新しい解析は始まらない（[#190](https://github.com/kentayamada-dev/playground/pull/190) で確認）
 - 環境変数 `GH_REPO` は使わない。どのディレクトリから実行しても、スクリプトはリポジトリのルートに移り、git の remote から反映先を決める
+- [`renovate-app.json`](.github/settings/renovate-app.json) は反映も検査もしない。Renovate の GitHub App を作るときだけ使う。詳しくは [GitHub App の準備](#github-app-の準備)
 
 ### 実行に必要な権限
 
@@ -487,13 +488,13 @@ yamllint は Python のパッケージで、PyYAML と pathspec に依存しま�
 
 Renovate は、GitHub App のトークンで操作します。App のトークンで動かすと、Renovate のコミットに GitHub が署名します。理由は [`renovate.yml`](.github/workflows/renovate.yml) のコメントに書いています。
 
-App は、次のコマンドで作ります。macOS で実行し、`gh` と `jq` が必要です。
+App の設定は、[`renovate-app.json`](.github/settings/renovate-app.json) に [マニフェスト](https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-from-a-manifest) として定義します。App は、次のコマンドでこの定義から作ります。macOS で実行し、`gh` と `jq` が必要です。
 
 ```bash
 .github/scripts/create-renovate-app/create-renovate-app.sh
 ```
 
-1. ブラウザで App の作成画面が開く。App の名前は `<リポジトリの持ち主>-renovate` になる。ほかの App と重なるときは、画面で書き換える
+1. ブラウザで App の作成画面が開く。App の名前は `renovate-app.json` の `name` になる。ほかの App と重なるときは、画面で書き換える
 2. 「Create GitHub App」を押すと、リポジトリのページに移る。アドレスバーの URL をコピーして、ターミナルに貼り付ける
 3. スクリプトが、App の秘密鍵を secret `RENOVATE_APP_PRIVATE_KEY` に、Client ID を変数 `RENOVATE_APP_CLIENT_ID` に登録する。秘密鍵はファイルに保存しない
 4. ブラウザで App のインストール画面が開く。Only select repositories でこのリポジトリを選んで、インストールする
@@ -501,8 +502,11 @@ App は、次のコマンドで作ります。macOS で実行し、`gh` と `jq`
 - 貼り付ける URL の `code` は、1 時間で期限が切れる。切れたら、もう一度実行する
 - 登録に失敗したら、スクリプトが示す手順で登録し直す
 - 環境変数 `GH_REPO` は使わない。スクリプトはリポジトリのルートに移り、git の remote から登録先を決める
+- `renovate-app.json` は App を作るときだけ使う。作ったあとに変えたときは、App の設定画面でも同じように変える
+- `redirect_url` はリポジトリのページにしている。`code` を受け取るサーバーを立てずに、移った先の URL を貼り付けて渡すため
+- Webhook は使わないため、`hook_attributes.active` を `false` にしている
 
-App には、Repository permissions を次の表のとおりに与えます。ワークフローで作るトークンにも、同じ権限だけを与えます。
+App には、Repository permissions を次の表のとおりに与えます（`renovate-app.json` の `default_permissions`）。ワークフローで作るトークンにも、同じ権限だけを与えます。権限を変えるときは、`renovate-app.json`・[`renovate.yml`](.github/workflows/renovate.yml) の `permission-*`・この表を合わせて変えます。
 
 | Permission | Access | 用途 |
 | --- | --- | --- |

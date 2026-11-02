@@ -12,6 +12,8 @@ setup() {
   script="${repo}/.github/scripts/create-renovate-app/create-renovate-app.sh"
   # shellcheck disable=SC2154 # BATS_TEST_DIRNAME は bats が設定する。ShellCheck の check-unassigned-uppercase は未代入と判定する
   cp "${BATS_TEST_DIRNAME}/create-renovate-app.sh" "${script}"
+  mkdir -p "${repo}/.github/settings"
+  echo '{"name": "kentayamada-dev-renovate"}' >"${repo}/.github/settings/renovate-app.json"
 
   # gh の偽物。GitHub 上の状態を $STUB_DIR 配下のファイルとして読み書きする
   export STUB_DIR="${BATS_TEST_TMPDIR}/stub"
@@ -110,31 +112,40 @@ path_without() {
   [[ ${output} == *"kentayamada-dev/playground を選んで"* ]]
 }
 
-@test "個人の設定画面に、リポジトリに戻る非公開の App のマニフェストを送るフォームを開く" {
+@test "renovate-app.json をそのままマニフェストにして、個人の設定画面に送るフォームを開く" {
+  # フォームの value 属性で意味を持つ " と & を含めて、エスケープを確かめる
+  cat >"${repo}/.github/settings/renovate-app.json" <<'EOF'
+{
+  "name": "kentayamada-dev-renovate",
+  "description": "<b>\"A\" & B</b>",
+  "default_permissions": {"contents": "write"},
+  "default_events": []
+}
+EOF
+
   run -0 "${script}" <<<"https://github.com/kentayamada-dev/playground?code=abc123"
 
   grep -qF '<form action="https://github.com/settings/apps/new" method="post">' "${STUB_DIR}/form.html"
   manifest=$(submitted_manifest)
   if ! jq -e '. == {
     name: "kentayamada-dev-renovate",
-    url: "https://github.com/kentayamada-dev/playground",
-    hook_attributes: {url: "https://github.com/kentayamada-dev/playground", active: false},
-    redirect_url: "https://github.com/kentayamada-dev/playground",
-    public: false,
-    default_permissions: {
-      contents: "write",
-      issues: "write",
-      metadata: "read",
-      pull_requests: "write",
-      statuses: "write",
-      vulnerability_alerts: "read",
-      workflows: "write"
-    },
+    description: "<b>\"A\" & B</b>",
+    default_permissions: {contents: "write"},
     default_events: []
   }' <<<"${manifest}" >/dev/null; then
     echo "送ったマニフェスト: ${manifest}"
     return 1
   fi
+}
+
+@test "renovate-app.json を読めなければ、GitHub に問い合わせず、ブラウザを開かずに失敗する" {
+  echo '{"name":' >"${repo}/.github/settings/renovate-app.json"
+
+  run -1 "${script}" <<<"https://github.com/kentayamada-dev/playground?code=abc123"
+
+  [[ ${output} == *"エラー: .github/settings/renovate-app.json を読めませんでした"* ]]
+  [[ ! -e "${STUB_DIR}/gh.pwd" ]]
+  [[ ! -s "${STUB_DIR}/opened" ]]
 }
 
 @test "code がクエリの 2 つ目以降にあっても読み取る" {

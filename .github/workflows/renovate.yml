@@ -28,7 +28,7 @@ jobs:
           # 変数とシークレットの名前を変えるときは、create-renovate-app.sh も合わせる
           client-id: ${{ vars.RENOVATE_APP_CLIENT_ID }}
           private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
-          # App にない権限を求めるとトークンを作れないため、権限を足すときは create-renovate-app.sh の App の権限にも足す
+          # App にない権限を求めるとトークンを作れないため、権限を足すときは renovate-app.json の default_permissions にも足す
           # https://github.com/actions/create-github-app-token/blob/v3.3.0/README.md
           permission-contents: write
           permission-issues: write

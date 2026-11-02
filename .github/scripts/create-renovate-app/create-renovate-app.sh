@@ -22,36 +22,21 @@ done
 unset GH_REPO
 cd "$(dirname "$0")/../../.."
 
-repository=$(gh api 'repos/{owner}/{repo}')
-repository_name=$(jq -r .full_name <<<"${repository}")
-repository_url=$(jq -r .html_url <<<"${repository}")
-owner=$(jq -r .owner.login <<<"${repository}")
+manifest_file=.github/settings/renovate-app.json
 settings_url=https://github.com/settings
 
-# 権限を変えるときは、renovate.yml の permission-* と README の表も合わせる
-# redirect_url は、code を受け取るサーバーを立てずに済むよう GitHub のページにし、移った先の URL を貼り付けてもらう
-# https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-from-a-manifest
-manifest_html=$(jq -nr --arg name "${owner}-renovate" --arg url "${repository_url}" '{
-  name: $name,
-  url: $url,
-  hook_attributes: {url: $url, active: false},
-  redirect_url: $url,
-  public: false,
-  default_permissions: {
-    contents: "write",
-    issues: "write",
-    metadata: "read",
-    pull_requests: "write",
-    statuses: "write",
-    vulnerability_alerts: "read",
-    workflows: "write"
-  },
-  default_events: []
-} | tojson | @html')
+if ! manifest_html=$(jq -r 'tojson | @html' "${manifest_file}"); then
+  echo "エラー: ${manifest_file} を読めませんでした" >&2
+  exit 1
+fi
+
+repository=$(gh api 'repos/{owner}/{repo}')
+repository_name=$(jq -r .full_name <<<"${repository}")
 
 form_dir=$(mktemp -d)
 trap 'rm -rf "${form_dir}"' EXIT
 # GitHub はマニフェストをフォームの POST で受け取るため、開くとすぐに送信するフォームを作る
+# https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-from-a-manifest
 cat >"${form_dir}/form.html" <<EOF
 <!doctype html>
 <meta charset="utf-8">
