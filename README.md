@@ -85,6 +85,8 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 - マージは squash だけで、PR タイトルがそのままコミットのタイトルになる（[`repository.json`](.github/settings/repository.json)）。マージの画面や `gh pr merge --subject` で書き換えたタイトルは検査しない
 - 必須チェックは、`main` の最新を取り込んだ状態で通す必要がある。`main` が先に進んだら、PR のブランチに取り込んでから検査し直す
 - 必須チェックのほかに、CodeQL のアラートがあってもマージできない。詳しくは [CodeQL](#codeql)
+- PR のコミットには、すべて GitHub で Verified になる署名（GPG・SSH・S/MIME）が要る。署名のないコミットが 1 つでもあると、squash でもマージできない（[Require signed commits](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#require-signed-commits)）
+- Renovate のコミットには GitHub が署名する。詳しくは [GitHub App の準備](#github-app-の準備)
 
 ### 検査する範囲
 
@@ -481,9 +483,26 @@ yamllint は Python のパッケージで、PyYAML と pathspec に依存しま�
   - 検証用ブランチで OSV の脆弱性情報から作らせた PR（[#141](https://github.com/kentayamada-dev/playground/pull/141)）で確認した
 - 更新の状況は、Dependency Dashboard の issue「chore(deps): 依存関係の更新状況」にまとまる。issue には `dependencies` ラベルを付ける
 
-### トークンの準備
+### GitHub App の準備
 
-Renovate は、リポジトリの secret `RENOVATE_TOKEN` に登録した Fine-grained personal access token で操作します。トークンは [トークンの作り方](#トークンの作り方) のとおりに作り、Repository permissions を次の表のとおりに設定します。
+Renovate は、GitHub App のトークンで操作します。App のトークンで動かすと、Renovate のコミットに GitHub が署名します。理由は [`renovate.yml`](.github/workflows/renovate.yml) のコメントに書いています。
+
+App は、次のコマンドで作ります。macOS で実行し、`gh` と `jq` が必要です。
+
+```bash
+.github/scripts/create-renovate-app/create-renovate-app.sh
+```
+
+1. ブラウザで App の作成画面が開く。App の名前は `<リポジトリの持ち主>-renovate` になる。ほかの App と重なるときは、画面で書き換える
+2. 「Create GitHub App」を押すと、リポジトリのページに移る。アドレスバーの URL をコピーして、ターミナルに貼り付ける
+3. スクリプトが、App の秘密鍵を secret `RENOVATE_APP_PRIVATE_KEY` に、Client ID を変数 `RENOVATE_APP_CLIENT_ID` に登録する。秘密鍵はファイルに保存しない
+4. ブラウザで App のインストール画面が開く。Only select repositories でこのリポジトリを選んで、インストールする
+
+- 貼り付ける URL の `code` は、1 時間で期限が切れる。切れたら、もう一度実行する
+- 登録に失敗したら、スクリプトが示す手順で登録し直す
+- 環境変数 `GH_REPO` は使わない。スクリプトはリポジトリのルートに移り、git の remote から登録先を決める
+
+App には、Repository permissions を次の表のとおりに与えます。ワークフローで作るトークンにも、同じ権限だけを与えます。
 
 | Permission | Access | 用途 |
 | --- | --- | --- |
@@ -495,22 +514,18 @@ Renovate は、リポジトリの secret `RENOVATE_TOKEN` に登録した Fine-g
 | Dependabot alerts | Read-only | 脆弱性アラートの読み取り。アラートがあると、Renovate が脆弱性を直す PR を作る |
 | Metadata | Read-only | 自動で付く（必須） |
 
-権限の一覧は [Renovate のドキュメント](https://docs.renovatebot.com/modules/platform/github/) に従っています。作成したトークンは、次のコマンドで secret に登録します。
-
-```bash
-gh secret set RENOVATE_TOKEN --repo kentayamada-dev/playground
-```
+権限は [Renovate のドキュメント](https://docs.renovatebot.com/modules/platform/github/) から選んでいます。ドキュメントが App に挙げる権限のうち、Administration・Checks・Merge queues・Members は与えていません。
 
 ## トークンの作り方
 
-[定義とのずれの検査](#検査に使うトークン) と [Renovate](#トークンの準備) が使う Fine-grained personal access token は、[作成画面](https://github.com/settings/personal-access-tokens/new) で次のように作ります。
+[定義とのずれの検査](#検査に使うトークン) が使う Fine-grained personal access token は、[作成画面](https://github.com/settings/personal-access-tokens/new) で次のように作ります。
 
 | 項目 | 設定する値 |
 | --- | --- |
-| Token name | 任意（例: `settings-read-playground`・`renovate-playground`） |
+| Token name | 任意（例: `settings-read-playground`） |
 | Description | 任意 |
 | Resource owner | `kentayamada-dev` |
-| Expiration | 任意。期限が切れると、定義とのずれの検査は失敗して issue が作られ、Renovate は実行が失敗する |
+| Expiration | 任意。期限が切れると、定義とのずれの検査は失敗して issue が作られる |
 | Repository access | Only select repositories で `kentayamada-dev/playground` を選ぶ |
-| Repository permissions | それぞれの節の表のとおりに設定し、ほかは No access のままにする |
+| Repository permissions | [検査に使うトークン](#検査に使うトークン) の表のとおりに設定し、ほかは No access のままにする |
 | Account permissions | すべて No access のままにする |
