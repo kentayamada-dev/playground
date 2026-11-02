@@ -49,6 +49,3 @@ jobs:
           # Docker Hub は未ログインだと 1000 件目より先を返さない。超えて失敗すると公開時刻のないタグ一覧に切り替わり、minimumReleaseAge の待ちが明けなくなる
           # https://github.com/renovatebot/renovate/blob/44.151.1/lib/modules/datasource/docker/index.ts#L1157-L1175
           RENOVATE_DOCKER_MAX_PAGES: 10
-          # 動かすアカウントを PAT の持ち主から App に替えたため、前のアカウントが作った PR と Dependency Dashboard の issue も探させる。App が引き継いだら外す
-          # https://github.com/renovatebot/renovate/blob/44.167.1/docs/usage/self-hosted-configuration.md#ignoreprauthor
-          RENOVATE_IGNORE_PR_AUTHOR: true
