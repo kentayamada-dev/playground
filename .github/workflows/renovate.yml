@@ -25,10 +25,10 @@ jobs:
       - id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
-          # 変数とシークレットの名前を変えるときは、README の登録のコマンドも合わせる
+          # 変数とシークレットの名前を変えるときは、create-renovate-app.sh も合わせる
           client-id: ${{ vars.RENOVATE_APP_CLIENT_ID }}
           private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
-          # App にない権限を求めるとトークンを作れないため、権限を足すときは App の設定と README の権限の表にも足す
+          # App にない権限を求めるとトークンを作れないため、権限を足すときは create-renovate-app.sh の App の権限にも足す
           # https://github.com/actions/create-github-app-token/blob/v3.3.0/README.md
           permission-contents: write
           permission-issues: write
