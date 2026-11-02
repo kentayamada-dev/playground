@@ -492,7 +492,7 @@ App は、次の手順で用意します。
 1. [GitHub App の登録](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app) の手順で、次の 2 つの表のとおりに App を作る
 2. App の設定画面に表示される Client ID を、リポジトリの変数 `RENOVATE_APP_CLIENT_ID` に登録する
 3. [秘密鍵を作り](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps)、ダウンロードした PEM ファイルを secret `RENOVATE_APP_PRIVATE_KEY` に登録する。登録したら、PEM ファイルは削除する
-4. [App をインストール](https://docs.github.com/en/apps/using-github-apps/installing-your-own-github-app)し、Only select repositories で `kentayamada-dev/playground` を選ぶ
+4. [App のインストール](https://docs.github.com/en/apps/using-github-apps/installing-your-own-github-app) の手順で、Only select repositories から `kentayamada-dev/playground` を選んでインストールする
 
 | 項目 | 設定する値 |
 | --- | --- |
@@ -500,8 +500,8 @@ App は、次の手順で用意します。
 | Homepage URL | `https://github.com/kentayamada-dev/playground` |
 | Webhook の Active | 外す。Renovate は定期実行で動き、Webhook を受け取らない |
 | Permissions | 次の表の Repository permissions を与え、ほかは No access のままにする |
-| Where can this GitHub App be installed? | Only on this account |
-| そのほかの項目 | 既定のまま |
+| `Where can this GitHub App be installed?` | Only on this account |
+| そのほかの項目 | デフォルトのまま |
 
 ワークフローで作るトークンにも、次の表と同じ権限だけを与えます。
 
