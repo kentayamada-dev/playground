@@ -110,7 +110,7 @@ path_without() {
   [[ ${output} == *"kentayamada-dev/playground を選んで"* ]]
 }
 
-@test "個人のリポジトリなら、個人の設定画面に、リポジトリに戻る非公開の App のマニフェストを送るフォームを開く" {
+@test "個人の設定画面に、リポジトリに戻る非公開の App のマニフェストを送るフォームを開く" {
   run -0 "${script}" <<<"https://github.com/kentayamada-dev/playground?code=abc123"
 
   grep -qF '<form action="https://github.com/settings/apps/new" method="post">' "${STUB_DIR}/form.html"
@@ -135,14 +135,6 @@ path_without() {
     echo "送ったマニフェスト: ${manifest}"
     return 1
   fi
-}
-
-@test "Organization のリポジトリなら、Organization の設定画面にマニフェストを送る" {
-  echo '{"full_name": "acme/app", "html_url": "https://github.com/acme/app", "owner": {"login": "acme", "type": "Organization"}}' >"${STUB_DIR}/repository.json"
-
-  run -0 "${script}" <<<"https://github.com/acme/app?code=abc123"
-
-  grep -qF '<form action="https://github.com/organizations/acme/settings/apps/new" method="post">' "${STUB_DIR}/form.html"
 }
 
 @test "code がクエリの 2 つ目以降にあっても読み取る" {

@@ -26,12 +26,7 @@ repository=$(gh api 'repos/{owner}/{repo}')
 repository_name=$(jq -r .full_name <<<"${repository}")
 repository_url=$(jq -r .html_url <<<"${repository}")
 owner=$(jq -r .owner.login <<<"${repository}")
-owner_type=$(jq -r .owner.type <<<"${repository}")
-if [[ ${owner_type} == Organization ]]; then
-  settings_url="https://github.com/organizations/${owner}/settings"
-else
-  settings_url=https://github.com/settings
-fi
+settings_url=https://github.com/settings
 
 # 権限を変えるときは、renovate.yml の permission-* と README の表も合わせる
 # redirect_url は、code を受け取るサーバーを立てずに済むよう GitHub のページにし、移った先の URL を貼り付けてもらう
