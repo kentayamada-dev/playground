@@ -487,34 +487,45 @@ yamllint は Python のパッケージで、PyYAML と pathspec に依存しま�
 
 Renovate は、GitHub App のトークンで操作します。App のトークンで動かすと、Renovate のコミットに GitHub が署名します。理由は [`renovate.yml`](.github/workflows/renovate.yml) のコメントに書いています。
 
-App は、次のコマンドで作ります。macOS で実行し、`gh` と `jq` が必要です。
+App は、次の手順で用意します。
 
-```bash
-.github/scripts/create-renovate-app/create-renovate-app.sh
-```
+1. [GitHub App の登録](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app) の手順で、次の 2 つの表のとおりに App を作る
+2. App の設定画面に表示される Client ID を、リポジトリの変数 `RENOVATE_APP_CLIENT_ID` に登録する
+3. [秘密鍵を作り](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps)、ダウンロードした PEM ファイルを secret `RENOVATE_APP_PRIVATE_KEY` に登録する。登録したら、PEM ファイルは削除する
+4. [App をインストール](https://docs.github.com/en/apps/using-github-apps/installing-your-own-github-app)し、Only select repositories で `kentayamada-dev/playground` を選ぶ
 
-1. ブラウザで App の作成画面が開く。App の名前は `<リポジトリの持ち主>-renovate` になる。ほかの App と重なるときは、画面で書き換える
-2. 「Create GitHub App」を押すと、リポジトリのページに移る。アドレスバーの URL をコピーして、ターミナルに貼り付ける
-3. スクリプトが、App の秘密鍵を secret `RENOVATE_APP_PRIVATE_KEY` に、Client ID を変数 `RENOVATE_APP_CLIENT_ID` に登録する。秘密鍵はファイルに保存しない
-4. ブラウザで App のインストール画面が開く。Only select repositories でこのリポジトリを選んで、インストールする
+| 項目 | 設定する値 |
+| --- | --- |
+| GitHub App name | 任意。34 文字までで、GitHub のほかの App と重ならない名前にする |
+| Homepage URL | `https://github.com/kentayamada-dev/playground` |
+| Webhook の Active | 外す。Renovate は定期実行で動き、Webhook を受け取らない |
+| Permissions | 次の表の Repository permissions を与え、ほかは No access のままにする |
+| Where can this GitHub App be installed? | Only on this account |
+| そのほかの項目 | 既定のまま |
 
-- 貼り付ける URL の `code` は、1 時間で期限が切れる。切れたら、もう一度実行する
-- 登録に失敗したら、スクリプトが示す手順で登録し直す
-- 環境変数 `GH_REPO` は使わない。スクリプトはリポジトリのルートに移り、git の remote から登録先を決める
-
-App には、Repository permissions を次の表のとおりに与えます。ワークフローで作るトークンにも、同じ権限だけを与えます。
+ワークフローで作るトークンにも、次の表と同じ権限だけを与えます。
 
 | Permission | Access | 用途 |
 | --- | --- | --- |
-| Contents | Read and write | リポジトリの取得と、更新用ブランチの push |
-| Pull requests | Read and write | 更新 PR の作成・更新と、自動マージの有効化 |
-| Issues | Read and write | Dependency Dashboard の issue の作成・更新 |
-| Commit statuses | Read and write | `renovate/stability-days` など、Renovate 自身のステータスの書き込み |
-| Workflows | Read and write | `.github/workflows` 配下のファイルの更新 |
+| Contents | Read & write | リポジトリの取得と、更新用ブランチの push |
+| Pull requests | Read & write | 更新 PR の作成・更新と、自動マージの有効化 |
+| Issues | Read & write | Dependency Dashboard の issue の作成・更新 |
+| Commit statuses | Read & write | `renovate/stability-days` など、Renovate 自身のステータスの書き込み |
+| Workflows | Read & write | `.github/workflows` 配下のファイルの更新 |
 | Dependabot alerts | Read-only | 脆弱性アラートの読み取り。アラートがあると、Renovate が脆弱性を直す PR を作る |
 | Metadata | Read-only | 自動で付く（必須） |
 
 権限は [Renovate のドキュメント](https://docs.renovatebot.com/modules/platform/github/) から選んでいます。ドキュメントが App に挙げる権限のうち、Administration・Checks・Merge queues・Members は与えていません。
+
+Client ID と秘密鍵は、次のコマンドで登録します。`private-key.pem` は、ダウンロードした PEM ファイルのパスに置き換えます。
+
+```bash
+gh variable set RENOVATE_APP_CLIENT_ID --repo kentayamada-dev/playground
+```
+
+```bash
+gh secret set RENOVATE_APP_PRIVATE_KEY --repo kentayamada-dev/playground < private-key.pem
+```
 
 ## トークンの作り方
 
