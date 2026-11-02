@@ -72,13 +72,15 @@ EOF
   touch "${STUB_DIR}/opened"
   echo '{"full_name": "kentayamada-dev/playground", "html_url": "https://github.com/kentayamada-dev/playground", "owner": {"login": "kentayamada-dev", "type": "User"}}' >"${STUB_DIR}/repository.json"
   echo abc123 >"${STUB_DIR}/code"
-  echo '{"id": 1, "slug": "kentayamada-dev-renovate", "client_id": "Iv23liAbc", "html_url": "https://github.com/apps/kentayamada-dev-renovate", "pem": "line1\nline2\n"}' >"${STUB_DIR}/app.json"
+  # pem の \n は JSON のエスケープのまま書き込む
+  printf '%s\n' '{"id": 1, "slug": "kentayamada-dev-renovate", "client_id": "Iv23liAbc", "html_url": "https://github.com/apps/kentayamada-dev-renovate", "pem": "line1\nline2\n"}' >"${STUB_DIR}/app.json"
 }
 
 # フォームの manifest の値を、HTML のエスケープを戻して取り出す
 submitted_manifest() {
-  sed -n 's/.*name="manifest" value="\([^"]*\)".*/\1/p' "${STUB_DIR}/form.html" |
-    sed -e 's/&quot;/"/g' -e "s/&#39;/'/g" -e 's/&lt;/</g' -e 's/&gt;/>/g' -e 's/&amp;/\&/g'
+  local escaped
+  escaped=$(sed -n 's/.*name="manifest" value="\([^"]*\)".*/\1/p' "${STUB_DIR}/form.html")
+  sed -e 's/&quot;/"/g' -e "s/&#39;/'/g" -e 's/&lt;/</g' -e 's/&gt;/>/g' -e 's/&amp;/\&/g' <<<"${escaped}"
 }
 
 # 指定したコマンドがない PATH を作る。システムの PATH を引き継がないため、リンクしたもののほかは使えない
