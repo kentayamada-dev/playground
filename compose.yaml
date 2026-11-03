@@ -96,6 +96,7 @@ services:
       - meta
     # Studio 自体には認証がなく（公式の構成ではゲートウェイの Basic 認証で守る）、開ければ誰でも DB を読み書きできるため、手元からしか開けないようにする。
     # ホストの 3000 は node の Next.js が使うため、Supabase CLI の Studio と同じ 54323 にする https://github.com/supabase/cli/blob/v3.0.0/packages/config/src/studio.ts#L18
+    # ホストのポートを変えるときは、.claude/launch.json の studio の port も合わせる
     ports:
       - 127.0.0.1:54323:3000
     environment:

@@ -56,6 +56,7 @@ docker compose up -d studio
 
 - `studio` が使う `meta`（postgres-meta）と `db` も起動する。起動したら、手元のブラウザで `http://localhost:54323` を開く
 - Studio は、手元のブラウザからしか開けない。`db` のポートは手元に公開しない
+- Auth・Storage など、入れていないサービスに依存する Studio の画面はエラーになる
 - 止めるときは、`docker compose stop studio meta db` のようにサービス名を付けて実行する。サービス名を付けない `docker compose stop`・`docker compose down` は、この 3 つを止めない（[Using profiles](https://docs.docker.com/compose/how-tos/profiles/)）
 - データは名前付きボリュームに置く。コンテナを作り直しても、データは残る
 

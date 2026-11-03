@@ -38,6 +38,15 @@
       ],
       "port": 3000,
       "autoPort": false
+    },
+    {
+      "name": "studio",
+      "runtimeExecutable": "docker-compose",
+      // run と違い、compose.yaml の ports のまま公開する。プレビューを止めても止まるのは studio だけで、meta・db は動いたまま残る
+      "runtimeArgs": ["up", "studio"],
+      // 内蔵ブラウザは Awaiting server… のまま Studio に移らない（原因は未確認）ため、起動したら http://localhost:54323 へ移動する
+      "port": 54323,
+      "autoPort": false
     }
   ]
 }
