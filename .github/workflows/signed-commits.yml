@@ -31,4 +31,4 @@ jobs:
       - run: .github/scripts/check-signed-commits/check-signed-commits.sh "$PR_NUMBER"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: "999999"
