@@ -56,7 +56,6 @@ while [ $# -gt 0 ]; do
     *) endpoint=$1; shift ;;
   esac
 done
-# 呼び出しごとに、標準出力が /dev/null かを記録する
 if [[ /dev/fd/1 -ef /dev/null ]]; then stdout=/dev/null; else stdout=other; fi
 echo "$method $endpoint $stdout" >> "$STUB_DIR/gh.stdout"
 if [ "$input" = - ]; then
