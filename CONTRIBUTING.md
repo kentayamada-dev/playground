@@ -35,7 +35,7 @@ docs/contributing-guide
 
 ## コミットの署名
 
-コミットには、GitHub で Verified になる署名（GPG・SSH・S/MIME）を付けてください。署名のないコミットを含む PR は、GitHub の画面から `main` へマージできません。
+コミットには、GitHub で Verified になる署名（GPG・SSH・S/MIME）を付けてください。署名のないコミットを含む PR は、`main` にマージできません。
 
 署名の設定は、GitHub の [Managing commit signature verification](https://docs.github.com/en/authentication/managing-commit-signature-verification) を参照してください。
 
