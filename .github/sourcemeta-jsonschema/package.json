@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "devDependencies": {
+    "@sourcemeta/jsonschema": "17.2.1"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.14.0",
+      "onFail": "download"
+    }
+  }
+}

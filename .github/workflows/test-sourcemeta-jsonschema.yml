@@ -1,0 +1,70 @@
+name: test-sourcemeta-jsonschema
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 10
+    env:
+      tool_dir: .github/sourcemeta-jsonschema
+      schema_url: https://raw.githubusercontent.com/devcontainers/spec/c95ffeed1d059abfe9ffbe79762dc2fa4e7c2421/schemas/devContainer.base.schema.json
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        env:
+          npm_config_registry: https://npm.flatt.tech/
+          pnpm_config_registry: https://npm.flatt.tech/
+        with:
+          package_json_file: ${{ env.tool_dir }}/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+      - name: "1: lockfile-only"
+        run: pnpm install --lockfile-only --no-frozen-lockfile
+        working-directory: ${{ env.tool_dir }}
+      - name: "1: show lockfile"
+        run: cat pnpm-lock.yaml
+        working-directory: ${{ env.tool_dir }}
+      - name: "2: licenses"
+        uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            --config=.github/osv-scanner-licenses.toml
+            --licenses=0BSD,Apache-2.0,BlueOak-1.0.0,BSD-2-Clause,BSD-3-Clause,CC-BY-3.0,CC-BY-4.0,CC0-1.0,GPL-3.0-or-later,ISC,LGPL-3.0-or-later,MIT,MIT-0,MPL-2.0,Python-2.0,WTFPL
+            --recursive
+            ./
+      - name: "3: install"
+        if: ${{ !cancelled() }}
+        run: pnpm install --frozen-lockfile
+        working-directory: ${{ env.tool_dir }}
+      - name: "4: schema"
+        if: ${{ !cancelled() }}
+        run: curl -fsSL -o "$RUNNER_TEMP/schema.json" "$schema_url"
+      - name: "version"
+        if: ${{ !cancelled() }}
+        run: '"$tool_dir/node_modules/.bin/jsonschema" version'
+      - name: "A: golang with comments"
+        if: ${{ !cancelled() }}
+        run: '"$tool_dir/node_modules/.bin/jsonschema" validate --verbose "$RUNNER_TEMP/schema.json" .devcontainer/golang/devcontainer.json'
+      - name: "B: node with comments"
+        if: ${{ !cancelled() }}
+        run: '"$tool_dir/node_modules/.bin/jsonschema" validate --verbose "$RUNNER_TEMP/schema.json" .devcontainer/node/devcontainer.json'
+      - name: "C: golang without comments"
+        if: ${{ !cancelled() }}
+        run: |
+          grep -v '^[[:space:]]*//' .devcontainer/golang/devcontainer.json >"$RUNNER_TEMP/golang.json"
+          cat "$RUNNER_TEMP/golang.json"
+          "$tool_dir/node_modules/.bin/jsonschema" validate --verbose "$RUNNER_TEMP/schema.json" "$RUNNER_TEMP/golang.json"
+      - name: "D: golang without comments, shutdownActon"
+        if: ${{ !cancelled() }}
+        run: |
+          sed 's/"shutdownAction"/"shutdownActon"/' "$RUNNER_TEMP/golang.json" >"$RUNNER_TEMP/typo.json"
+          grep -n shutdownActon "$RUNNER_TEMP/typo.json"
+          "$tool_dir/node_modules/.bin/jsonschema" validate --verbose "$RUNNER_TEMP/schema.json" "$RUNNER_TEMP/typo.json"
