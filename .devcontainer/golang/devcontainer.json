@@ -5,7 +5,7 @@
   "initializeCommand": "bash \"${localWorkspaceFolder}/.devcontainer/scripts/check-host-os/check-host-os.sh\"",
   // Compose の既定の stopCompose は、ウィンドウを閉じると node のコンテナも止め、node で開いているウィンドウが切れるため
   // https://containers.dev/implementors/json_reference/
-  "shutdownAction": "none",
+  "shutdownActon": "none",
   "workspaceFolder": "/workspace/golang",
   "remoteUser": "dev",
   "customizations": {
