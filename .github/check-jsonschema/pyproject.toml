@@ -1,7 +1,7 @@
 [project]
 name = "check-jsonschema-ci"
 version = "0.0.0"
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 # 書き換えたら、このディレクトリで uv lock を実行して uv.lock も更新する。CI は uv sync --locked で入れ、uv.lock が古いと失敗するため
 # https://docs.astral.sh/uv/reference/cli/#uv-sync
 # json5 は import しないが、コメントを含む devcontainer.json を check-jsonschema が JSON5 として読むのに要る
