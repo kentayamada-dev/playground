@@ -46,6 +46,19 @@ node と golang を、別々の Dev Container で開発します。ホストの 
 
 サーバーが待ち受けているポートは、VS Code が手元に自動で転送します（`remote.autoForwardPorts`）。両方を起動したら、手元のブラウザで `http://localhost:3000` を開きます。
 
+### DB を起動する
+
+[`compose.yaml`](compose.yaml) の `db` で、Supabase の Postgres を動かせます。データは `studio` の Supabase Studio で見ます。Dev Container を開いても起動しないため、手元のリポジトリのルートで次を実行します。
+
+```bash
+docker compose up -d studio
+```
+
+- `studio` が使う `meta`（postgres-meta）と `db` も起動する。起動したら、手元のブラウザで `http://localhost:54323` を開く
+- Studio は、手元のブラウザからしか開けない。`db` のポートは手元に公開しない
+- 止めるときは、`docker compose stop studio meta db` のようにサービス名を付けて実行する。サービス名を付けない `docker compose stop`・`docker compose down` は、この 3 つを止めない（[Using profiles](https://docs.docker.com/compose/how-tos/profiles/)）
+- データは名前付きボリュームに置く。コンテナを作り直しても、データは残る
+
 ## CI の検査
 
 GitHub Actions で、次のとおり検査します。必須チェックが通らない PR はマージできません。必須チェックは [`rulesets/main.json`](.github/settings/rulesets/main.json) に定義しています。

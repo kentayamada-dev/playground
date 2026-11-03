@@ -54,8 +54,67 @@ services:
         target: *history-dir
     command: sleep infinity
 
+  # db・meta・studio は、Supabase の公式の docker-compose.yml から、Studio でデータを見るのに要る設定だけを取っている
+  # https://github.com/supabase/supabase/blob/831d6302c7361c0a5115a91e953bdf084eb85330/docker/docker-compose.yml
+  db:
+    image: supabase/postgres:17.11.0.018@sha256:7c31363a3f7434ff14945f1b8a4880e6eca8b362e197e88b87c476c77aa3cf8c
+    # Dev Containers はサービス名を付けずに docker compose up を実行し、profiles のあるサービスは起動しないため、使うときだけ docker compose up -d studio で起動できる。
+    # depends_on でたどるサービスも同じ profile でないと起動しないため、meta・studio もこのアンカーを使う
+    # https://github.com/devcontainers/cli/blob/v0.90.0/src/spec-node/dockerCompose.ts#L420-L430 https://docs.docker.com/compose/how-tos/profiles/
+    profiles: &supabase-profiles
+      - supabase
+    volumes:
+      # イメージに VOLUME がなく、コンテナを作り直すとデータが消えるため
+      - type: volume
+        source: db-data
+        target: /var/lib/postgresql/data
+      # Vault の暗号鍵をここに作るため。ボリュームにしないと、コンテナを作り直すたびに鍵が変わり、暗号化した値を読めなくなる
+      # https://github.com/supabase/postgres/blob/17.11.0.018/ansible/files/pgsodium_getkey_urandom.sh.j2
+      - type: volume
+        source: db-config
+        target: /etc/postgresql-custom
+    environment:
+      # postgres と supabase_admin のパスワードになる。db はポートを公開せず、Studio も手元からしか開けないため、推測されやすい値のままにしている。
+      # 初回の起動でデータのディレクトリを作るときにしか使わないため、変えるときは db-data のボリュームを消して作り直す
+      # https://github.com/supabase/postgres/blob/17.11.0.018/migrations/db/migrate.sh
+      POSTGRES_PASSWORD: &postgres-password postgres
+
+  meta:
+    image: supabase/postgres-meta:v0.100.0@sha256:145325b7e39f8ef4931d6e8cfd3f6f4d655de09d72a2ccc96d9513542c2202bd
+    profiles: *supabase-profiles
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PG_META_DB_HOST: db
+      PG_META_DB_PASSWORD: *postgres-password # betterleaks:allow
+
+  studio:
+    image: supabase/studio:2026.10.12-sha-3699278@sha256:948770ec467f00e6ae34c35018ef7cb23d7b30eb806b42c2cc0d7bcfdcf8a7a8
+    profiles: *supabase-profiles
+    depends_on:
+      - meta
+    # Studio 自体には認証がなく（公式の構成ではゲートウェイの Basic 認証で守る）、開ければ誰でも DB を読み書きできるため、手元からしか開けないようにする。
+    # ホストの 3000 は node の Next.js が使うため、Supabase CLI の Studio と同じ 54323 にする https://github.com/supabase/cli/blob/v3.0.0/packages/config/src/studio.ts#L18
+    ports:
+      - 127.0.0.1:54323:3000
+    environment:
+      # Docker が HOSTNAME にコンテナのホスト名を入れ、Next.js のサーバーがそのアドレスだけで待ち受けると、イメージのヘルスチェックが localhost に接続できないため
+      # https://docs.docker.com/engine/containers/run/#environment-variables https://github.com/vercel/next.js/blob/v16.3.6/packages/next/src/build/utils.ts#L1438
+      HOSTNAME: 0.0.0.0
+      # イメージに入っている .env の、ゲートウェイ経由の URL とサンプルのパスワードを上書きする。8080 は postgres-meta のイメージが PG_META_PORT に設定しているポート
+      # https://github.com/supabase/supabase/blob/831d6302c7361c0a5115a91e953bdf084eb85330/apps/studio/.env https://github.com/supabase/postgres-meta/blob/v0.100.0/Dockerfile#L18
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_HOST: db
+      POSTGRES_PASSWORD: *postgres-password # betterleaks:allow
+      # 既定の supabase_admin だと、Studio で作ったテーブルの所有者が、Supabase のホスティングと違って supabase_admin になるため
+      # https://supabase.com/docs/guides/self-hosting/remove-superuser-access
+      POSTGRES_USER_READ_WRITE: postgres
+
 volumes:
   node-node-modules:
   node-history:
   golang-go-cache:
   golang-history:
+  db-data:
+  db-config:

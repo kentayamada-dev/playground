@@ -59,6 +59,13 @@
       matchPackageNames: ["renovate/renovate", "renovatebot/github-action"],
       schedule: ["* 0-3 * * *"],
     },
+    // Studio のタグは 2026.10.12-sha-3699278 の形で、docker の versioning はハイフンより後ろが同じタグにしか更新しないため、日付の部分だけで比べる
+    // https://github.com/renovatebot/renovate/blob/44.151.1/lib/modules/versioning/docker/index.ts#L80-L91 https://docs.renovatebot.com/modules/versioning/regex/
+    {
+      matchDatasources: ["docker"],
+      matchPackageNames: ["supabase/studio"],
+      versioning: "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-sha-[0-9a-f]+$",
+    },
     // タイトルを日本語にする。語順が「action topic extra」で固定なので、action を空にして動詞を extra に入れる https://github.com/renovatebot/renovate/blob/44.151.1/lib/config/options/index.ts#L2502-L2506
     // datasource（Docker など）のデフォルトのメッセージより後に適用させるため packageRules に置く https://github.com/renovatebot/renovate/blob/44.151.1/lib/workers/repository/updates/flatten.ts#L143-L147
     {
