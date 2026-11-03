@@ -1,4 +1,4 @@
-.PHONY: run build test fmt vet staticcheck gosec
+.PHONY: run build test fmt tidy vet staticcheck gosec
 
 run:
 	go run .
@@ -11,6 +11,9 @@ test:
 
 fmt:
 	gofumpt -w .
+
+tidy:
+	go mod tidy
 
 vet:
 	go vet ./...
