@@ -22,7 +22,7 @@ node と golang を、別々の Dev Container で開発します。ホストの 
 - node は pnpm を使う。版は node の Dockerfile だけで管理し、Renovate が更新する。[`node/pnpm-workspace.yaml`](node/pnpm-workspace.yaml) は、`storeDir` のほかは textlint の [`pnpm-workspace.yaml`](.github/textlint/pnpm-workspace.yaml) とそろえている。golang には、`compose.yaml` の `GOLANG_URL` のアドレスで接続する
 - node では npm を使えない。`npm install`・`npm run` などは、`EBADDEVENGINES` のエラーで止まる。[`node/package.json`](node/package.json) の `devEngines.packageManager` で pnpm を指定しているため（[devEngines](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines)）
 - `devEngines.packageManager` には版を書かず、pnpm の版は Dockerfile の 1 か所で管理する。pnpm は `onFail` を省くと `download` として扱うため、`error` を明示している（[pmOnFail](https://pnpm.io/settings/cli#pmonfail)）
-- node・textlint・oxfmt の pnpm は、本体とパッケージを Takumi Guard のレジストリ（`https://npm.flatt.tech/`）から取得する。`@jsr` スコープも同じレジストリに向け、`npmjs:` と `gh:`（GitHub Packages）は使えないようにしている（[Registries](https://pnpm.io/registries)）
+- node・textlint・oxfmt・jscpd の pnpm は、本体とパッケージを Takumi Guard のレジストリ（`https://npm.flatt.tech/`）から取得する。`@jsr` スコープも同じレジストリに向け、`npmjs:` と `gh:`（GitHub Packages）は使えないようにしている（[Registries](https://pnpm.io/registries)）
 - 公開から 1 日（`minimumReleaseAge: 1440` 分）経っていない版は入れない。待機期間を満たす版がないときと、レジストリが公開日時を返さないときは、インストールが失敗する。以前の版より信頼のレベルが下がった版も入れない（`trustPolicy: no-downgrade`）。どれも [pnpm の設定](https://pnpm.io/settings/dependency-resolution) による
 - golang は、gopls・gofumpt・staticcheck・gosec・govulncheck をイメージに入れている。版は [`.devcontainer/golang/tools`](.devcontainer/golang/tools) のツールごとの `go.mod` で管理し、Renovate が更新する
 - bash の履歴、node の `node_modules`・pnpm のストア、golang のモジュールとビルドのキャッシュは、名前付きボリュームに置く。コンテナを作り直しても、履歴とキャッシュは残る。手元の `node/node_modules` は空のディレクトリになる
@@ -86,6 +86,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`golang-check.yml`](.github/workflows/golang-check.yml) | [`golang`](golang) の Go のコード。golang の Dev Container と同じイメージのなかで、ビルド・`go vet`・gofumpt の整形・[staticcheck](https://staticcheck.dev/)・[gosec](https://github.com/securego/gosec)・`go test` を順に検査する。staticcheck の設定は [`golang/staticcheck.conf`](golang/staticcheck.conf) にある。詳しくは [golang-check](#golang-check) | `golang-check` |
 | [`node-check.yml`](.github/workflows/node-check.yml) | [`node`](node) のコード。node の Dev Container と同じイメージのなかで、TypeScript の型・[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) の整形・[oxlint](https://oxc.rs/docs/guide/usage/linter.html) の規則を順に検査する。最後に [knip](https://knip.dev/) で、使われていないファイル・export・依存関係を探す。設定は [`node/tsconfig.json`](node/tsconfig.json)・[`node/.oxfmtrc.jsonc`](node/.oxfmtrc.jsonc)・[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) にある。詳しくは [node-check](#node-check) | `node-check` |
 | [`oxfmt.yml`](.github/workflows/oxfmt.yml) | [`node`](node) の外の JSON・YAML・TOML・Markdown などが、[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) の整形に沿っているか。設定は [`.oxfmtrc.jsonc`](.oxfmtrc.jsonc) にある。詳しくは [oxfmt](#oxfmt) | `oxfmt` |
+| [`jscpd.yml`](.github/workflows/jscpd.yml) | コピーして貼り付けたように、同じコードが繰り返されている箇所。[jscpd](https://github.com/kucherenko/jscpd) で検査する。詳しくは [jscpd](#jscpd) | `jscpd` |
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 | [`govulncheck.yml`](.github/workflows/govulncheck.yml) | [`golang`](golang) の Go のコードが呼び出す、標準ライブラリと依存関係の既知の脆弱性。[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) で検査する。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) | なし |
 
@@ -128,6 +129,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `golang-check` | [`golang`](golang) のモジュールのすべてのパッケージ（`./...`）。gofumpt は、その下のすべての `.go`（`vendor`・`testdata` は除く）。gosec は、テストのファイル（`_test.go`）も検査する |
 | `node-check` | [`node`](node) の下のファイル。`.gitignore` に一致するファイルは除く。tsc は、[`node/tsconfig.json`](node/tsconfig.json) の `include` に一致するファイルで、`node_modules` の下を除く。oxfmt は、対応する形式のファイルで、ロックファイルを除く。oxlint は、JavaScript と TypeScript のファイル。knip は、JavaScript と TypeScript のファイルと、`package.json` の依存関係 |
 | `oxfmt` | リポジトリ全体のうち、oxfmt が対応する形式のファイル。[`node`](node) の下・`.gitignore` に一致するファイル・ロックファイルは除く |
+| `jscpd` | リポジトリ全体のうち、jscpd が対応する形式（[FORMATS.md](https://github.com/kucherenko/jscpd/blob/v5.4.2/FORMATS.md)）のファイル。`.git`・`.github/workflows`・`node_modules` の下と、`.gitignore` に一致するファイル・`pnpm-workspace.yaml`・`pnpm-lock.yaml` は除く |
 | `osv-scanner-licenses` | リポジトリ全体のロックファイルと `go.mod` |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
@@ -150,6 +152,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | hadolint | [`.github/hadolint.yaml`](.github/hadolint.yaml) の `failure-threshold: style` で、重大度が style の指摘でも失敗する。`label-schema` のラベルがないときと、`strict-labels` でそれ以外のラベルがあるときも失敗する（[Linting Labels](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#linting-labels)） |
 | staticcheck | [`golang/staticcheck.conf`](golang/staticcheck.conf) の `checks = ["all"]` で、デフォルトでは無効のスタイルの検査もすべて有効にする（[Configuration](https://staticcheck.dev/docs/configuration/)） |
 | oxlint | [`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) で、開発中の `nursery` を除くすべてのカテゴリの規則をエラーにする。Tailwind CSS のクラスの規則も、行の折り返しを除いてすべてエラーにする。warning と、使われていない無効化のコメントでも失敗する（[`options`](https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#options)） |
+| jscpd | `--exit-code` を付け、重複が 1 か所でもあると失敗する。`--fail-on-empty` を付け、検査したファイルが 1 つもないときも失敗する（[Exit codes](https://github.com/kucherenko/jscpd/blob/v5.4.2/docs/rust.md#exit-codes)） |
 
 #### 指摘を無視する方法
 
@@ -166,6 +169,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | oxfmt | 整形させない文の前に `// oxfmt-ignore` と書く。JSX のなかでは `{/* oxfmt-ignore */}` と書く。JavaScript と TypeScript のほかのファイルでは、`prettier-ignore` を使う（[Ignore comments](https://oxc.rs/docs/guide/usage/formatter/ignore-comments.html)） |
 | knip | 使われていない export は、JSDoc で `@public` タグを付ける（[JSDoc & TSDoc Tags](https://knip.dev/reference/jsdoc-tsdoc-tags)）。依存関係は、`node` に `knip.json` を作り、`ignoreDependencies` に足す（[Configuration](https://knip.dev/reference/configuration)） |
 | Betterleaks | その行のコメントに `betterleaks:allow` と書く。書けないときは、[シークレットの検査](#シークレットの検査) のとおり `.betterleaksignore` を使う |
+| jscpd | 除く範囲の前後に、その言語のコメントで `jscpd:ignore-start` と `jscpd:ignore-end` を書く（[Ignoring source regions](https://github.com/kucherenko/jscpd/blob/v5.4.2/docs/rust.md#ignoring-source-regions)） |
 
 #### actionlint
 
@@ -214,6 +218,15 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - `-c` で設定を渡す理由は、[`oxfmt.yml`](.github/workflows/oxfmt.yml) のコメントに書いている
 - pnpm の版は、[`.github/oxfmt/package.json`](.github/oxfmt/package.json) の `devEngines.packageManager` で管理し、Renovate が更新する。[`pnpm-workspace.yaml`](.github/oxfmt/pnpm-workspace.yaml) は、textlint のものとそろえている
 - Renovate は、`oxfmt` の minor・patch を自動マージする。整形の結果が変わる更新を入れないため、必須チェックにしている
+- 依存関係は、Takumi Guard のレジストリから取得する。接続できないと、どの PR もマージできない
+
+#### jscpd
+
+- 重複とみなす長さは、jscpd のデフォルトの下限（`--min-tokens`・`--min-lines`）のまま変えていない（[Options](https://github.com/kucherenko/jscpd/blob/v5.4.2/docs/rust.md#options)）
+- Markdown のコードブロックは、Markdown ではなく、ブロックに書いた言語の形式で読む（[FORMATS.md](https://github.com/kucherenko/jscpd/blob/v5.4.2/FORMATS.md)）
+- 手元では、`.github/jscpd` に `pnpm install` で依存関係を入れる。リポジトリのルートから、[`jscpd.yml`](.github/workflows/jscpd.yml) と同じ引数で `.github/jscpd/node_modules/.bin/jscpd` を実行すると、CI と同じ検査になる
+- pnpm の版は、[`.github/jscpd/package.json`](.github/jscpd/package.json) の `devEngines.packageManager` で管理し、Renovate が更新する。[`pnpm-workspace.yaml`](.github/jscpd/pnpm-workspace.yaml) は、textlint のものとそろえている
+- Renovate は、jscpd の minor・patch を自動マージする。必須チェックのため、重複の検出のしかたが変わって検査に通らなくなる更新は、自動ではマージされない
 - 依存関係は、Takumi Guard のレジストリから取得する。接続できないと、どの PR もマージできない
 
 #### bats
