@@ -129,7 +129,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `golang-check` | [`golang`](golang) のモジュールのすべてのパッケージ（`./...`）。gofumpt は、その下のすべての `.go`（`vendor`・`testdata` は除く）。gosec は、テストのファイル（`_test.go`）も検査する |
 | `node-check` | [`node`](node) の下のファイル。`.gitignore` に一致するファイルは除く。tsc は、[`node/tsconfig.json`](node/tsconfig.json) の `include` に一致するファイルで、`node_modules` の下を除く。oxfmt は、対応する形式のファイルで、ロックファイルを除く。oxlint は、JavaScript と TypeScript のファイル。knip は、JavaScript と TypeScript のファイルと、`package.json` の依存関係 |
 | `oxfmt` | リポジトリ全体のうち、oxfmt が対応する形式のファイル。[`node`](node) の下・`.gitignore` に一致するファイル・ロックファイルは除く |
-| `jscpd` | リポジトリ全体のうち、jscpd が対応する形式（[FORMATS.md](https://github.com/kucherenko/jscpd/blob/v5.4.2/FORMATS.md)）のファイル。`.git`・`.gitignore` に一致するファイル・`node_modules` の下・`pnpm-lock.yaml` は除く |
+| `jscpd` | リポジトリ全体のうち、jscpd が対応する形式（[FORMATS.md](https://github.com/kucherenko/jscpd/blob/v5.4.2/FORMATS.md)）のファイル。`.git`・`.github/workflows`・`node_modules` の下と、`.gitignore` に一致するファイル・`pnpm-workspace.yaml`・`pnpm-lock.yaml` は除く |
 | `osv-scanner-licenses` | リポジトリ全体のロックファイルと `go.mod` |
 
 - 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
