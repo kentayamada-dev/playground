@@ -36,3 +36,6 @@ jobs:
       - run: docker compose run --rm node pnpm fmt:check
       - run: docker compose run --rm node pnpm lint
       - run: docker compose run --rm node pnpm knip
+      # 型・整形・lint が通っても、ビルドでページを事前にレンダリングするときに初めて失敗することがあるため、ビルドまで通す
+      # https://nextjs.org/docs/app/glossary#build-time
+      - run: docker compose run --rm node pnpm build
