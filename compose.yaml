@@ -90,7 +90,7 @@ services:
       PG_META_DB_PASSWORD: *postgres-password # betterleaks:allow
 
   studio:
-    image: supabase/studio:2026.10.12-sha-3699278@sha256:948770ec467f00e6ae34c35018ef7cb23d7b30eb806b42c2cc0d7bcfdcf8a7a8
+    image: supabase/studio:2026.10.19-sha-b375769@sha256:7ffd263c9e13b254f2c97b716ff9bccf404b29cbe7886e6652a776b066a9840f
     profiles: *supabase-profiles
     # 依存先を変えるときは、.claude/launch.json の studio の runtimeArgs に並べるサービスも合わせる
     depends_on:
