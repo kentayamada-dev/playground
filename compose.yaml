@@ -92,6 +92,7 @@ services:
   studio:
     image: supabase/studio:2026.10.12-sha-3699278@sha256:948770ec467f00e6ae34c35018ef7cb23d7b30eb806b42c2cc0d7bcfdcf8a7a8
     profiles: *supabase-profiles
+    # 依存先を変えるときは、.claude/launch.json の studio の runtimeArgs に並べるサービスも合わせる
     depends_on:
       - meta
     # Studio 自体には認証がなく（公式の構成ではゲートウェイの Basic 認証で守る）、開ければ誰でも DB を読み書きできるため、手元からしか開けないようにする。
