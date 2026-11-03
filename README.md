@@ -86,8 +86,8 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 - 必須チェックは、`main` の最新を取り込んだ状態で通す必要がある。`main` が先に進んだら、PR のブランチに取り込んでから検査し直す
 - 必須チェックのほかに、CodeQL のアラートがあってもマージできない。詳しくは [CodeQL](#codeql)
 - `main` のコミットには、GitHub で Verified と表示される署名（GPG・SSH・S/MIME）が要る（[Require signed commits](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#require-signed-commits)）
-- PR の head ブランチに署名のないコミットがあると、画面や `gh pr merge` ではマージできない
-- REST API からの squash マージは、head ブランチに署名のないコミットがあっても通る。`main` に入るコミットは、GitHub が署名した squash のコミットだけ。ルールが検査するのも、このコミットだけ（[#427](https://github.com/kentayamada-dev/playground/pull/427) で確認）
+- 署名のないコミットを含む PR は、マージの状態が `BLOCKED` と判定される。画面・`gh pr merge`・自動マージは、この状態の PR をマージしない
+- REST・GraphQL の API で squash マージすると、`BLOCKED` でも通る。push の段階のルールは、GitHub の署名した squash のコミットだけを検査するため（[#427](https://github.com/kentayamada-dev/playground/pull/427)・[#430](https://github.com/kentayamada-dev/playground/pull/430)・[#431](https://github.com/kentayamada-dev/playground/pull/431) で確認）
 - Renovate のコミットには GitHub が署名する。詳しくは [GitHub App の準備](#github-app-の準備)
 
 ### 検査する範囲
