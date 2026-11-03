@@ -146,6 +146,7 @@ jobs:
   # 結果はログに出すだけにする。Code scanning に上げると、名前と版が同じパッケージが別々の結果になってアラートが重複し、3,000 件を超えたため https://github.com/google/osv-scanner/blob/v2.7.0/internal/output/sarif.go#L334-L385
   osv-scanner-image:
     # matrix の値は GitHub が名前の後ろに付ける。名前に式を書くと、PR で skip されたときに式が展開されずにそのまま表示される
+    # https://github.com/kentayamada-dev/playground/pull/455
     name: osv-scanner-image
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-26.04-arm
