@@ -6,3 +6,5 @@ go 1.26.0
 // https://github.com/renovatebot/renovate/blob/44.151.1/lib/workers/repository/process/vulnerabilities.ts#L180-L187
 // この行を消すときは、osv-scanner.toml の ScanGoModVersion も外す
 toolchain go1.27.3
+
+require golang.org/x/mod v0.40.0
