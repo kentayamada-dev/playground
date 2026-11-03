@@ -54,5 +54,4 @@ jobs:
           "$jscpd_dir/node_modules/.bin/jscpd"
           --exit-code 1
           --fail-on-empty
-          --ignore '**/pnpm-lock.yaml,**/node_modules/**,**/.github/workflows/**,**/pnpm-workspace.yaml'
           .
