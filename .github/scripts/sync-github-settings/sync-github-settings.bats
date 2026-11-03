@@ -56,6 +56,8 @@ while [ $# -gt 0 ]; do
     *) endpoint=$1; shift ;;
   esac
 done
+if [[ /dev/fd/1 -ef /dev/null ]]; then stdout=/dev/null; else stdout=other; fi
+echo "$method $endpoint $stdout" >> "$STUB_DIR/gh.stdout"
 if [ "$input" = - ]; then
   input="$STUB_DIR/stdin.json"
   cat > "$input"
@@ -962,6 +964,24 @@ path_without() {
 
   [[ ${output} == 'GitHub に定義を適用しています...
 GitHub に定義を適用しました' ]]
+}
+
+@test "書き込みの gh api は、標準出力を /dev/null に向け、端末につながない" {
+  given_github_rulesets '[{"id": 1, "source_type": "Repository", "name": "main", "enforcement": "disabled"}, {"id": 2, "source_type": "Repository", "name": "old", "enforcement": "active"}]'
+  given_github_labels '[{"name": "bug", "color": "d73a4a", "description": "Something is not working"}, {"name": "wontfix", "color": "ffffff", "description": "Will not be worked on"}]'
+  define_ruleset main.json '{"name": "main", "enforcement": "active"}'
+  define_ruleset new.json '{"name": "new", "enforcement": "active"}'
+  define_repository '{"has_wiki": false}'
+  define_security '{"vulnerability_alerts": true, "automated_security_fixes": false, "code_scanning_default_setup": {"state": "configured"}}'
+  define_actions '{"workflow_permissions": {"default_workflow_permissions": "read"}}'
+  define_labels '[{"name": "bug", "color": "d73a4a", "description": "不具合"}, {"name": "good first issue", "color": "7057ff", "description": "初めての人向け"}]'
+
+  run -0 "${script}"
+
+  writes=$(grep -v '^GET ' "${STUB_DIR}/gh.stdout")
+  [[ ${writes} == *POST* && ${writes} == *PUT* && ${writes} == *PATCH* && ${writes} == *DELETE* ]]
+  not_discarded=$(grep -v ' /dev/null$' <<<"${writes}" || true)
+  [[ -z ${not_discarded} ]]
 }
 
 @test "リポジトリにあるルールセットの定義を、すべて GitHub に作成できる" {
