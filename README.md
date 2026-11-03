@@ -82,7 +82,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`markdownlint.yml`](.github/workflows/markdownlint.yml) | すべての `.md` の書式。見出しのレベル・リストの記号・表の列数・空行・コードブロックの言語の指定など。[markdownlint](https://github.com/DavidAnson/markdownlint) で検査する。設定は [`.github/markdownlint-cli2.jsonc`](.github/markdownlint-cli2.jsonc) にある | `markdownlint` |
 | [`yamllint.yml`](.github/workflows/yamllint.yml) | `.yml`・`.yaml` の構文と書式。キーの重複・インデント・コメントの書き方など。[yamllint](https://github.com/adrienverge/yamllint) で検査する。設定は [`.github/yamllint/.yamllint.yaml`](.github/yamllint/.yamllint.yaml) にある | `yamllint` |
 | [`hadolint.yml`](.github/workflows/hadolint.yml) | Dockerfile の書き方。ベースイメージのタグの指定・`apt-get install` の版の固定など。[hadolint](https://github.com/hadolint/hadolint) で検査し、`RUN` のスクリプトは hadolint に組み込まれた ShellCheck にかける。設定は [`.github/hadolint.yaml`](.github/hadolint.yaml) にある | `hadolint` |
-| [`devcontainer.yml`](.github/workflows/devcontainer.yml) | [開発環境](#開発環境) の 2 つのイメージを、[`compose.yaml`](compose.yaml) のとおりにビルドできるか。golang では gopls・gofumpt・staticcheck・gosec・govulncheck が、node では pnpm が起動するかも確認する。詳しくは [devcontainer](#devcontainer) | `devcontainer` |
+| [`devcontainer.yml`](.github/workflows/devcontainer.yml) | [開発環境](#開発環境) の 2 つのイメージを、[`compose.yaml`](compose.yaml) のとおりにビルドできるか。golang では gopls・gofumpt・staticcheck・gosec・govulncheck が、node では pnpm が起動するかも確認する。各 `devcontainer.json` が Dev Container の仕様のスキーマに沿っているかも、[check-jsonschema](https://github.com/python-jsonschema/check-jsonschema) で検査する。詳しくは [devcontainer](#devcontainer) | `devcontainer` |
 | [`golang-check.yml`](.github/workflows/golang-check.yml) | [`golang`](golang) の Go のコード。golang の Dev Container と同じイメージのなかで、ビルド・`go vet`・gofumpt の整形・[staticcheck](https://staticcheck.dev/)・[gosec](https://github.com/securego/gosec)・`go test` を順に検査する。staticcheck の設定は [`golang/staticcheck.conf`](golang/staticcheck.conf) にある。詳しくは [golang-check](#golang-check) | `golang-check` |
 | [`node-check.yml`](.github/workflows/node-check.yml) | [`node`](node) のコード。node の Dev Container と同じイメージのなかで、TypeScript の型・[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) の整形・[oxlint](https://oxc.rs/docs/guide/usage/linter.html) の規則を順に検査する。最後に [knip](https://knip.dev/) で、使われていないファイル・export・依存関係を探す。設定は [`node/tsconfig.json`](node/tsconfig.json)・[`node/.oxfmtrc.jsonc`](node/.oxfmtrc.jsonc)・[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) にある。詳しくは [node-check](#node-check) | `node-check` |
 | [`oxfmt.yml`](.github/workflows/oxfmt.yml) | [`node`](node) の外の JSON・YAML・TOML・Markdown などが、[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) の整形に沿っているか。設定は [`.oxfmtrc.jsonc`](.oxfmtrc.jsonc) にある。詳しくは [oxfmt](#oxfmt) | `oxfmt` |
@@ -121,11 +121,11 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `zizmor` | すべてのワークフローと、リポジトリ内のアクション（`action.yml`） |
 | `ghalint` | すべてのワークフローと、リポジトリのルートから 3 階層までのディレクトリにあるアクション（`action.yml`） |
 | `renovate-config-validator` | [`.github/renovate.json5`](.github/renovate.json5) |
-| `lychee` | リポジトリ全体。`.git` と、`.github/mise.lock`・`.github/yamllint/uv.lock` は除く |
+| `lychee` | リポジトリ全体。`.git` と、`.github/mise.lock`・`.github/yamllint/uv.lock`・`.github/check-jsonschema/uv.lock` は除く |
 | `typos` | リポジトリ全体。`.git` と、`typos.toml`・`pyproject.toml` など typos の設定ファイルと同じ名前のファイルは除く |
 | `yamllint` | リポジトリ全体の `.yml`・`.yaml`。`pnpm-lock.yaml` と、`.venv`・`node_modules` の下は除く |
 | `hadolint` | リポジトリ全体のうち、名前が `Dockerfile`・`Containerfile` のファイル。`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*`・`*.Containerfile` に一致するファイルも含む。`.git` は除く |
-| `devcontainer` | [`compose.yaml`](compose.yaml) の `node`・`golang` のサービスのイメージ。ランナーと同じ arm64 のイメージだけをビルドする |
+| `devcontainer` | [`compose.yaml`](compose.yaml) の `node`・`golang` のサービスのイメージ。ランナーと同じ arm64 のイメージだけをビルドする。スキーマの検査は、[`.devcontainer`](.devcontainer) の下の各ディレクトリにある `devcontainer.json` |
 | `golang-check` | [`golang`](golang) のモジュールのすべてのパッケージ（`./...`）。gofumpt は、その下のすべての `.go`（`vendor`・`testdata` は除く）。gosec は、テストのファイル（`_test.go`）も検査する |
 | `node-check` | [`node`](node) の下のファイル。`.gitignore` に一致するファイルは除く。tsc は、[`node/tsconfig.json`](node/tsconfig.json) の `include` に一致するファイルで、`node_modules` の下を除く。oxfmt は、対応する形式のファイルで、ロックファイルを除く。oxlint は、JavaScript と TypeScript のファイル。knip は、JavaScript と TypeScript のファイルと、`package.json` の依存関係 |
 | `oxfmt` | リポジトリ全体のうち、oxfmt が対応する形式のファイル。[`node`](node) の下・`.gitignore` に一致するファイル・ロックファイルは除く |
@@ -254,7 +254,12 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - Renovate は、次の minor・patch・digest の更新を自動マージする。組み合わせによってはビルドが壊れるため、必須チェックにしている
   - ベースイメージ・pnpm・gopls・gofumpt・staticcheck・gosec・govulncheck
 - ビルドのキャッシュは使わず、毎回すべての層をビルドする
-- ビルドでは、Docker Hub・Takumi Guard のレジストリ・Go のモジュールプロキシから取得する。どれかに接続できないと、どの PR もマージできない
+- `devcontainer.json` は、[Dev Container の仕様](https://github.com/devcontainers/spec) のベースのスキーマで検査する。スキーマにないキーや、値の型の誤りがあると失敗する
+  - `customizations` は、オブジェクトであることだけを検査する。VS Code の設定や拡張機能の中身は検査しない
+  - スキーマは、コミットで固定した URL から読む。Renovate は更新しないため、仕様の更新に合わせるときは手で上げる
+- check-jsonschema は Python のパッケージで、依存関係まで版と sha256 を固定するため、uv で入れる
+  - [`.github/check-jsonschema`](.github/check-jsonschema) の `pyproject.toml` と `uv.lock` で固定し、Renovate の pep621 マネージャーが更新する
+- ビルドでは、Docker Hub・Takumi Guard のレジストリ・Go のモジュールプロキシから取得する。スキーマの検査では、check-jsonschema を PyPI から、スキーマを GitHub から取得する。どれかに接続できないと、どの PR もマージできない
 
 #### golang-check
 

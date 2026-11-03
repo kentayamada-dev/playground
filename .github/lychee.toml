@@ -16,4 +16,5 @@ exclude_path = [
   # mise.lock と uv.lock の URL は mise lock と uv lock が書くもので、手で直さないため
   '^\.github/mise\.lock$',
   '^\.github/yamllint/uv\.lock$',
+  '^\.github/check-jsonschema/uv\.lock$',
 ]
