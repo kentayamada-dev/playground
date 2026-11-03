@@ -1,4 +1,4 @@
-name: ghalint
+name: ワークフローの規約
 
 on:
   pull_request:

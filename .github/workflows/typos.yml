@@ -1,4 +1,4 @@
-name: typos
+name: 英単語の綴り
 
 on:
   pull_request:

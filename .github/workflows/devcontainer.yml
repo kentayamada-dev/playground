@@ -1,4 +1,4 @@
-name: devcontainer
+name: Dev Container のビルド
 
 on:
   pull_request:

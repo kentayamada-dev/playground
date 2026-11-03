@@ -1,4 +1,4 @@
-name: yamllint
+name: YAML の構文と書式
 
 on:
   pull_request:

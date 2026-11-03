@@ -1,4 +1,4 @@
-name: jscpd
+name: コードの重複
 
 on:
   pull_request:

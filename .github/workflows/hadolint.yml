@@ -1,4 +1,4 @@
-name: hadolint
+name: Dockerfile の書き方
 
 on:
   pull_request:

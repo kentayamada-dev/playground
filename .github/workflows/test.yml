@@ -1,4 +1,4 @@
-name: test
+name: シェルスクリプトの静的解析・テスト
 
 on:
   pull_request:

@@ -1,4 +1,4 @@
-name: golang-check
+name: Go のビルド・静的解析・テスト
 
 on:
   pull_request:

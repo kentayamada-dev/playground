@@ -1,4 +1,4 @@
-name: lychee
+name: リンク切れ
 
 on:
   pull_request:

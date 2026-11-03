@@ -1,4 +1,4 @@
-name: node-check
+name: Node の型・静的解析・ビルド
 
 on:
   pull_request:
