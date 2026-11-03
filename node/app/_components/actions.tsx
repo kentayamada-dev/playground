@@ -21,7 +21,7 @@ export const Actions = (): JSX.Element => (
         width={16}
         height={14}
       />
-      {text.deployNow}
+      {new URL(text.deployNow).origin}
     </a>
     <a
       className="flex items-center justify-center rounded-full border border-solid border-black/8 px-5 transition-colors block-12 inline-full hover:border-transparent hover:bg-black/4 md:inline-39.5 dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
