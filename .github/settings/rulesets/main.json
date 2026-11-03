@@ -120,6 +120,10 @@
           {
             "context": "oxfmt",
             "integration_id": 15368
+          },
+          {
+            "context": "signed-commits",
+            "integration_id": 15368
           }
         ]
       }

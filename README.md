@@ -55,6 +55,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`textlint.yml`](.github/workflows/textlint.yml) | リポジトリのすべての `.md` の表記。ルールは [`.github/textlint`](.github/textlint) にある | `textlint` |
 | [`test.yml`](.github/workflows/test.yml) | `.sh` と `.bats` を ShellCheck で検査し、[shfmt](https://github.com/mvdan/sh) の整形に沿っているかを確認し、bats のテストを実行する。shfmt の整形の設定は [`.editorconfig`](.editorconfig) から読む | `test` |
 | [`pr-title.yml`](.github/workflows/pr-title.yml) | PR タイトルが Conventional Commits 形式に沿い、説明を日本語で書いているか。規約は [CONTRIBUTING.md](CONTRIBUTING.md#タイトルとコミットメッセージ) | `pr-title` |
+| [`signed-commits.yml`](.github/workflows/signed-commits.yml) | PR のコミットがすべて、GitHub で Verified と表示される署名付きか。詳しくは [マージの条件](#マージの条件) | `signed-commits` |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | 依存関係と Dev Container のイメージの脆弱性とマルウェア、依存関係のライセンス。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) と [ライセンスの検査](#ライセンスの検査) | `osv-scanner / osv-scan`（PR の検査だけ）・`osv-scanner-licenses` |
 | [`betterleaks.yml`](.github/workflows/betterleaks.yml) | コミットに含まれるシークレット。詳しくは [シークレットの検査](#シークレットの検査) | `betterleaks` |
 | [`editorconfig.yml`](.github/workflows/editorconfig.yml) | git で管理するファイルが [`.editorconfig`](.editorconfig) の文字コード・改行・インデント・末尾の空白に沿っているか。[editorconfig-checker](https://github.com/editorconfig-checker/editorconfig-checker) で検査する | `editorconfig` |
@@ -74,9 +75,10 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 | [`govulncheck.yml`](.github/workflows/govulncheck.yml) | [`golang`](golang) の Go のコードが呼び出す、標準ライブラリと依存関係の既知の脆弱性。[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) で検査する。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) | なし |
 
-どのワークフローも、PR と `main` への push で動きます。動くタイミングが違うのは、次の 5 つです。
+どのワークフローも、PR と `main` への push で動きます。動くタイミングが違うのは、次の 6 つです。
 
 - `pr-title.yml` は、PR の作成・編集・push・再オープンで動く
+- `signed-commits.yml` は、PR でだけ動く
 - `osv-scanner.yml` は毎日、`lychee.yml` は毎週も動く
 - `settings-drift.yml`・`govulncheck.yml` は、毎日と手動の実行でだけ動く
 
@@ -87,7 +89,8 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 - 必須チェックのほかに、CodeQL のアラートがあってもマージできない。詳しくは [CodeQL](#codeql)
 - `main` のコミットには、GitHub で Verified と表示される署名（GPG・SSH・S/MIME）が要る（[Require signed commits](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#require-signed-commits)）
 - 署名のないコミットを含む PR は、マージの状態が `BLOCKED` と判定される。画面・`gh pr merge`・自動マージは、この状態の PR をマージしない
-- REST・GraphQL の API で squash マージすると、`BLOCKED` でも通る。push の段階のルールは、GitHub の署名した squash のコミットだけを検査するため（[#427](https://github.com/kentayamada-dev/playground/pull/427)・[#430](https://github.com/kentayamada-dev/playground/pull/430)・[#431](https://github.com/kentayamada-dev/playground/pull/431) で確認）
+- ルールセットの署名の必須だけだと、REST・GraphQL の API での squash マージは止まらない。push の段階のルールは、GitHub の署名した squash のコミットだけを検査するため（[#427](https://github.com/kentayamada-dev/playground/pull/427)・[#430](https://github.com/kentayamada-dev/playground/pull/430)・[#431](https://github.com/kentayamada-dev/playground/pull/431) で確認）
+- API からのマージは、PR のコミットの署名を検査する必須チェック `signed-commits` で止める。コミットの数が 250 件より多い PR だと、このチェックは通らない。API でコミットの一覧を取れるのは 250 件までのため
 - Renovate のコミットには GitHub が署名する。詳しくは [GitHub App の準備](#github-app-の準備)
 
 ### 検査する範囲
