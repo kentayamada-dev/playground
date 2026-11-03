@@ -44,7 +44,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile && exit 1
         working-directory: ${{ env.jscpd_dir }}
       # --exit-code がないと、重複を見つけても 0 で終わる。--fail-on-empty がないと、除外の誤りで検査するファイルがなくなっても 0 で終わる
       # https://github.com/kucherenko/jscpd/blob/v5.4.2/docs/rust.md#exit-codes
