@@ -24,6 +24,12 @@ gh_api() {
   fi
 }
 
+# 書き込みの応答は使わない。標準出力が端末のままだと、gh が要求の前に端末の応答を待ち、応答しない端末では 1 回ごとに約 5 秒かかるため、/dev/null に向ける
+# 待つのは termenv の端末への問い合わせと推測している（TERM=dumb で待ちが消え、待つ時間が OSCTimeout と同じ） https://github.com/muesli/termenv/blob/v0.16.0/termenv_unix.go#L234-L293
+gh_write() {
+  gh_api "$@" >/dev/null
+}
+
 drift_count=0
 
 drift() {
@@ -101,7 +107,7 @@ sync_rulesets() {
         if ${check_only}; then
           drift "ルールセット ${name} (${file}) が GitHub にありません"
         else
-          gh_api "ルールセット ${name} の作成" --method POST 'repos/{owner}/{repo}/rulesets' --input "${file}" --silent
+          gh_write "ルールセット ${name} の作成" --method POST 'repos/{owner}/{repo}/rulesets' --input "${file}"
           echo "作成: ルールセット ${name} (${file})"
         fi
       elif ${check_only}; then
@@ -112,7 +118,7 @@ sync_rulesets() {
         actual=$(jq 'del(.id, .source_type, .source, .node_id, .created_at, .updated_at, .current_user_can_bypass, ._links)' <<<"${actual}")
         report_drift "ルールセット ${name} (${file})" "${desired}" "${actual}"
       else
-        gh_api "ルールセット ${name} の反映" --method PUT "repos/{owner}/{repo}/rulesets/${id}" --input "${file}" --silent
+        gh_write "ルールセット ${name} の反映" --method PUT "repos/{owner}/{repo}/rulesets/${id}" --input "${file}"
       fi
     done
   fi
@@ -125,7 +131,7 @@ sync_rulesets() {
     if ${check_only}; then
       drift "定義にないルールセット ${name} が GitHub にあります"
     else
-      gh_api "ルールセット ${name} の削除" --method DELETE "repos/{owner}/{repo}/rulesets/${id}" --silent
+      gh_write "ルールセット ${name} の削除" --method DELETE "repos/{owner}/{repo}/rulesets/${id}"
       echo "削除: ルールセット ${name}"
     fi
   done
@@ -150,7 +156,7 @@ sync_repository() {
   fi
   # has_discussions は API のドキュメントの項目にないが、gh repo edit も同じ API に送っている
   # https://github.com/cli/cli/blob/v2.102.0/pkg/cmd/repo/edit/edit.go
-  gh_api 'リポジトリの設定の反映' --method PATCH 'repos/{owner}/{repo}' --input "${repository_definition}" --silent
+  gh_write 'リポジトリの設定の反映' --method PATCH 'repos/{owner}/{repo}' --input "${repository_definition}"
 }
 
 security_definition="${settings_dir}/security.json"
@@ -204,9 +210,9 @@ sync_security() {
         drift "${feature} が定義では ${enabled}、GitHub では ${current}"
       fi
     elif [[ ${enabled} == true ]]; then
-      gh_api "${feature} の反映" --method PUT "repos/{owner}/{repo}/${feature//_/-}" --silent
+      gh_write "${feature} の反映" --method PUT "repos/{owner}/{repo}/${feature//_/-}"
     else
-      gh_api "${feature} の反映" --method DELETE "repos/{owner}/{repo}/${feature//_/-}" --silent
+      gh_write "${feature} の反映" --method DELETE "repos/{owner}/{repo}/${feature//_/-}"
     fi
   done
 
@@ -222,7 +228,7 @@ sync_security() {
   fi
   # 同じ設定を送っても新しい解析は始まらない（202 で前回の run_id が返る）ため、比べずに送る
   # https://github.com/kentayamada-dev/playground/pull/190
-  gh_api 'CodeQL のデフォルトセットアップの反映' --method PATCH 'repos/{owner}/{repo}/code-scanning/default-setup' --input - --silent <<<"${desired}"
+  gh_write 'CodeQL のデフォルトセットアップの反映' --method PATCH 'repos/{owner}/{repo}/code-scanning/default-setup' --input - <<<"${desired}"
 }
 
 actions_definition="${settings_dir}/actions.json"
@@ -250,7 +256,7 @@ sync_actions_setting() {
     actual=$(gh_get "${subject}の取得" "${endpoint}")
     report_defined_drift "${subject}" "${body}" "${actual}"
   else
-    gh_api "${subject}の反映" --method PUT "${endpoint}" --input - --silent <<<"${body}"
+    gh_write "${subject}の反映" --method PUT "${endpoint}" --input - <<<"${body}"
   fi
 }
 
@@ -304,7 +310,7 @@ sync_labels() {
       if ${check_only}; then
         drift "ラベル ${name} が GitHub にありません"
       else
-        gh_api "ラベル ${name} の作成" --method POST 'repos/{owner}/{repo}/labels' --input - --silent <<<"${label}"
+        gh_write "ラベル ${name} の作成" --method POST 'repos/{owner}/{repo}/labels' --input - <<<"${label}"
         echo "作成: ラベル ${name}"
       fi
     elif ${check_only}; then
@@ -313,7 +319,7 @@ sync_labels() {
     else
       encoded=$(uri_encode "${name}")
       body=$(jq -c 'del(.name)' <<<"${label}")
-      gh_api "ラベル ${name} の反映" --method PATCH "repos/{owner}/{repo}/labels/${encoded}" --input - --silent <<<"${body}"
+      gh_write "ラベル ${name} の反映" --method PATCH "repos/{owner}/{repo}/labels/${encoded}" --input - <<<"${body}"
     fi
   done
 
@@ -326,7 +332,7 @@ sync_labels() {
       drift "定義にないラベル ${name} が GitHub にあります"
     else
       encoded=$(uri_encode "${name}")
-      gh_api "ラベル ${name} の削除" --method DELETE "repos/{owner}/{repo}/labels/${encoded}" --silent
+      gh_write "ラベル ${name} の削除" --method DELETE "repos/{owner}/{repo}/labels/${encoded}"
       echo "削除: ラベル ${name}"
     fi
   done <<<"${stale}"
