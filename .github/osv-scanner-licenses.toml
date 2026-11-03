@@ -17,3 +17,9 @@ version = "0.2.2"
 ecosystem = "npm"
 license.override = ["MIT"]
 reason = "package.json が古い形式の licenses の欄で MIT としていて判定できない（UNKNOWN）"
+
+[[PackageOverrides]]
+name = "check-jsonschema"
+ecosystem = "PyPI"
+license.override = ["Apache-2.0"]
+reason = "pyproject.toml に license の欄がなく、classifiers の Apache Software License だけで判定できない（non-standard）。LICENSE も Apache License 2.0 の告知文。Renovate が版を上げるたびに止まらないよう、版は限らない https://github.com/python-jsonschema/check-jsonschema/blob/0.38.2/pyproject.toml https://github.com/python-jsonschema/check-jsonschema/blob/0.38.2/LICENSE"
