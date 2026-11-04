@@ -1,5 +1,5 @@
 ---
-name: merge-automerge-prs
+name: rebase-dependency-prs
 description: 自動マージを予約済みの Renovate の PR を、1 件ずつ main に追いつかせてマージしていく。main に遅れて止まっている PR を、Renovate の次の実行を待たずにマージしたいときに使う
 disable-model-invocation: true
 ---
