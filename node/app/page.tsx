@@ -11,7 +11,7 @@ const Home = (): JSX.Element => (
         className="block-5 inline-25 dark:invert"
         src="/next.svg"
         alt="Next.js logo"
-        width={100}
+        width="wide"
         height={20}
         priority
       />
