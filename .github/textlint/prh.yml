@@ -1,6 +1,6 @@
 version: 1
 rules:
-  # 文字列のパターンは大文字・小文字を区別するため、正規表現で両方に一致させ、README の権限名「Pull requests」は除く
+  # 文字列のパターンは大文字・小文字を区別するため、正規表現で両方に一致させ、GitHub の権限名「Pull requests」は除く
   # https://github.com/prh/prh/blob/v5.4.4/lib/rule.ts#L80-L88 https://github.com/prh/prh/blob/v5.4.4/lib/utils/regexp.ts#L113-L122
   - expected: PR
     pattern: /[Pp]ull [Rr]equest(?!s)/

@@ -21,6 +21,9 @@ https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-
 
 ## README の書き方
 
+README には概要と開発環境の始め方だけを書き、テーマごとの詳しい内容は `docs/` の文書に書く。
+この節の「README」は、`docs/` の文書も含む。`docs/` に文書を足したら、README のドキュメントの一覧にも足す。
+
 内容ごとに、書く場所を次の表で決める。
 
 | 内容 | 書く場所 |

@@ -1,0 +1,306 @@
+# CI の検査
+
+GitHub Actions で、次のとおり検査します。必須チェックが通らない PR はマージできません。必須チェックは [`rulesets/main.json`](../.github/settings/rulesets/main.json) に定義しています。
+
+| ワークフロー | 検査する内容 | 必須チェック |
+| --- | --- | --- |
+| [`textlint.yml`](../.github/workflows/textlint.yml) | リポジトリのすべての `.md` の表記。ルールは [`.github/textlint`](../.github/textlint) にある | `textlint` |
+| [`test.yml`](../.github/workflows/test.yml) | `.sh` と `.bats` を ShellCheck で検査し、[shfmt](https://github.com/mvdan/sh) の整形に沿っているかを確認し、bats のテストを実行する。shfmt の整形の設定は [`.editorconfig`](../.editorconfig) から読む | `test` |
+| [`pr-title.yml`](../.github/workflows/pr-title.yml) | PR タイトルが Conventional Commits 形式に沿い、説明を日本語で書いているか。規約は [CONTRIBUTING.md](../CONTRIBUTING.md#タイトルとコミットメッセージ) | `pr-title` |
+| [`signed-commits.yml`](../.github/workflows/signed-commits.yml) | PR のコミットがすべて、GitHub で Verified と表示される署名付きか。詳しくは [マージの条件](#マージの条件) | `signed-commits` |
+| [`osv-scanner.yml`](../.github/workflows/osv-scanner.yml) | 依存関係の脆弱性とマルウェア、依存関係のライセンス。詳しくは [脆弱性とマルウェアの検査](scanning.md#脆弱性とマルウェアの検査) と [ライセンスの検査](scanning.md#ライセンスの検査) | `osv-scanner / osv-scan`（PR の検査だけ）・`osv-scanner-licenses` |
+| [`betterleaks.yml`](../.github/workflows/betterleaks.yml) | コミットに含まれるシークレット。詳しくは [シークレットの検査](scanning.md#シークレットの検査) | `betterleaks` |
+| [`editorconfig.yml`](../.github/workflows/editorconfig.yml) | git で管理するファイルが [`.editorconfig`](../.editorconfig) の文字コード・改行・インデント・末尾の空白に沿っているか。[editorconfig-checker](https://github.com/editorconfig-checker/editorconfig-checker) で検査する | `editorconfig` |
+| [`actionlint.yml`](../.github/workflows/actionlint.yml) | GitHub Actions のワークフローのキー・式・`run:` のスクリプト。[actionlint](https://github.com/rhysd/actionlint) で検査し、`run:` のスクリプトは actionlint から ShellCheck にかける。設定は [`.github/actionlint.yaml`](../.github/actionlint.yaml) にある | `actionlint` |
+| [`renovate-config-validator.yml`](../.github/workflows/renovate-config-validator.yml) | [`.github/renovate.json5`](../.github/renovate.json5) の構文と、オプションの名前・値。Renovate の [renovate-config-validator](https://docs.renovatebot.com/config-validation/) で検査する | `renovate-config-validator` |
+| [`zizmor.yml`](../.github/workflows/zizmor.yml) | GitHub Actions のワークフローのセキュリティ上の問題。テンプレートインジェクション・広すぎる権限・checkout の資格情報の残留・フォークにしかないコミットへの固定などを、[zizmor](https://github.com/zizmorcore/zizmor) で検査する | `zizmor` |
+| [`ghalint.yml`](../.github/workflows/ghalint.yml) | GitHub Actions のワークフローが、すべてのジョブに `timeout-minutes` を書いているか、シークレットを必要なステップだけに渡しているかなど。[ghalint](https://github.com/suzuki-shunsuke/ghalint) で検査する | `ghalint` |
+| [`lychee.yml`](../.github/workflows/lychee.yml) | リポジトリのすべてのファイルに書いたリンクが切れていないか。[lychee](https://github.com/lycheeverse/lychee) で検査する。PR と `main` への push ではリポジトリ内のリンクだけ、毎週の実行では外部のリンクも検査する | `lychee`（リポジトリ内のリンクの検査だけ） |
+| [`typos.yml`](../.github/workflows/typos.yml) | リポジトリのすべてのファイルの英単語の綴り。[typos](https://github.com/crate-ci/typos) で検査する。設定は [`.github/typos.toml`](../.github/typos.toml) にある | `typos` |
+| [`markdownlint.yml`](../.github/workflows/markdownlint.yml) | すべての `.md` の書式。見出しのレベル・リストの記号・表の列数・空行・コードブロックの言語の指定など。[markdownlint](https://github.com/DavidAnson/markdownlint) で検査する。設定は [`.github/markdownlint-cli2.jsonc`](../.github/markdownlint-cli2.jsonc) にある | `markdownlint` |
+| [`yamllint.yml`](../.github/workflows/yamllint.yml) | `.yml`・`.yaml` の構文と書式。キーの重複・インデント・コメントの書き方など。[yamllint](https://github.com/adrienverge/yamllint) で検査する。設定は [`.github/yamllint/.yamllint.yaml`](../.github/yamllint/.yamllint.yaml) にある | `yamllint` |
+| [`hadolint.yml`](../.github/workflows/hadolint.yml) | Dockerfile の書き方。ベースイメージのタグの指定・`apt-get install` の版の固定など。[hadolint](https://github.com/hadolint/hadolint) で検査し、`RUN` のスクリプトは hadolint に組み込まれた ShellCheck にかける。設定は [`.github/hadolint.yaml`](../.github/hadolint.yaml) にある | `hadolint` |
+| [`check-jsonschema.yml`](../.github/workflows/check-jsonschema.yml) | `devcontainer.json`・issue のテンプレート・アクションの定義（`action.yml`）が、それぞれの仕様のスキーマに沿っているか。[check-jsonschema](https://github.com/python-jsonschema/check-jsonschema) で検査する。詳しくは [check-jsonschema](#check-jsonschema) | `check-jsonschema` |
+| [`golang-check.yml`](../.github/workflows/golang-check.yml) | [`golang`](../golang) の Go のコード。golang の Dev Container のイメージを [`compose.yaml`](../compose.yaml) のとおりにビルドする。そのなかで、`go mod tidy`・ビルド・`go vet`・gofumpt の整形・[staticcheck](https://staticcheck.dev/)・[gosec](https://github.com/securego/gosec)・`go test` を順に検査する。ツールの `go.mod`・`go.sum` が `go mod tidy` で整えた状態か、ほかで動かさない gopls と govulncheck が起動するかも確認する。staticcheck の設定は [`golang/staticcheck.conf`](../golang/staticcheck.conf) にある。詳しくは [golang-check](#golang-check) | `golang-check` |
+| [`node-check.yml`](../.github/workflows/node-check.yml) | [`node`](../node) のコード。node の Dev Container のイメージを [`compose.yaml`](../compose.yaml) のとおりにビルドする。そのなかで、[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) の整形・[oxlint](https://oxc.rs/docs/guide/usage/linter.html) の規則を順に検査する。続いて [knip](https://knip.dev/) で使われていないファイル・export・依存関係を探し、最後に `next build` で TypeScript の型を検査してビルドできるかを確認する。設定は [`node/tsconfig.json`](../node/tsconfig.json)・[`node/.oxfmtrc.jsonc`](../node/.oxfmtrc.jsonc)・[`node/.oxlintrc.jsonc`](../node/.oxlintrc.jsonc) にある。詳しくは [node-check](#node-check) | `node-check` |
+| [`oxfmt.yml`](../.github/workflows/oxfmt.yml) | [`node`](../node) の外の JSON・YAML・TOML・Markdown などが、[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) の整形に沿っているか。設定は [`.oxfmtrc.jsonc`](../.oxfmtrc.jsonc) にある。詳しくは [oxfmt](#oxfmt) | `oxfmt` |
+| [`jscpd.yml`](../.github/workflows/jscpd.yml) | コピーして貼り付けたように、同じコードが繰り返されている箇所。[jscpd](https://github.com/kucherenko/jscpd) で検査する。詳しくは [jscpd](#jscpd) | `jscpd` |
+| [`settings-drift.yml`](../.github/workflows/settings-drift.yml) | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](../.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](github-settings.md#定義とのずれの検査) | なし |
+| [`govulncheck.yml`](../.github/workflows/govulncheck.yml) | [`golang`](../golang) の Go のコードが呼び出す、標準ライブラリと依存関係の既知の脆弱性。[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) で検査する。詳しくは [脆弱性とマルウェアの検査](scanning.md#脆弱性とマルウェアの検査) | なし |
+
+どのワークフローも、PR と `main` への push で動きます。動くタイミングが違うのは、次の 6 つです。
+
+- `pr-title.yml` は、PR の作成・編集・push・再オープンで動く
+- `signed-commits.yml` は、PR でだけ動く
+- `osv-scanner.yml` は毎日、`lychee.yml` は毎週も動く
+- `settings-drift.yml`・`govulncheck.yml` は、毎日と手動の実行でだけ動く
+
+## マージの条件
+
+- マージは squash だけで、PR タイトルがそのままコミットのタイトルになる（[`repository.json`](../.github/settings/repository.json)）。マージの画面や `gh pr merge --subject` で書き換えたタイトルは検査しない
+- 必須チェックは、`main` の最新を取り込んだ状態で通す必要がある。`main` が先に進んだら、PR のブランチに取り込んでから検査し直す
+- 必須チェックのほかに、CodeQL のアラートがあってもマージできない。詳しくは [CodeQL](#codeql)
+- `main` のコミットには、GitHub で Verified と表示される署名（GPG・SSH・S/MIME）が要る（[Require signed commits](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#require-signed-commits)）
+- 署名のないコミットを含む PR は、マージの状態が `BLOCKED` と判定される。画面・`gh pr merge`・自動マージは、この状態の PR をマージしない
+- ルールセットの署名の必須だけだと、REST・GraphQL の API での squash マージは止まらない。push の段階のルールは、GitHub の署名した squash のコミットだけを検査するため（[#427](https://github.com/kentayamada-dev/playground/pull/427)・[#430](https://github.com/kentayamada-dev/playground/pull/430)・[#431](https://github.com/kentayamada-dev/playground/pull/431) で確認）
+- API からのマージは、PR のコミットの署名を検査する必須チェック `signed-commits` で止める。コミットの数が 250 件より多い PR だと、このチェックは通らない。API でコミットの一覧を取れるのは 250 件までのため
+- Renovate のコミットには GitHub が署名する。詳しくは [GitHub App の準備](renovate.md#github-app-の準備)
+
+## 検査する範囲
+
+チェックごとに、次の範囲を検査します。どのチェックも、PR で変えたファイルにかかわらず、毎回すべてを検査します。
+
+| チェック | 検査する範囲 |
+| --- | --- |
+| `textlint`・`markdownlint` | リポジトリのすべての `.md` |
+| `test` | リポジトリ全体の `.sh`・`.bats`。`.git` は除く |
+| `editorconfig` | リポジトリ全体。`pnpm-lock.yaml` など、editorconfig-checker がデフォルトで除外するファイルは除く（[Default Excludes](https://github.com/editorconfig-checker/editorconfig-checker/blob/v4.0.2/README.md#default-excludes)） |
+| `actionlint` | すべてのワークフロー |
+| `zizmor` | すべてのワークフローと、リポジトリ内のアクション（`action.yml`） |
+| `ghalint` | すべてのワークフローと、リポジトリのルートから 3 階層までのディレクトリにあるアクション（`action.yml`） |
+| `renovate-config-validator` | [`.github/renovate.json5`](../.github/renovate.json5) |
+| `lychee` | リポジトリ全体。`.git` と、`.github/mise.lock`・`.github/yamllint/uv.lock`・`.github/check-jsonschema/uv.lock` は除く |
+| `typos` | リポジトリ全体。`.git` と、`typos.toml`・`pyproject.toml` など typos の設定ファイルと同じ名前のファイルは除く |
+| `yamllint` | リポジトリ全体の `.yml`・`.yaml`。`pnpm-lock.yaml` と、`.venv`・`node_modules` の下は除く |
+| `hadolint` | リポジトリ全体のうち、名前が `Dockerfile`・`Containerfile` のファイル。`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*`・`*.Containerfile` に一致するファイルも含む。`.git` は除く |
+| `check-jsonschema` | [`.devcontainer`](../.devcontainer) の下の各ディレクトリにある `devcontainer.json`。[`.github/ISSUE_TEMPLATE`](../.github/ISSUE_TEMPLATE) の拡張子が `.yml` のファイル。[`.github/actions`](../.github/actions) の下の各ディレクトリにある `action.yml` |
+| `golang-check` | [`golang`](../golang) のモジュールのすべてのパッケージ（`./...`）。gofumpt は、その下のすべての `.go`（`vendor`・`testdata` は除く）。gosec は、テストのファイル（`_test.go`）も検査する。`go mod tidy` は、`golang` のモジュールと、[`.devcontainer/golang/tools`](../.devcontainer/golang/tools) の下のすべてのディレクトリ。イメージは、ランナーと同じ arm64 のものだけをビルドする |
+| `node-check` | [`node`](../node) の下のファイル。`.gitignore` に一致するファイルは除く。`next build` の型の検査は、[`node/tsconfig.json`](../node/tsconfig.json) の `include` に一致するファイルで、`node_modules` の下を除く。oxfmt は、対応する形式のファイルで、ロックファイルを除く。oxlint は、JavaScript と TypeScript のファイル。knip は、JavaScript と TypeScript のファイルと、`package.json` の依存関係。`next build` は、[`node/app`](../node/app) のルートと、そこから読み込むファイル |
+| `oxfmt` | リポジトリ全体のうち、oxfmt が対応する形式のファイル。[`node`](../node) の下・`.gitignore` に一致するファイル・ロックファイルは除く |
+| `jscpd` | リポジトリ全体のうち、jscpd が対応する形式（[FORMATS.md](https://github.com/kucherenko/jscpd/blob/v5.4.2/FORMATS.md)）のファイル。`.git`・`.github/workflows`・`node_modules` の下と、`.gitignore` に一致するファイル・`pnpm-workspace.yaml`・`pnpm-lock.yaml` は除く |
+| `osv-scanner-licenses` | リポジトリ全体のロックファイルと `go.mod` |
+
+- 必須チェックのワークフローは `on.pull_request.paths` で絞らない。絞ると、実行されなかった PR の必須チェックが Pending のまま残り、マージできない（[Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)）
+- 範囲の決め方と除く理由は、各ワークフローと、[`.yamllint.yaml`](../.github/yamllint/.yamllint.yaml)・[`.github/lychee.toml`](../.github/lychee.toml)・[`.github/typos.toml`](../.github/typos.toml) のコメントに書いている
+- typos は、`typos.toml`・`Cargo.toml`・`pyproject.toml` など設定ファイルと同じ名前のファイルを、渡し方によらず読まない（[`file.rs`](https://github.com/crate-ci/typos/blob/v1.51.1/crates/typos-cli/src/file.rs#L942-L951)）。そのため、[`.github/typos.toml`](../.github/typos.toml) と [`.github/yamllint/pyproject.toml`](../.github/yamllint/pyproject.toml) は検査しない
+
+## 外部のサービスへの接続
+
+次の必須チェックは、ツール・依存関係・イメージなどを外部のサービスから取得します。どれかに接続できないと、どの PR もマージできません。
+
+| チェック | 接続するサービス |
+| --- | --- |
+| `textlint`・`oxfmt`・`jscpd` | Takumi Guard のレジストリ |
+| `yamllint` | PyPI |
+| `check-jsonschema` | PyPI・GitHub（`devcontainer.json` のスキーマ） |
+| `renovate-config-validator` | Docker Hub |
+| `golang-check` | Docker Hub・Go のモジュールプロキシ |
+| `node-check` | Docker Hub・Takumi Guard のレジストリ・Google Fonts（`next build` が取得する `next/font/google` のフォント。[Font Module](https://nextjs.org/docs/app/api-reference/components/font)） |
+
+## ツールごとの補足
+
+### 失敗する条件
+
+次のツールは、軽い指摘でも失敗するように実行しています。
+
+| ツール | 失敗する条件 |
+| --- | --- |
+| renovate-config-validator | `--strict` を付け、エラーと警告に加えて、設定の移行が必要なだけのときも失敗する（[renovate-config-validator の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/config-validator.ts#L101-L120)） |
+| zizmor | 指摘が 1 件でもあると失敗する。`--strict-collection` を付け、入力のファイルを解析できないときも失敗する（[Input collection](https://docs.zizmor.sh/usage/#input-collection)）。`--persona=pedantic` を付け、すぐには攻撃に使えないコードの臭いも指摘させる（[Using personas](https://docs.zizmor.sh/usage/#using-personas)）。PR の注釈は最初の 10 件までで、残りはジョブのログにだけ出る（[Output formats](https://docs.zizmor.sh/usage/#output-formats)） |
+| ShellCheck | `--enable=all` を付け、デフォルトでは無効の任意のチェックもすべて有効にする（[shellcheck.1.md](https://github.com/koalaman/shellcheck/blob/v0.11.0/shellcheck.1.md)） |
+| shfmt | [`.editorconfig`](../.editorconfig) の `simplify = true` で、もっと簡単に書けるコードも差分として出す |
+| yamllint | `--strict` を付け、warning の指摘でも失敗する（[Errors and warnings](https://yamllint.readthedocs.io/en/stable/configuration.html#errors-and-warnings)） |
+| hadolint | [`.github/hadolint.yaml`](../.github/hadolint.yaml) の `failure-threshold: style` で、重大度が style の指摘でも失敗する。`label-schema` のラベルがないときと、`strict-labels` でそれ以外のラベルがあるときも失敗する（[Linting Labels](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#linting-labels)） |
+| staticcheck | [`golang/staticcheck.conf`](../golang/staticcheck.conf) の `checks = ["all"]` で、デフォルトでは無効のスタイルの検査もすべて有効にする（[Configuration](https://staticcheck.dev/docs/configuration/)） |
+| oxlint | [`node/.oxlintrc.jsonc`](../node/.oxlintrc.jsonc) で、開発中の `nursery` を除くすべてのカテゴリの規則をエラーにする。Tailwind CSS のクラスの規則も、行の折り返しを除いてすべてエラーにする。warning と、使われていない無効化のコメントでも失敗する（[`options`](https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#options)） |
+| go mod tidy | `-diff` を付け、`go.mod`・`go.sum` を書き換えずに、整えた結果との差分があると失敗する（[go mod tidy](https://go.dev/ref/mod#go-mod-tidy)） |
+| jscpd | `--exit-code` を付け、重複が 1 か所でもあると失敗する。`--fail-on-empty` を付け、検査したファイルが 1 つもないときも失敗する（[Exit codes](https://github.com/kucherenko/jscpd/blob/v5.4.2/docs/rust.md#exit-codes)） |
+
+### 指摘を無視する方法
+
+| ツール | 無視する方法 |
+| --- | --- |
+| zizmor | YAML の該当する行に `# zizmor: ignore[<監査名>]` と書く（[Ignoring results](https://docs.zizmor.sh/usage/#ignoring-results)） |
+| typos | 誤検知は、[`.github/typos.toml`](../.github/typos.toml) の `extend-ignore-re` に、その箇所だけに一致する正規表現を足して除外する（[`default.extend-ignore-re`](https://github.com/crate-ci/typos/blob/v1.51.1/docs/reference.md#defaultextend-ignore-re)） |
+| markdownlint | 該当する行の前に `<!-- markdownlint-disable-next-line <ルール名> -->` と書く（[Configuration](https://github.com/DavidAnson/markdownlint/blob/v0.41.1/README.md#configuration)） |
+| yamllint | 該当する行に `# yamllint disable-line rule:<ルール名>` と書く（[Disable with comments](https://yamllint.readthedocs.io/en/stable/disable_with_comments.html#disabling-checks-for-a-specific-line)） |
+| hadolint | 該当する命令の前の行に `# hadolint ignore=<ルール名>` と書く（[Inline ignores](https://github.com/hadolint/hadolint/blob/v2.15.1/README.md#inline-ignores)） |
+| staticcheck | 該当する行の前に `//lint:ignore <チェック名> <理由>` と書く。理由は省略できない（[Ignoring problems with linter directives](https://staticcheck.dev/docs/configuration/#ignoring-problems)） |
+| gosec | 指摘された行に `// #nosec <規則名> -- <理由>` と書く。理由は省略できる（[Annotating code](https://github.com/securego/gosec/blob/v2.30.0/README.md#annotating-code)） |
+| oxlint | 該当する行の前に `// oxlint-disable-next-line <規則名>` と書く（[Inline suppressions](https://oxc.rs/docs/guide/usage/linter/ignore-comments.html)） |
+| oxfmt | 整形させない文の前に `// oxfmt-ignore` と書く。JSX のなかでは `{/* oxfmt-ignore */}` と書く。JavaScript と TypeScript のほかのファイルでは、`prettier-ignore` を使う（[Ignore comments](https://oxc.rs/docs/guide/usage/formatter/ignore-comments.html)） |
+| knip | 使われていない export は、JSDoc で `@public` タグを付ける（[JSDoc & TSDoc Tags](https://knip.dev/reference/jsdoc-tsdoc-tags)）。依存関係は、`node` に `knip.json` を作り、`ignoreDependencies` に足す（[Configuration](https://knip.dev/reference/configuration)） |
+| Betterleaks | その行のコメントに `betterleaks:allow` と書く。書けないときは、[シークレットの検査](scanning.md#シークレットの検査) のとおり `.betterleaksignore` を使う |
+| jscpd | 除く範囲の前後に、その言語のコメントで `jscpd:ignore-start` と `jscpd:ignore-end` を書く（[Ignoring source regions](https://github.com/kucherenko/jscpd/blob/v5.4.2/docs/rust.md#ignoring-source-regions)） |
+
+### actionlint
+
+- ランナーのラベル `ubuntu-26.04-arm` を、[`actionlint.yaml`](../.github/actionlint.yaml) でセルフホストのランナーのラベルとして認めている。理由は、そのファイルのコメントに書いている
+
+### renovate-config-validator
+
+- [`renovate.yml`](../.github/workflows/renovate.yml) で動かす Renovate と同じ版の Docker イメージを、ジョブのコンテナにして使う
+
+### zizmor
+
+- `GITHUB_TOKEN` を渡し、GitHub API で調べる監査も動かす（[Operating modes](https://docs.zizmor.sh/usage/#operating-modes)）。対象は `impostor-commit`・`known-vulnerable-actions`・`ref-confusion` の 3 つ
+- `--persona=pedantic` の指摘に合わせて、ワークフローを次のように書く（[Audit Rules](https://docs.zizmor.sh/audits/)）
+  - すべてのジョブに `name` を書く（`anonymous-definition`）。`name` は必須チェックの名前になるので、ジョブ ID と同じにする。変えるときは [`rulesets/main.json`](../.github/settings/rulesets/main.json) の `context` も合わせる
+  - `concurrency` を書く（`concurrency-limits`）。同じ PR に push し直したら、古い実行を取り消す。PR 以外は実行ごとにグループを分け、`main` への push や定期実行は取り消さない。同時に動くと困るワークフローは、ワークフロー単位のグループにして実行を重ねない
+  - `contents: read` 以外の `permissions` には、行末のコメントで理由を書く（`undocumented-permissions`）
+
+### ghalint
+
+zizmor の監査にない次のポリシーのために使います（[Policies](https://github.com/suzuki-shunsuke/ghalint/blob/v1.5.6/README.md#policies)・[zizmor の監査の一覧](https://docs.zizmor.sh/audits/)）。
+
+- `job_timeout_minutes_is_required` は、すべてのジョブに `timeout-minutes` を求める
+- `workflow_secrets`・`job_secrets` は、シークレットをワークフロー・ジョブの `env` に置かせない
+
+### lychee
+
+- ネットワークを使わず（`--offline`）、リポジトリ内のファイルへのリンクと見出しのアンカーだけを確認する
+- Markdown と HTML 以外のファイルからは URL だけを拾い、コメントに書いた相対パスは検査しない
+
+### markdownlint
+
+- [markdownlint-cli2-action](https://github.com/DavidAnson/markdownlint-cli2-action) に同梱された markdownlint-cli2 で検査する。npm から依存関係を取得しないので、`package.json` とロックファイルはない。markdownlint-cli2 の版は、アクションの版で決まる
+- 行の長さ・1 行目の見出し・表の列のそろえ方のルールを無効にしている。理由は [`.github/markdownlint-cli2.jsonc`](../.github/markdownlint-cli2.jsonc) のコメントに書いている
+- editorconfig や lychee の検査と重なるルールは、有効のままにしている
+
+### oxfmt
+
+- [`node`](../node) の外の、oxfmt が対応する形式（JSON・JSONC・JSON5・YAML・TOML・Markdown など）の整形を検査する。`node` の下は [node-check](#node-check) が検査する
+- ほかのリンターと規則がぶつかるときは、oxfmt の整形に合わせて、リンターの設定を変える
+- `.md` は、見出しの行が 1 行に収まらない表の列を揃えない。段落の改行は、日本語の文字に隣り合うものだけが残り、ほかは 1 行にまとまる。理由は [`.oxfmtrc.jsonc`](../.oxfmtrc.jsonc) のコメントに書いている
+- 手元では、`.github/oxfmt` に `pnpm install` で依存関係を入れる。リポジトリのルートから `.github/oxfmt/node_modules/.bin/oxfmt -c .oxfmtrc.jsonc` を実行すると、整形し直す。`--check` を付けると、CI と同じ検査になる
+- `-c` で設定を渡す理由は、[`oxfmt.yml`](../.github/workflows/oxfmt.yml) のコメントに書いている
+
+### jscpd
+
+- 重複とみなす長さは、jscpd のデフォルトの下限（`--min-tokens`・`--min-lines`）のまま変えていない（[Options](https://github.com/kucherenko/jscpd/blob/v5.4.2/docs/rust.md#options)）
+- Markdown のコードブロックは、Markdown ではなく、ブロックに書いた言語の形式で読む（[FORMATS.md](https://github.com/kucherenko/jscpd/blob/v5.4.2/FORMATS.md)）
+- 手元では、`.github/jscpd` に `pnpm install` で依存関係を入れる。リポジトリのルートから、[`jscpd.yml`](../.github/workflows/jscpd.yml) と同じ引数で `.github/jscpd/node_modules/.bin/jscpd` を実行すると、CI と同じ検査になる
+
+### bats
+
+- `LC_ALL=C` を付けて実行する。手元で実行するときも付ける。理由は [`test.yml`](../.github/workflows/test.yml) のコメントに書いている
+
+### yamllint
+
+- デフォルトの設定から、次の 4 つを変えている。理由は [`.yamllint.yaml`](../.github/yamllint/.yamllint.yaml) のコメントに書いている
+  - 行の長さ（`line-length`）と、ファイルの先頭の `---`（`document-start`）を検査しない
+  - 真偽値の書き方（`truthy`）は、値だけを検査し、キーは検査しない
+  - 行末のコメントの前の空白（`comments`）は、1 つでよい
+- yamllint の入れ方は [uv で入れるツール](#uv-で入れるツール) にある
+
+### hadolint
+
+- 対象のファイルが 1 つもなければ、hadolint を実行せずに成功する
+- `RUN` のスクリプトは、hadolint にライブラリとして組み込まれた ShellCheck で検査する。mise で入れる ShellCheck は使わない（[`hadolint.cabal`](https://github.com/hadolint/hadolint/blob/v2.15.1/hadolint.cabal#L169)）
+- 設定は [`.github/hadolint.yaml`](../.github/hadolint.yaml) に書き、`--config` で渡す。検査の前に、style の指摘だけが出る Dockerfile を標準入力から渡し、設定が効いて失敗することを確認する
+- Dockerfile のラベルは、`.github/hadolint.yaml` の `label-schema` に挙げた 4 つだけを書く。値は変数で渡さず、各 Dockerfile に直接書く
+- 理由は、[`hadolint.yml`](../.github/workflows/hadolint.yml) と `.github/hadolint.yaml` のコメントに書いている
+
+### check-jsonschema
+
+- `devcontainer.json` は、[Dev Container の仕様](https://github.com/devcontainers/spec) のベースのスキーマで検査する。スキーマにないキーや、値の型の誤りがあると失敗する
+  - `customizations` は、オブジェクトであることだけを検査する。VS Code の設定や拡張機能の中身は検査しない
+  - スキーマは、コミットで固定した URL から読む。Renovate は更新しないため、仕様の更新に合わせるときは手で上げる
+- `compose.yaml` は検査しない。`golang-check`・`node-check` の `docker compose build` が、読むときに Compose のスキーマで検査するため
+- issue のテンプレートと `action.yml` は、check-jsonschema に同梱のスキーマで検査する（[`catalog.py`](https://github.com/python-jsonschema/check-jsonschema/blob/0.38.2/src/check_jsonschema/catalog.py)）
+  - 同梱のスキーマは check-jsonschema のパッケージに入っていて、check-jsonschema を上げる Renovate の更新で一緒に変わる
+- check-jsonschema の入れ方は [uv で入れるツール](#uv-で入れるツール) にある
+
+### golang-check と node-check
+
+- どちらも、Dev Container のイメージを [`compose.yaml`](../compose.yaml) のとおりにビルドし、そのイメージのなかで検査する
+- 同じイメージで検査する理由は、[`golang-check.yml`](../.github/workflows/golang-check.yml)・[`node-check.yml`](../.github/workflows/node-check.yml) のコメントに書いている
+- イメージのビルドのキャッシュは使わず、毎回すべての層をビルドする
+- 検査は順に実行し、失敗したところで止まる。後の検査は実行しない
+
+### golang-check
+
+- 手元では、golang のコンテナで CI と同じ検査ができる。実行のしかたは [`golang/Makefile`](../golang/Makefile) にある
+- staticcheck は、エディタの gopls と同じく、すべての検査を有効にしている
+- `go test` は、テストのファイルがないパッケージを `[no test files]` と出して成功として扱う
+- ビルドは、VCS の情報を埋め込まず、実行ファイルを一時ディレクトリに書いて捨てる。手元の `make build` とは出力が違う
+- ビルドと gofumpt に付けるオプションの理由は、[`golang-check.yml`](../.github/workflows/golang-check.yml) のコメントに書いている
+
+### node-check
+
+- 手元では、node のコンテナで `pnpm fmt:check`・`pnpm lint`・`pnpm knip`・`pnpm build` を実行すると、CI と同じ検査ができる。`pnpm typecheck` は、ビルドせずに型だけを検査する。`pnpm fmt` を実行すると整形し直す
+- `pnpm typecheck` は、Next.js が生成するルートの型（`.next/types`）を作ってから検査する。`tsc` だけでは、その型がないときに `LayoutProps` などが見つからずに失敗する
+- `pnpm lint` は、`pnpm typecheck` と同じく、Next.js が生成するルートの型を作ってから検査する。その型がないと、型情報を使う規則が `LayoutProps` などを解決できず、誤った指摘を出す
+- oxfmt のインデントや改行の設定は、リポジトリのルートの [`.editorconfig`](../.editorconfig) から読む
+- oxlint は、型情報を使う規則も動かす。型情報は `oxlint-tsgolint` が [`node/tsconfig.json`](../node/tsconfig.json) から作る
+- oxlint は、Tailwind CSS のクラスも [eslint-plugin-better-tailwindcss](https://github.com/schoero/eslint-plugin-better-tailwindcss) の規則で検査する
+  - ESLint のプラグインを、oxlint の JS プラグインとして動かす。JS プラグインは、まだ alpha の機能（[JS Plugins](https://oxc.rs/docs/guide/usage/linter/js-plugins.html)）
+  - クラスの正規の形は Tailwind CSS 本体が決める。そのため `tailwindcss` を更新すると、指摘の内容も変わりうる
+- 外した規則と、デフォルトのオプションを変えた規則の理由は、[`node/.oxlintrc.jsonc`](../node/.oxlintrc.jsonc) と、その `extends` で読み込むファイルのコメントに書いている
+- knip は設定ファイルを置かず、デフォルトの設定で動かす。Next.js や oxlint のプラグインが、それぞれの設定からエントリーのファイルと使っている依存関係を読み取る（[Plugins](https://knip.dev/explanations/plugins)）
+- node の Dev Container には Oxc の VS Code 拡張機能を入れ、保存すると oxfmt で整形する設定にしている
+
+## 外部リンクの定期検査
+
+外部のリンクは、[`lychee.yml`](../.github/workflows/lychee.yml) の `lychee-external` が毎週月曜と手動の実行（`workflow_dispatch`）で検査します。必須チェックではありません。
+
+- `429`・`502`・`503`・`504` は成功として扱う
+- `mise.lock` と `uv.lock` の URL は、[`.github/lychee.toml`](../.github/lychee.toml) で検査から除く
+- node と golang のサーバーのアドレス（`http://localhost:3000` など）も、`.github/lychee.toml` で検査から除く
+- 理由は、[`lychee.yml`](../.github/workflows/lychee.yml) と `.github/lychee.toml` のコメントに書いている
+- HTTPS で開けるリンクを `http://` で書いていると、失敗する（`require_https`、[lychee.example.toml](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee.example.toml#L98-L99)）。PR の検査は `--offline` でネットワークを使わないため、この検査は効かない
+- 通らないリンクがあると、issue で知らせる（[検査の失敗を知らせる issue](#検査の失敗を知らせる-issue)）
+- リンクを直したら、次の検査を待つか、手動で実行して issue を閉じる
+
+## 検査の失敗を知らせる issue
+
+次の検査は、失敗すると [`report-scheduled-check.sh`](../.github/scripts/report-scheduled-check/report-scheduled-check.sh) が issue を作って知らせます。
+
+| 検査 | issue のタイトル | ラベル |
+| --- | --- | --- |
+| [`lychee.yml`](../.github/workflows/lychee.yml) の `lychee-external` | docs: 外部リンクの定期検査で見つかったリンク切れを直す | `documentation` |
+| [`settings-drift.yml`](../.github/workflows/settings-drift.yml) | chore: 定期検査で見つかった GitHub の設定と定義のずれを直す | `configuration` |
+| [`govulncheck.yml`](../.github/workflows/govulncheck.yml) | fix(golang): 定期検査で見つかった Go の脆弱性を直す | `dependencies`・`security` |
+| `main` での [`osv-scanner.yml`](../.github/workflows/osv-scanner.yml) の `osv-scanner-full` | fix: main の依存関係の検査で見つかった脆弱性を直す | `dependencies`・`security` |
+
+- 同じタイトルの issue が開いていれば、新しく作らずに本文を最新の結果に書き換える
+- 検査が通ると、開いている issue に実行の URL をコメントして閉じる
+
+## CodeQL
+
+ワークフローのほかに、CodeQL のデフォルトセットアップが、GitHub Actions のワークフローと、Go・JavaScript・TypeScript のコードを解析します。クエリのスイートは `default` です（[`security.json`](../.github/settings/security.json)）。
+
+- エラー・警告のアラートか、medium 以上の重大度のセキュリティアラートがあると、ルールセットの `code_scanning` ルールでマージできない
+- 解析は、`main` への push、`main` に向けた PR の作成と push、週 1 回の定期実行で動く。フォークからの PR は解析しない（[デフォルトセットアップ](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types)）
+
+## 使うツール
+
+CI のツールは、[mise](https://mise.jdx.dev/) で入れています。対象は、[ダウンロードするファイルの検証](#ダウンロードするファイルの検証) の表に並べたツールです。[`.github/mise.toml`](../.github/mise.toml) で版を、[`.github/mise.lock`](../.github/mise.lock) でダウンロードするファイルの sha256 を固定し、どちらも Renovate が更新します。手元では使わないので、ルートではなく `.github` に置き、[`setup-mise`](../.github/actions/setup-mise/action.yml) が mise-action の `working_directory` で読ませています。
+
+### `mise.lock` の更新
+
+- `mise.lock` には、CI の linux-arm64 だけを記録している。`mise lock` は `--platform` を付けないと `mise.lock` にあるプラットフォームだけを対象にするので、手元で実行しても macOS などの記録は増えない（[`mise lock`](https://mise.jdx.dev/cli/lock.html)）
+
+### ダウンロードするファイルの検証
+
+署名は、`mise lock` で `mise.lock` を更新するときに検証します。CI のインストールでは検証し直さず、`mise.lock` の sha256 と照合します（[`locked_verify_provenance`](https://mise.jdx.dev/configuration/settings.html#locked_verify_provenance)）。
+
+バックエンドは `mise.lock` の `backend` の値です。
+
+| ツール | バックエンド | 検証の方法 |
+| --- | --- | --- |
+| Betterleaks | aqua | `checksums.txt` を cosign の署名で検証する（[aqua レジストリの定義](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/betterleaks/betterleaks/registry.yaml)） |
+| actionlint・hadolint・jq・uv・zizmor | aqua | GitHub の artifact attestations で検証する（aqua レジストリの定義: [actionlint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/rhysd/actionlint/registry.yaml)・[hadolint](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/hadolint/hadolint/registry.yaml)・[jq](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/jqlang/jq/registry.yaml)・[uv](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/astral-sh/uv/registry.yaml)・[zizmor](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/zizmorcore/zizmor/registry.yaml)） |
+| editorconfig-checker・shfmt・ghalint・typos | github | GitHub の artifact attestations で検証する（[github バックエンド](https://mise.jdx.dev/dev-tools/backends/github.html)） |
+| ShellCheck | aqua | リリースに署名もチェックサムのファイルもない。`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest を使う |
+| lychee | aqua | リリースに署名も GitHub の artifact attestations もない。aqua レジストリの定義にも検証の設定がない（[lycheeverse/lychee](https://github.com/aquaproj/aqua-registry/blob/main/pkgs/lycheeverse/lychee/registry.yaml)）。`mise.lock` の sha256 は、GitHub がリリースのファイルごとに返す digest と同じ値になる |
+| bats | aqua | リリースにファイルがなく、タグのソースアーカイブを入れる。`mise lock` は sha256 を記録しないので、版（タグ）でだけ固定している |
+
+- github バックエンドで入れるツールを選んだ理由は、[`.github/mise.toml`](../.github/mise.toml) のコメントに書いている
+- typos のリリースのファイルに付く attestation は、タグとファイルを結び付けるリリースの attestation だけで、ビルドしたワークフローを含まない
+
+### pnpm で入れるツール
+
+textlint・oxfmt・jscpd は、[`.github/textlint`](../.github/textlint)・[`.github/oxfmt`](../.github/oxfmt)・[`.github/jscpd`](../.github/jscpd) に pnpm で入れています。
+
+- pnpm の版は、各ディレクトリの `package.json` の `devEngines.packageManager` だけで管理し、Renovate が更新する（[#26](https://github.com/kentayamada-dev/playground/pull/26)）
+- CI の pnpm/action-setup も、Renovate がロックファイルを更新するときも、この版を使う（[Renovate の実装](https://github.com/renovatebot/renovate/blob/44.151.1/lib/modules/manager/npm/post-update/pnpm.ts#L55-L65)）
+- oxfmt と jscpd の `pnpm-workspace.yaml` は、textlint のものとそろえている
+
+### uv で入れるツール
+
+yamllint と check-jsonschema は Python のパッケージで、依存関係まで版と sha256 を固定するため、mise ではなく uv で入れています。uv 本体は mise で入れます。
+
+- [`.github/yamllint`](../.github/yamllint)・[`.github/check-jsonschema`](../.github/check-jsonschema) の `pyproject.toml` でツールの版を、`uv.lock` で依存関係を含むすべての版と sha256 を固定する
+- `pyproject.toml` と `uv.lock` は、Renovate の pep621 マネージャーが更新する（[pep621](https://docs.renovatebot.com/modules/manager/pep621/)）
+- yamllint は、PyYAML と pathspec に依存する（[PyPI](https://pypi.org/project/yamllint/)）
