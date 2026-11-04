@@ -1,0 +1,5 @@
+name: schema-test
+description: 検証用。runs.using が不正なため、スキーマの検査で失敗する
+runs:
+  using: composit
+  steps: []
