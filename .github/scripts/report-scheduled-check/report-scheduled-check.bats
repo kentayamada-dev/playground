@@ -411,10 +411,13 @@ EOF
   ]'
 }
 
-@test "grype では、修正版のある脆弱性を表にした本文で、イメージの脆弱性の issue を作る" {
+@test "grype では、修正版のある脆弱性をイメージ・ソースパッケージ・種類・版ごとにまとめた表の本文で、イメージの脆弱性の issue を作る" {
   cat >"${BATS_TEST_TMPDIR}/matches.jsonl" <<'EOF'
-{"image": "node", "name": "curl", "type": "deb", "version": "8.14.1-2+deb13u5", "fixed": ["8.14.1-2+deb13u6"], "id": "CVE-2026-0001", "url": "https://security-tracker.debian.org/tracker/CVE-2026-0001", "severity": "High", "path": "/var/lib/dpkg/status.d/curl"}
-{"image": "golang", "name": "golang.org/x/crypto", "type": "go-module", "version": "v0.58.0", "fixed": ["0.59.0", "0.60.0"], "id": "GHSA-aaaa-bbbb-cccc", "url": "https://github.com/advisories/GHSA-aaaa-bbbb-cccc", "severity": "Medium", "path": "/go/bin/gosec"}
+{"image": "node", "package": "curl", "type": "deb", "version": "8.14.1-2+deb13u5", "fixed": ["8.14.1-2+deb13u6"], "id": "CVE-2026-0001", "severity": "High"}
+{"image": "node", "package": "curl", "type": "deb", "version": "8.14.1-2+deb13u5", "fixed": ["8.14.1-2+deb13u6"], "id": "CVE-2026-0001", "severity": "High"}
+{"image": "node", "package": "curl", "type": "deb", "version": "8.14.1-2+deb13u5", "fixed": ["8.14.1-2+deb13u7"], "id": "CVE-2026-0002", "severity": "Critical"}
+{"image": "golang", "package": "curl", "type": "deb", "version": "8.14.1-2+deb13u5", "fixed": ["8.14.1-2+deb13u6"], "id": "CVE-2026-0001", "severity": "High"}
+{"image": "golang", "package": "stdlib", "type": "go-module", "version": "go1.27.2", "fixed": ["1.26.10", "1.27.3"], "id": "GO-2026-0001", "severity": "Medium"}
 EOF
   given_github_issues '[{"number": 185, "title": "fix(golang): 定期検査で見つかった Go の脆弱性を直す", "state": "open", "body": "前回の結果"}]'
 
@@ -422,31 +425,19 @@ EOF
 
   assert_github_issues '[
     {"number": 185, "title": "fix(golang): 定期検査で見つかった Go の脆弱性を直す", "state": "open", "body": "前回の結果"},
-    {"number": 186, "title": "fix(devcontainer): 定期検査で見つかった、修正版のあるイメージの脆弱性を直す", "state": "open", "body": "[Dev Container のイメージの検査](https://example.com/owner/repo/actions/runs/123) で、修正版のある脆弱性が見つかりました。ベースイメージに入っているものはベースイメージを、ツールに入っているものはツールを、修正版を含む版に上げてください。\n\n| イメージ | パッケージ | 種類 | 入っている版 | 修正版 | 脆弱性 | 深刻度 | 場所 |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| node | curl | deb | 8.14.1-2+deb13u5 | 8.14.1-2+deb13u6 | [CVE-2026-0001](https://security-tracker.debian.org/tracker/CVE-2026-0001) | High | /var/lib/dpkg/status.d/curl |\n| golang | golang.org/x/crypto | go-module | v0.58.0 | 0.59.0, 0.60.0 | [GHSA-aaaa-bbbb-cccc](https://github.com/advisories/GHSA-aaaa-bbbb-cccc) | Medium | /go/bin/gosec |\n", "labels": ["dependencies", "security"]}
-  ]'
-}
-
-@test "grype で、脆弱性の URL がなければ、ID をリンクにせずに載せる" {
-  cat >"${BATS_TEST_TMPDIR}/matches.jsonl" <<'EOF'
-{"image": "node", "name": "curl", "type": "deb", "version": "8.14.1-2+deb13u5", "fixed": ["8.14.1-2+deb13u6"], "id": "CVE-2026-0001", "url": "", "severity": "High", "path": "/var/lib/dpkg/status.d/curl"}
-EOF
-
-  run -0 "${script}" grype "${BATS_TEST_TMPDIR}/matches.jsonl"
-
-  assert_github_issues '[
-    {"number": 1, "title": "fix(devcontainer): 定期検査で見つかった、修正版のあるイメージの脆弱性を直す", "state": "open", "body": "[Dev Container のイメージの検査](https://example.com/owner/repo/actions/runs/123) で、修正版のある脆弱性が見つかりました。ベースイメージに入っているものはベースイメージを、ツールに入っているものはツールを、修正版を含む版に上げてください。\n\n| イメージ | パッケージ | 種類 | 入っている版 | 修正版 | 脆弱性 | 深刻度 | 場所 |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| node | curl | deb | 8.14.1-2+deb13u5 | 8.14.1-2+deb13u6 | CVE-2026-0001 | High | /var/lib/dpkg/status.d/curl |\n", "labels": ["dependencies", "security"]}
+    {"number": 186, "title": "fix(devcontainer): 定期検査で見つかった、修正版のあるイメージの脆弱性を直す", "state": "open", "body": "[Dev Container のイメージの検査](https://example.com/owner/repo/actions/runs/123) で、修正版のある脆弱性が見つかりました。ベースイメージに入っているものはベースイメージを、ツールに入っているものはツールを、修正版を含む版に上げてください。個々の脆弱性は、実行のログにあります。\n\n| イメージ | パッケージ | 種類 | 入っている版 | 修正版 | 脆弱性の数 | 最も高い深刻度 |\n| --- | --- | --- | --- | --- | --- | --- |\n| golang | curl | deb | 8.14.1-2+deb13u5 | 8.14.1-2+deb13u6 | 1 | High |\n| golang | stdlib | go-module | go1.27.2 | 1.26.10, 1.27.3 | 1 | Medium |\n| node | curl | deb | 8.14.1-2+deb13u5 | 8.14.1-2+deb13u6, 8.14.1-2+deb13u7 | 2 | Critical |\n", "labels": ["dependencies", "security"]}
   ]'
 }
 
 @test "grype で、値に | があれば、列が分かれないようにエスケープする" {
   cat >"${BATS_TEST_TMPDIR}/matches.jsonl" <<'EOF'
-{"image": "node", "name": "a|b", "type": "deb", "version": "1.0", "fixed": ["1.1"], "id": "CVE-2026-0001", "url": "", "severity": "Low", "path": "/var/lib/dpkg/status"}
+{"image": "node", "package": "a|b", "type": "deb", "version": "1.0", "fixed": ["1.1"], "id": "CVE-2026-0001", "severity": "Low"}
 EOF
 
   run -0 "${script}" grype "${BATS_TEST_TMPDIR}/matches.jsonl"
 
   assert_github_issues '[
-    {"number": 1, "title": "fix(devcontainer): 定期検査で見つかった、修正版のあるイメージの脆弱性を直す", "state": "open", "body": "[Dev Container のイメージの検査](https://example.com/owner/repo/actions/runs/123) で、修正版のある脆弱性が見つかりました。ベースイメージに入っているものはベースイメージを、ツールに入っているものはツールを、修正版を含む版に上げてください。\n\n| イメージ | パッケージ | 種類 | 入っている版 | 修正版 | 脆弱性 | 深刻度 | 場所 |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| node | a\\|b | deb | 1.0 | 1.1 | CVE-2026-0001 | Low | /var/lib/dpkg/status |\n", "labels": ["dependencies", "security"]}
+    {"number": 1, "title": "fix(devcontainer): 定期検査で見つかった、修正版のあるイメージの脆弱性を直す", "state": "open", "body": "[Dev Container のイメージの検査](https://example.com/owner/repo/actions/runs/123) で、修正版のある脆弱性が見つかりました。ベースイメージに入っているものはベースイメージを、ツールに入っているものはツールを、修正版を含む版に上げてください。個々の脆弱性は、実行のログにあります。\n\n| イメージ | パッケージ | 種類 | 入っている版 | 修正版 | 脆弱性の数 | 最も高い深刻度 |\n| --- | --- | --- | --- | --- | --- | --- |\n| node | a\\|b | deb | 1.0 | 1.1 | 1 | Low |\n", "labels": ["dependencies", "security"]}
   ]'
 }
 
@@ -456,7 +447,7 @@ EOF
   run -0 "${script}" grype "${BATS_TEST_TMPDIR}/matches.jsonl"
 
   assert_github_issues '[
-    {"number": 1, "title": "fix(devcontainer): 定期検査で見つかった、修正版のあるイメージの脆弱性を直す", "state": "open", "body": "[Dev Container のイメージの検査](https://example.com/owner/repo/actions/runs/123) で、修正版のある脆弱性が見つかりました。ベースイメージに入っているものはベースイメージを、ツールに入っているものはツールを、修正版を含む版に上げてください。\n\nなし。検査そのものが失敗していないか、実行のログを確認してください。\n", "labels": ["dependencies", "security"]}
+    {"number": 1, "title": "fix(devcontainer): 定期検査で見つかった、修正版のあるイメージの脆弱性を直す", "state": "open", "body": "[Dev Container のイメージの検査](https://example.com/owner/repo/actions/runs/123) で、修正版のある脆弱性が見つかりました。ベースイメージに入っているものはベースイメージを、ツールに入っているものはツールを、修正版を含む版に上げてください。個々の脆弱性は、実行のログにあります。\n\nなし。検査そのものが失敗していないか、実行のログを確認してください。\n", "labels": ["dependencies", "security"]}
   ]'
 }
 

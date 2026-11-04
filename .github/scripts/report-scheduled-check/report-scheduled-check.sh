@@ -84,26 +84,28 @@ grype)
   labels=dependencies,security
   resolved_comment="[Dev Container のイメージの検査](${run_url}) で、修正版のある脆弱性が見つからなくなりました。"
   # 検査の出力は、Grype が見つけた脆弱性を 1 件ずつ JSON にして並べたもの。キーを変えるときは、出力を作る grype.yml の jq も合わせる
+  # 1 件ずつ並べると、今のイメージで 500 行を超え、issue の本文の上限の 65,536 文字に収まらないため、イメージ・ソースパッケージ・種類・版ごとに 1 行にまとめる
+  # https://github.com/github/issue-metrics/issues/258
   matches=$(jq -rs '
     # セルの中の | で列が分かれないようにする
     def cell: gsub("\\|"; "\\|");
+    def rank: {"Critical": 5, "High": 4, "Medium": 3, "Low": 2, "Negligible": 1}[.] // 0;
     if length == 0 then
       "なし。検査そのものが失敗していないか、実行のログを確認してください。"
     else
-      "| イメージ | パッケージ | 種類 | 入っている版 | 修正版 | 脆弱性 | 深刻度 | 場所 |",
-      "| --- | --- | --- | --- | --- | --- | --- | --- |",
-      (.[] | [
-        .image,
-        .name,
-        .type,
-        .version,
-        (.fixed | join(", ")),
-        (if .url == "" then .id else "[\(.id)](\(.url))" end),
-        .severity,
-        .path
+      "| イメージ | パッケージ | 種類 | 入っている版 | 修正版 | 脆弱性の数 | 最も高い深刻度 |",
+      "| --- | --- | --- | --- | --- | --- | --- |",
+      (group_by([.image, .package, .type, .version])[] | [
+        .[0].image,
+        .[0].package,
+        .[0].type,
+        .[0].version,
+        ([.[].fixed[]] | unique | join(", ")),
+        ([.[].id] | unique | length | tostring),
+        (max_by(.severity | rank) | .severity)
       ] | map(cell) | "| \(join(" | ")) |")
     end' <<<"${output}")
-  body="[Dev Container のイメージの検査](${run_url}) で、修正版のある脆弱性が見つかりました。ベースイメージに入っているものはベースイメージを、ツールに入っているものはツールを、修正版を含む版に上げてください。
+  body="[Dev Container のイメージの検査](${run_url}) で、修正版のある脆弱性が見つかりました。ベースイメージに入っているものはベースイメージを、ツールに入っているものはツールを、修正版を含む版に上げてください。個々の脆弱性は、実行のログにあります。
 
 ${matches}"
   ;;

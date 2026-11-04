@@ -51,14 +51,12 @@ jobs:
             grype "docker:$(docker compose config --images "$service")" --only-fixed --output json >"$RUNNER_TEMP/$service.json"
             jq -c --arg image "$service" '.matches[] | {
               image: $image,
-              name: .artifact.name,
+              package: (.artifact.upstreams[0].name // .artifact.name),
               type: .artifact.type,
               version: .artifact.version,
               fixed: .vulnerability.fix.versions,
               id: .vulnerability.id,
-              url: (.vulnerability.dataSource // ""),
-              severity: .vulnerability.severity,
-              path: (.artifact.locations[0].path // "")
+              severity: .vulnerability.severity
             }' "$RUNNER_TEMP/$service.json" >>"$RUNNER_TEMP/matches.jsonl"
           done
           cat "$RUNNER_TEMP/matches.jsonl"
