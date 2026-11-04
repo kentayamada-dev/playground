@@ -428,7 +428,7 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
   - Renovate も、`toolchain` の版で脆弱性を照会し、修正版への PR を作る
 - Dev Container のイメージの検査では、イメージをビルドして、OS パッケージと、イメージに入っている Go のツールなどのバイナリを検査する。修正版のあるものだけを出す理由と、OSV-Scanner でなく Grype を使う理由は、[`grype.yml`](.github/workflows/grype.yml) のコメントに書いている
   - Grype の脆弱性のデータベースは、実行のたびに Anchore の配信元から取得する。接続できないと、どの PR もマージできない
-  - `main` で見つかると、`grype-report` が issue「fix(devcontainer): 定期検査で見つかった、修正版のあるイメージの脆弱性を直す」を作る。本文には、見つかった脆弱性を、イメージ・ソースパッケージ・種類・版ごとに 1 行にまとめた表を載せる。個々の脆弱性は、実行のログに出す
+  - `main` で見つかると、`grype-report` が issue「fix(devcontainer): 定期検査で見つかった、修正版のあるイメージの脆弱性を直す」を作る。本文の表は、見つかった脆弱性を、イメージ・ソースパッケージ・種類・版ごとの 1 行にまとめる。個々の脆弱性は、実行のログに出す
   - issue には `dependencies` と `security` のラベルを付ける
   - 開いていれば、本文を最新の結果に書き換え、見つからなくなると閉じる。PR と `main` 以外の実行、報告する前に `main` へ新しいコミットが入った実行は、issue に触れない
 - govulncheck は、標準ライブラリも検査する。Go の脆弱性データベースには、標準ライブラリの脆弱性も載っている（例: [GO-2024-2687](https://pkg.go.dev/vuln/GO-2024-2687)）
