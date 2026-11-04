@@ -406,13 +406,13 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 
 ## 脆弱性とマルウェアの検査
 
-依存関係に既知の脆弱性やマルウェアがないかを、[OSV-Scanner](https://google.github.io/osv-scanner/) と Dependabot で検査しています。結果はどれも Security タブに出ます。Dev Container のイメージも OSV-Scanner で検査しますが、結果はジョブのログにだけ出します。Go のコードは、[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) でも検査し、結果を issue に出します。`main` の OSV-Scanner の検査が失敗したときも、issue で知らせます。
+依存関係に既知の脆弱性やマルウェアがないかを、[OSV-Scanner](https://google.github.io/osv-scanner/) と Dependabot で検査しています。結果はどれも Security タブに出ます。Dev Container と Supabase のイメージも OSV-Scanner で検査しますが、結果はジョブのログにだけ出します。Go のコードは、[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) でも検査し、結果を issue に出します。`main` の OSV-Scanner の検査が失敗したときも、issue で知らせます。
 
 | 仕組み | 実行のタイミング | 結果 |
 | --- | --- | --- |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner` | PR ごと | PR のベースと比べて新しく入ったものがあると失敗する。必須チェックなので、失敗するとマージできない |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-full` | `main` への push と毎日 | 見つかったものを Code scanning に出し、1 件でもあれば失敗する。失敗すると issue を作る |
-| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-image` | `main` への push と毎日 | node と golang の Dev Container のイメージで見つかったものをジョブのログに出す。見つかっても失敗しない |
+| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-image` | `main` への push と毎日 | node と golang の Dev Container のイメージと、[`compose.yaml`](compose.yaml) の `db`・`meta`・`studio` のイメージで見つかったものをジョブのログに出す。見つかっても失敗しない |
 | Dependabot アラート | アドバイザリが公開されたときと、依存関係を変えて push したとき | 脆弱性を Dependabot のアラートに出す |
 | [`govulncheck.yml`](.github/workflows/govulncheck.yml) | 毎日と手動の実行 | [`golang`](golang) のコードが呼び出す関数に脆弱性があると失敗し、issue を作る。必須チェックではない |
 
@@ -425,6 +425,7 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 - Go の標準ライブラリは、OSV-Scanner でも検査する。[`golang/osv-scanner.toml`](golang/osv-scanner.toml) の `ScanGoModVersion` で、[`golang/go.mod`](golang/go.mod) の `toolchain` の版を使う。OSV-Scanner は、デフォルトでは go.mod の Go の版を検査に使わない（[Scan Go Mod Version](https://google.github.io/osv-scanner/configuration/#scan-go-mod-version)）
   - Renovate も、`toolchain` の版で脆弱性を照会し、修正版への PR を作る
 - Dev Container のイメージの検査では、イメージをビルドして、OS パッケージと、イメージに入っている Go のツールなどのバイナリを検査する。見つかっても失敗させない理由と、Code scanning に出さない理由は、[`osv-scanner.yml`](.github/workflows/osv-scanner.yml) のコメントに書いている
+- Supabase のイメージは、ビルドせずに、`compose.yaml` で固定したダイジェストのイメージを取得して検査する
 - govulncheck は、標準ライブラリも検査する。Go の脆弱性データベースには、標準ライブラリの脆弱性も載っている（例: [GO-2024-2687](https://pkg.go.dev/vuln/GO-2024-2687)）
   - 標準ライブラリの脆弱性は、golang の Dev Container の Go の版で判定する。理由は、[`govulncheck.yml`](.github/workflows/govulncheck.yml) のコメントに書いている
   - テストのファイルと、Dev Container の Go のツールは検査しない

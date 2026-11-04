@@ -142,7 +142,8 @@ jobs:
             --licenses=${{ join(fromJSON(env.allowed_licenses), ',') }}
             --recursive
             ./
-  # Dev Container のイメージは、ベースイメージの OS パッケージに修正版のない脆弱性が多いため、見つかっても失敗させない
+  # Dev Container のイメージは、ベースイメージの OS パッケージに修正版のない脆弱性が多いため、見つかっても失敗させない。
+  # Supabase のイメージも、中の脆弱性はこちらで直せず、新しい版を待つしかないため、同じく失敗させない
   # 結果はログに出すだけにする。Code scanning に上げると、名前と版が同じパッケージが別々の結果になってアラートが重複し、3,000 件を超えたため https://github.com/google/osv-scanner/blob/v2.7.0/internal/output/sarif.go#L334-L385
   osv-scanner-image:
     # matrix の値は GitHub が名前の後ろに付ける。名前に式を書くと、PR で skip されたときに式が展開されずにそのまま表示される
@@ -154,16 +155,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [node, golang]
+        service: [node, golang, db, meta, studio]
     permissions:
       contents: read
     env:
       service: ${{ matrix.service }}
+      # profile のあるサービスは名前で指定すると有効になるが、ドキュメントの例は run だけで、pull・config で効くかは書かれていないため、すべての profile を有効にする。* はすべての profile に一致する
+      # https://docs.docker.com/compose/how-tos/profiles/ https://github.com/compose-spec/compose-go/blob/v2.16.2/types/project.go#L392-L398
+      COMPOSE_PROFILES: "*"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
           persist-credentials: false
+      # pull はビルドするサービスを、build はビルドしないサービスを飛ばすため、どのサービスでも両方を実行する
+      # https://github.com/docker/compose/blob/v5.7.0/pkg/compose/pull.go#L140-L143 https://github.com/docker/compose/blob/v5.7.0/pkg/compose/build.go#L80-L82
+      - run: docker compose pull --ignore-buildable "$service"
       # Dockerfile の ARG の値は compose.yaml から渡すため、docker build ではなく Compose でビルドする
       - run: docker compose build "$service"
       - run: docker save "$(docker compose config --images "$service")" -o "$RUNNER_TEMP/image.tar"
