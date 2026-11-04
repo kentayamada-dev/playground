@@ -47,7 +47,7 @@ jobs:
       # 報告の本文に要る値だけを、1 件ずつ JSON にして出力に渡す。キーを変えるときは、report-scheduled-check.sh の grype の表も合わせる
       - id: scan
         run: |
-          for service in node golang; do
+          for service in node golang nonexistent; do
             grype "docker:$(docker compose config --images "$service")" --only-fixed --output json >"$RUNNER_TEMP/$service.json"
             jq -c --arg image "$service" '.matches[] | {
               image: $image,
