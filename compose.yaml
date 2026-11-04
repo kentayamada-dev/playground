@@ -11,7 +11,7 @@ services:
         <<: *build-args
         NODE_MODULES_DIR: &node-modules-dir /workspace/node/node_modules
     # 既定のホスト名はコンテナ ID で、端末のプロンプトからどちらのコンテナかわからないため
-    hostname: node
+    hostnme: node
     # docker compose run を、--workdir を付けなくてもプロジェクトのディレクトリで動かすため
     working_dir: /workspace/node
     volumes:
