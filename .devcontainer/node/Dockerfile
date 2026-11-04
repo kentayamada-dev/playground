@@ -1,4 +1,4 @@
-FROM node:26.12.0-trixie@sha256:1b84b89ada025e3b14543cbb837ffaa1c1b5273b841c5b94dd1a8f9c1d8cf7fe
+FROM node:26.12.0-trixie@sha256:45a2bf9d9300e9cf47ecb375e38447c140c45ef5fbae869c430475b05b98d86e
 
 LABEL org.opencontainers.image.title="node" \
   org.opencontainers.image.description="node の Dev Container" \
