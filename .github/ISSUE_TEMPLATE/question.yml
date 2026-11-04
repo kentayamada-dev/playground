@@ -1,0 +1,2 @@
+name: 質問
+description: 検証用。body がないため、スキーマの検査で失敗する
