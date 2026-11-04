@@ -30,7 +30,7 @@ jobs:
       - uses: $/.github/actions/setup-mise
         with:
           install_args: uv
-      - run: uv sync --locked
+      - run: uv sync --locked && exit 1
         working-directory: ${{ env.check_jsonschema_dir }}
       # devcontainer.json はコメントを含むため、JSON5 として読ませる。
       # devContainer.schema.json は VS Code のスキーマをブランチの最新で参照し、版を固定できないため、ベースのスキーマで検査する
