@@ -301,6 +301,6 @@ textlint・oxfmt・jscpd は、[`.github/textlint`](../.github/textlint)・[`.gi
 
 yamllint と check-jsonschema は Python のパッケージで、依存関係まで版と sha256 を固定するため、mise ではなく uv で入れています。uv 本体は mise で入れます。
 
-- [`.github/yamllint`](../.github/yamllint)・[`.github/check-jsonschema`](../.github/check-jsonschema) の `pyproject.toml` でツールの版を、`uv.lock` で依存関係を含むすべての版と sha256 を固定する
+- [`.github/yamllint`](../.github/yamllint)・[`.github/check-jsonschema`](../.github/check-jsonschema) に、`pyproject.toml` と `uv.lock` を置く。`pyproject.toml` でツールの版を、`uv.lock` で依存関係を含むすべての版と sha256 を固定する
 - `pyproject.toml` と `uv.lock` は、Renovate の pep621 マネージャーが更新する（[pep621](https://docs.renovatebot.com/modules/manager/pep621/)）
 - yamllint は、PyYAML と pathspec に依存する（[PyPI](https://pypi.org/project/yamllint/)）
