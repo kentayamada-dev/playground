@@ -70,7 +70,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`test.yml`](.github/workflows/test.yml) | `.sh` と `.bats` を ShellCheck で検査し、[shfmt](https://github.com/mvdan/sh) の整形に沿っているかを確認し、bats のテストを実行する。shfmt の整形の設定は [`.editorconfig`](.editorconfig) から読む | `test` |
 | [`pr-title.yml`](.github/workflows/pr-title.yml) | PR タイトルが Conventional Commits 形式に沿い、説明を日本語で書いているか。規約は [CONTRIBUTING.md](CONTRIBUTING.md#タイトルとコミットメッセージ) | `pr-title` |
 | [`signed-commits.yml`](.github/workflows/signed-commits.yml) | PR のコミットがすべて、GitHub で Verified と表示される署名付きか。詳しくは [マージの条件](#マージの条件) | `signed-commits` |
-| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | 依存関係と Dev Container のイメージの脆弱性とマルウェア、依存関係のライセンス。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) と [ライセンスの検査](#ライセンスの検査) | `osv-scanner / osv-scan`（PR の検査だけ）・`osv-scanner-licenses` |
+| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | 依存関係の脆弱性とマルウェア、依存関係のライセンス。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) と [ライセンスの検査](#ライセンスの検査) | `osv-scanner / osv-scan`（PR の検査だけ）・`osv-scanner-licenses` |
 | [`betterleaks.yml`](.github/workflows/betterleaks.yml) | コミットに含まれるシークレット。詳しくは [シークレットの検査](#シークレットの検査) | `betterleaks` |
 | [`editorconfig.yml`](.github/workflows/editorconfig.yml) | git で管理するファイルが [`.editorconfig`](.editorconfig) の文字コード・改行・インデント・末尾の空白に沿っているか。[editorconfig-checker](https://github.com/editorconfig-checker/editorconfig-checker) で検査する | `editorconfig` |
 | [`actionlint.yml`](.github/workflows/actionlint.yml) | GitHub Actions のワークフローのキー・式・`run:` のスクリプト。[actionlint](https://github.com/rhysd/actionlint) で検査し、`run:` のスクリプトは actionlint から ShellCheck にかける。設定は [`.github/actionlint.yaml`](.github/actionlint.yaml) にある | `actionlint` |
@@ -82,10 +82,9 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`markdownlint.yml`](.github/workflows/markdownlint.yml) | すべての `.md` の書式。見出しのレベル・リストの記号・表の列数・空行・コードブロックの言語の指定など。[markdownlint](https://github.com/DavidAnson/markdownlint) で検査する。設定は [`.github/markdownlint-cli2.jsonc`](.github/markdownlint-cli2.jsonc) にある | `markdownlint` |
 | [`yamllint.yml`](.github/workflows/yamllint.yml) | `.yml`・`.yaml` の構文と書式。キーの重複・インデント・コメントの書き方など。[yamllint](https://github.com/adrienverge/yamllint) で検査する。設定は [`.github/yamllint/.yamllint.yaml`](.github/yamllint/.yamllint.yaml) にある | `yamllint` |
 | [`hadolint.yml`](.github/workflows/hadolint.yml) | Dockerfile の書き方。ベースイメージのタグの指定・`apt-get install` の版の固定など。[hadolint](https://github.com/hadolint/hadolint) で検査し、`RUN` のスクリプトは hadolint に組み込まれた ShellCheck にかける。設定は [`.github/hadolint.yaml`](.github/hadolint.yaml) にある | `hadolint` |
-| [`check-jsonschema.yml`](.github/workflows/check-jsonschema.yml) | `devcontainer.json`・issue のテンプレート・アクションの定義（`action.yml`）・[`compose.yaml`](compose.yaml) が、それぞれの仕様のスキーマに沿っているか。[check-jsonschema](https://github.com/python-jsonschema/check-jsonschema) で検査する。詳しくは [check-jsonschema](#check-jsonschema) | `check-jsonschema` |
-| [`devcontainer.yml`](.github/workflows/devcontainer.yml) | [開発環境](#開発環境) の 2 つのイメージを、[`compose.yaml`](compose.yaml) のとおりにビルドできるか。golang では gopls・gofumpt・staticcheck・gosec・govulncheck が、node では pnpm が起動するかも確認する。ツールの `go.mod`・`go.sum` が `go mod tidy` で整えた状態かも検査する。詳しくは [devcontainer](#devcontainer) | `devcontainer` |
-| [`golang-check.yml`](.github/workflows/golang-check.yml) | [`golang`](golang) の Go のコード。golang の Dev Container と同じイメージのなかで、`go mod tidy`・ビルド・`go vet`・gofumpt の整形・[staticcheck](https://staticcheck.dev/)・[gosec](https://github.com/securego/gosec)・`go test` を順に検査する。staticcheck の設定は [`golang/staticcheck.conf`](golang/staticcheck.conf) にある。詳しくは [golang-check](#golang-check) | `golang-check` |
-| [`node-check.yml`](.github/workflows/node-check.yml) | [`node`](node) のコード。node の Dev Container と同じイメージのなかで、TypeScript の型・[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) の整形・[oxlint](https://oxc.rs/docs/guide/usage/linter.html) の規則を順に検査する。続いて [knip](https://knip.dev/) で使われていないファイル・export・依存関係を探し、最後に `next build` でビルドできるかを確認する。設定は [`node/tsconfig.json`](node/tsconfig.json)・[`node/.oxfmtrc.jsonc`](node/.oxfmtrc.jsonc)・[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) にある。詳しくは [node-check](#node-check) | `node-check` |
+| [`check-jsonschema.yml`](.github/workflows/check-jsonschema.yml) | `devcontainer.json`・issue のテンプレート・アクションの定義（`action.yml`）が、それぞれの仕様のスキーマに沿っているか。[check-jsonschema](https://github.com/python-jsonschema/check-jsonschema) で検査する。詳しくは [check-jsonschema](#check-jsonschema) | `check-jsonschema` |
+| [`golang-check.yml`](.github/workflows/golang-check.yml) | [`golang`](golang) の Go のコード。golang の Dev Container のイメージを [`compose.yaml`](compose.yaml) のとおりにビルドする。そのなかで、`go mod tidy`・ビルド・`go vet`・gofumpt の整形・[staticcheck](https://staticcheck.dev/)・[gosec](https://github.com/securego/gosec)・`go test` を順に検査する。ツールの `go.mod`・`go.sum` が `go mod tidy` で整えた状態か、ほかで動かさない gopls と govulncheck が起動するかも確認する。staticcheck の設定は [`golang/staticcheck.conf`](golang/staticcheck.conf) にある。詳しくは [golang-check](#golang-check) | `golang-check` |
+| [`node-check.yml`](.github/workflows/node-check.yml) | [`node`](node) のコード。node の Dev Container のイメージを [`compose.yaml`](compose.yaml) のとおりにビルドする。そのなかで、[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) の整形・[oxlint](https://oxc.rs/docs/guide/usage/linter.html) の規則を順に検査する。続いて [knip](https://knip.dev/) で使われていないファイル・export・依存関係を探し、最後に `next build` で TypeScript の型を検査してビルドできるかを確認する。設定は [`node/tsconfig.json`](node/tsconfig.json)・[`node/.oxfmtrc.jsonc`](node/.oxfmtrc.jsonc)・[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) にある。詳しくは [node-check](#node-check) | `node-check` |
 | [`oxfmt.yml`](.github/workflows/oxfmt.yml) | [`node`](node) の外の JSON・YAML・TOML・Markdown などが、[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) の整形に沿っているか。設定は [`.oxfmtrc.jsonc`](.oxfmtrc.jsonc) にある。詳しくは [oxfmt](#oxfmt) | `oxfmt` |
 | [`jscpd.yml`](.github/workflows/jscpd.yml) | コピーして貼り付けたように、同じコードが繰り返されている箇所。[jscpd](https://github.com/kucherenko/jscpd) で検査する。詳しくは [jscpd](#jscpd) | `jscpd` |
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
@@ -126,10 +125,9 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `typos` | リポジトリ全体。`.git` と、`typos.toml`・`pyproject.toml` など typos の設定ファイルと同じ名前のファイルは除く |
 | `yamllint` | リポジトリ全体の `.yml`・`.yaml`。`pnpm-lock.yaml` と、`.venv`・`node_modules` の下は除く |
 | `hadolint` | リポジトリ全体のうち、名前が `Dockerfile`・`Containerfile` のファイル。`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*`・`*.Containerfile` に一致するファイルも含む。`.git` は除く |
-| `check-jsonschema` | [`.devcontainer`](.devcontainer) の下の各ディレクトリにある `devcontainer.json`。[`.github/ISSUE_TEMPLATE`](.github/ISSUE_TEMPLATE) の拡張子が `.yml` のファイル。[`.github/actions`](.github/actions) の下の各ディレクトリにある `action.yml`。[`compose.yaml`](compose.yaml) |
-| `devcontainer` | [`compose.yaml`](compose.yaml) の `node`・`golang` のサービスのイメージ。ランナーと同じ arm64 のイメージだけをビルドする。`go mod tidy` は、[`.devcontainer/golang/tools`](.devcontainer/golang/tools) の下のすべてのディレクトリ |
-| `golang-check` | [`golang`](golang) のモジュールのすべてのパッケージ（`./...`）。gofumpt は、その下のすべての `.go`（`vendor`・`testdata` は除く）。gosec は、テストのファイル（`_test.go`）も検査する |
-| `node-check` | [`node`](node) の下のファイル。`.gitignore` に一致するファイルは除く。tsc は、[`node/tsconfig.json`](node/tsconfig.json) の `include` に一致するファイルで、`node_modules` の下を除く。oxfmt は、対応する形式のファイルで、ロックファイルを除く。oxlint は、JavaScript と TypeScript のファイル。knip は、JavaScript と TypeScript のファイルと、`package.json` の依存関係。`next build` は、[`node/app`](node/app) のルートと、そこから読み込むファイル |
+| `check-jsonschema` | [`.devcontainer`](.devcontainer) の下の各ディレクトリにある `devcontainer.json`。[`.github/ISSUE_TEMPLATE`](.github/ISSUE_TEMPLATE) の拡張子が `.yml` のファイル。[`.github/actions`](.github/actions) の下の各ディレクトリにある `action.yml` |
+| `golang-check` | [`golang`](golang) のモジュールのすべてのパッケージ（`./...`）。gofumpt は、その下のすべての `.go`（`vendor`・`testdata` は除く）。gosec は、テストのファイル（`_test.go`）も検査する。`go mod tidy` は、`golang` のモジュールと、[`.devcontainer/golang/tools`](.devcontainer/golang/tools) の下のすべてのディレクトリ。イメージは、ランナーと同じ arm64 のものだけをビルドする |
+| `node-check` | [`node`](node) の下のファイル。`.gitignore` に一致するファイルは除く。`next build` の型の検査は、[`node/tsconfig.json`](node/tsconfig.json) の `include` に一致するファイルで、`node_modules` の下を除く。oxfmt は、対応する形式のファイルで、ロックファイルを除く。oxlint は、JavaScript と TypeScript のファイル。knip は、JavaScript と TypeScript のファイルと、`package.json` の依存関係。`next build` は、[`node/app`](node/app) のルートと、そこから読み込むファイル |
 | `oxfmt` | リポジトリ全体のうち、oxfmt が対応する形式のファイル。[`node`](node) の下・`.gitignore` に一致するファイル・ロックファイルは除く |
 | `jscpd` | リポジトリ全体のうち、jscpd が対応する形式（[FORMATS.md](https://github.com/kucherenko/jscpd/blob/v5.4.2/FORMATS.md)）のファイル。`.git`・`.github/workflows`・`node_modules` の下と、`.gitignore` に一致するファイル・`pnpm-workspace.yaml`・`pnpm-lock.yaml` は除く |
 | `osv-scanner-licenses` | リポジトリ全体のロックファイルと `go.mod` |
@@ -257,18 +255,12 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - `devcontainer.json` は、[Dev Container の仕様](https://github.com/devcontainers/spec) のベースのスキーマで検査する。スキーマにないキーや、値の型の誤りがあると失敗する
   - `customizations` は、オブジェクトであることだけを検査する。VS Code の設定や拡張機能の中身は検査しない
   - スキーマは、コミットで固定した URL から読む。Renovate は更新しないため、仕様の更新に合わせるときは手で上げる
-- issue のテンプレート・`action.yml`・`compose.yaml` は、check-jsonschema に同梱のスキーマで検査する（[`catalog.py`](https://github.com/python-jsonschema/check-jsonschema/blob/0.38.2/src/check_jsonschema/catalog.py)）
+- `compose.yaml` は検査しない。`golang-check`・`node-check` の `docker compose build` が、読むときに Compose のスキーマで検査するため
+- issue のテンプレートと `action.yml` は、check-jsonschema に同梱のスキーマで検査する（[`catalog.py`](https://github.com/python-jsonschema/check-jsonschema/blob/0.38.2/src/check_jsonschema/catalog.py)）
   - 同梱のスキーマは check-jsonschema のパッケージに入っていて、check-jsonschema を上げる Renovate の更新で一緒に変わる
 - check-jsonschema は Python のパッケージで、依存関係まで版と sha256 を固定するため、uv で入れる
   - [`.github/check-jsonschema`](.github/check-jsonschema) の `pyproject.toml` と `uv.lock` で固定し、Renovate の pep621 マネージャーが更新する
 - check-jsonschema を PyPI から、`devcontainer.json` のスキーマを GitHub から取得する。どちらかに接続できないと、どの PR もマージできない
-
-#### devcontainer
-
-- Renovate は、次の minor・patch・digest の更新を自動マージする。組み合わせによってはビルドが壊れるため、必須チェックにしている
-  - ベースイメージ・pnpm・gopls・gofumpt・staticcheck・gosec・govulncheck
-- ビルドのキャッシュは使わず、毎回すべての層をビルドする
-- ビルドでは、Docker Hub・Takumi Guard のレジストリ・Go のモジュールプロキシから取得する。どれかに接続できないと、どの PR もマージできない
 
 #### golang-check
 
@@ -277,13 +269,15 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - staticcheck は、エディタの gopls と同じく、すべての検査を有効にしている
 - `go test` は、テストのファイルがないパッケージを `[no test files]` と出して成功として扱う
 - ビルドは、VCS の情報を埋め込まず、実行ファイルを一時ディレクトリに書いて捨てる。手元の `make build` とは出力が違う
-- Renovate は、golang のベースイメージと gofumpt・staticcheck・gosec の minor・patch・digest の更新を自動マージする。コードが検査に通らなくなる更新を入れないため、必須チェックにしている
+- Renovate は、golang のベースイメージと Go のツールの minor・patch・digest の更新を自動マージする。イメージがビルドできなくなる更新や、コードが検査に通らなくなる更新を入れないため、必須チェックにしている
+  - Go のツールは、gopls・gofumpt・staticcheck・gosec・govulncheck
+- イメージのビルドのキャッシュは使わず、毎回すべての層をビルドする
 - イメージのビルドとツールチェーン・モジュールの取得では、Docker Hub と Go のモジュールプロキシから取得する。どちらかに接続できないと、どの PR もマージできない
 - Dev Container と同じイメージで検査する理由と、ビルドと gofumpt に付けるオプションの理由は、[`golang-check.yml`](.github/workflows/golang-check.yml) のコメントに書いている
 
 #### node-check
 
-- 手元では、node のコンテナで `pnpm typecheck`・`pnpm fmt:check`・`pnpm lint`・`pnpm knip`・`pnpm build` を実行すると、CI と同じ検査ができる。`pnpm fmt` を実行すると整形し直す
+- 手元では、node のコンテナで `pnpm fmt:check`・`pnpm lint`・`pnpm knip`・`pnpm build` を実行すると、CI と同じ検査ができる。`pnpm typecheck` は、ビルドせずに型だけを検査する。`pnpm fmt` を実行すると整形し直す
 - 検査は順に実行し、失敗したところで止まる。後の検査は実行しない
 - `pnpm typecheck` は、Next.js が生成するルートの型（`.next/types`）を作ってから検査する。`tsc` だけでは、その型がないときに `LayoutProps` などが見つからずに失敗する
 - `pnpm lint` は、`pnpm typecheck` と同じく、Next.js が生成するルートの型を作ってから検査する。その型がないと、型情報を使う規則が `LayoutProps` などを解決できず、誤った指摘を出す
@@ -295,6 +289,8 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - 外した規則と、デフォルトのオプションを変えた規則の理由は、[`node/.oxlintrc.jsonc`](node/.oxlintrc.jsonc) と、その `extends` で読み込むファイルのコメントに書いている
 - knip は設定ファイルを置かず、デフォルトの設定で動かす。Next.js や oxlint のプラグインが、それぞれの設定からエントリーのファイルと使っている依存関係を読み取る（[Plugins](https://knip.dev/explanations/plugins)）
 - node の Dev Container には Oxc の VS Code 拡張機能を入れ、保存すると oxfmt で整形する設定にしている
+- Renovate は、node のベースイメージと pnpm の minor・patch・digest の更新を自動マージする。イメージがビルドできなくなる更新を入れないため、必須チェックにしている
+- イメージのビルドのキャッシュは使わず、毎回すべての層をビルドする
 - Renovate は、`next`・`typescript`・`@types/*` などの minor・patch の更新も自動マージする。型が合わなくなる更新や、ビルドできなくなる更新を入れないため、必須チェックにしている
 - Renovate は、次のパッケージの minor・patch も自動マージする。指摘や整形の結果が変わる更新を入れないため、必須チェックにしている
   - `oxlint`・`oxfmt`・`oxlint-tsgolint`・`eslint-plugin-better-tailwindcss`・`knip`
@@ -406,13 +402,12 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 
 ## 脆弱性とマルウェアの検査
 
-依存関係に既知の脆弱性やマルウェアがないかを、[OSV-Scanner](https://google.github.io/osv-scanner/) と Dependabot で検査しています。結果はどれも Security タブに出ます。Dev Container のイメージも OSV-Scanner で検査しますが、結果はジョブのログにだけ出します。Go のコードは、[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) でも検査し、結果を issue に出します。`main` の OSV-Scanner の検査が失敗したときも、issue で知らせます。
+依存関係に既知の脆弱性やマルウェアがないかを、[OSV-Scanner](https://google.github.io/osv-scanner/) と Dependabot で検査しています。結果はどれも Security タブに出ます。Dev Container のイメージは検査しません。Go のコードは、[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) でも検査し、結果を issue に出します。`main` の OSV-Scanner の検査が失敗したときも、issue で知らせます。
 
 | 仕組み | 実行のタイミング | 結果 |
 | --- | --- | --- |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner` | PR ごと | PR のベースと比べて新しく入ったものがあると失敗する。必須チェックなので、失敗するとマージできない |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-full` | `main` への push と毎日 | 見つかったものを Code scanning に出し、1 件でもあれば失敗する。失敗すると issue を作る |
-| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-image` | `main` への push と毎日 | node と golang の Dev Container のイメージで見つかったものをジョブのログに出す。見つかっても失敗しない |
 | Dependabot アラート | アドバイザリが公開されたときと、依存関係を変えて push したとき | 脆弱性を Dependabot のアラートに出す |
 | [`govulncheck.yml`](.github/workflows/govulncheck.yml) | 毎日と手動の実行 | [`golang`](golang) のコードが呼び出す関数に脆弱性があると失敗し、issue を作る。必須チェックではない |
 
@@ -424,7 +419,9 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 - Actions のアクションは SHA で固定しているため、Dependabot のアラートは出ない（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner もデフォルトでは Actions を検査しない
 - Go の標準ライブラリは、OSV-Scanner でも検査する。[`golang/osv-scanner.toml`](golang/osv-scanner.toml) の `ScanGoModVersion` で、[`golang/go.mod`](golang/go.mod) の `toolchain` の版を使う。OSV-Scanner は、デフォルトでは go.mod の Go の版を検査に使わない（[Scan Go Mod Version](https://google.github.io/osv-scanner/configuration/#scan-go-mod-version)）
   - Renovate も、`toolchain` の版で脆弱性を照会し、修正版への PR を作る
-- Dev Container のイメージの検査では、イメージをビルドして、OS パッケージと、イメージに入っている Go のツールなどのバイナリを検査する。見つかっても失敗させない理由と、Code scanning に出さない理由は、[`osv-scanner.yml`](.github/workflows/osv-scanner.yml) のコメントに書いている
+- Dev Container のイメージの脆弱性は検査しない。イメージの中身は、ベースイメージと pnpm と Go のツールで、どれも Renovate が新しい版に上げる
+  - 見つかっても、こちらで取れる手はそれらの版を上げることだけで、Renovate の更新と変わらない
+  - 見つかる脆弱性の大半は、ベースイメージの OS パッケージにある、修正版のないもの
 - govulncheck は、標準ライブラリも検査する。Go の脆弱性データベースには、標準ライブラリの脆弱性も載っている（例: [GO-2024-2687](https://pkg.go.dev/vuln/GO-2024-2687)）
   - 標準ライブラリの脆弱性は、golang の Dev Container の Go の版で判定する。理由は、[`govulncheck.yml`](.github/workflows/govulncheck.yml) のコメントに書いている
   - テストのファイルと、Dev Container の Go のツールは検査しない

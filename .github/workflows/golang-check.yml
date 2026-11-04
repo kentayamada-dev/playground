@@ -29,6 +29,8 @@ jobs:
       # Dockerfile の ARG の値は compose.yaml から渡すため、docker build ではなく Compose でビルドする
       - run: docker compose build golang
       - run: docker compose run --rm golang go mod tidy -diff
+      # tools にツールを足したとき、ここに並べ忘れても検査から漏れないよう、ディレクトリをすべて回る
+      - run: docker compose run --rm --workdir /workspace/.devcontainer/golang/tools golang sh -c 'for dir in */; do echo "$dir"; (cd "$dir" && go mod tidy -diff) || exit 1; done'
       # コンテナの dev とランナーの uid が違い、git がリポジトリの所有者の違いで止まって VCS の情報を埋め込めず、checkout にも書き込めないため、
       # 埋め込みを切り、実行ファイルを一時ディレクトリに書く https://pkg.go.dev/cmd/go@go1.27.3#hdr-Compile_packages_and_dependencies
       - run: docker compose run --rm golang sh -c 'go build -buildvcs=false -o "$(mktemp -d)" ./...'
@@ -41,3 +43,6 @@ jobs:
       # https://github.com/securego/gosec/blob/v2.30.0/cmd/gosec/main.go
       - run: docker compose run --rm golang gosec -tests ./...
       - run: docker compose run --rm golang go test ./...
+      # このジョブもほかの PR のジョブも動かさないツールは、起動するかだけを確かめる。このジョブでツールを使わなくなったら、ここに足す
+      - run: docker compose run --rm golang gopls version
+      - run: docker compose run --rm golang govulncheck -version
