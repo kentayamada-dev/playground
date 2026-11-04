@@ -103,7 +103,7 @@ grype)
         ([.[].fixed[]] | unique | join(", ")),
         ([.[].id] | unique | length | tostring),
         (max_by(.severity | rank) | .severity)
-      ] | "| \(join(" | ")) |")
+      ] | map(cell) | "| \(join(" | ")) |")
     end' <<<"${output}")
   body="[Dev Container のイメージの検査](${run_url}) で、修正版のある脆弱性が見つかりました。ベースイメージに入っているものはベースイメージを、ツールに入っているものはツールを、修正版を含む版に上げてください。個々の脆弱性は、実行のログにあります。
 
