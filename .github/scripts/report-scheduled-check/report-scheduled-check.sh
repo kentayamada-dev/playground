@@ -101,7 +101,7 @@ grype)
         (if .url == "" then .id else "[\(.id)](\(.url))" end),
         .severity,
         .path
-      ] | map(cell) | "| \(join(" | ")) |")
+      ] | "| \(join(" | ")) |")
     end' <<<"${output}")
   body="[Dev Container のイメージの検査](${run_url}) で、修正版のある脆弱性が見つかりました。ベースイメージに入っているものはベースイメージを、ツールに入っているものはツールを、修正版を含む版に上げてください。
 
