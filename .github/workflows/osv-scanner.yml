@@ -173,7 +173,13 @@ jobs:
       - run: docker compose pull --ignore-buildable "$service"
       # Dockerfile の ARG の値は compose.yaml から渡すため、docker build ではなく Compose でビルドする
       - run: docker compose build "$service"
-      - run: docker save "$(docker compose config --images "$service")" -o "$RUNNER_TEMP/image.tar"
+      # config --images は depends_on の先のイメージも 1 行ずつ出すため、JSON からそのサービスの image だけを取り出す。
+      # image のないサービスは、Compose がビルドしたイメージに付ける「プロジェクト名-サービス名」にする
+      # https://github.com/docker/compose/blob/v5.7.0/cmd/compose/config.go#L689-L700 https://github.com/docker/compose/blob/v5.7.0/pkg/api/api.go#L896-L905
+      - run: >-
+          docker save
+          "$(docker compose config --format json | jq -r --arg s "$service" '.services[$s].image // "\(.name)-\($s)"')"
+          -o "$RUNNER_TEMP/image.tar"
       # 脆弱性が見つかると終了コードが 1 になるため、ステップの失敗では止めず、次のステップで結果のファイルがあるかで判定する
       - uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
         continue-on-error: true
