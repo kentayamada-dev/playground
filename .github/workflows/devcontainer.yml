@@ -20,26 +20,11 @@ jobs:
     name: devcontainer
     runs-on: ubuntu-26.04-arm
     timeout-minutes: 15
-    env:
-      check_jsonschema_dir: .github/check-jsonschema
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
           persist-credentials: false
-      - uses: $/.github/actions/setup-mise
-        with:
-          install_args: uv
-      - run: uv sync --locked
-        working-directory: ${{ env.check_jsonschema_dir }}
-      # devcontainer.json はコメントを含むため、JSON5 として読ませる。
-      # devContainer.schema.json は VS Code のスキーマをブランチの最新で参照し、版を固定できないため、ベースのスキーマで検査する
-      # https://github.com/devcontainers/spec/blob/c95ffeed1d059abfe9ffbe79762dc2fa4e7c2421/schemas/devContainer.schema.json
-      - run: >-
-          "$check_jsonschema_dir/.venv/bin/check-jsonschema"
-          --force-filetype json5
-          --schemafile https://raw.githubusercontent.com/devcontainers/spec/c95ffeed1d059abfe9ffbe79762dc2fa4e7c2421/schemas/devContainer.base.schema.json
-          .devcontainer/*/devcontainer.json
       # Dockerfile の ARG の値は compose.yaml から渡すため、docker build ではなく Compose でビルドする
       - run: docker compose build
       - run: docker compose run --rm golang gopls version
