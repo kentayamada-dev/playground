@@ -269,7 +269,8 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - staticcheck は、エディタの gopls と同じく、すべての検査を有効にしている
 - `go test` は、テストのファイルがないパッケージを `[no test files]` と出して成功として扱う
 - ビルドは、VCS の情報を埋め込まず、実行ファイルを一時ディレクトリに書いて捨てる。手元の `make build` とは出力が違う
-- Renovate は、golang のベースイメージと gopls・gofumpt・staticcheck・gosec・govulncheck の minor・patch・digest の更新を自動マージする。イメージがビルドできなくなる更新や、コードが検査に通らなくなる更新を入れないため、必須チェックにしている
+- Renovate は、golang のベースイメージと Go のツールの minor・patch・digest の更新を自動マージする。イメージがビルドできなくなる更新や、コードが検査に通らなくなる更新を入れないため、必須チェックにしている
+  - Go のツールは、gopls・gofumpt・staticcheck・gosec・govulncheck
 - イメージのビルドのキャッシュは使わず、毎回すべての層をビルドする
 - イメージのビルドとツールチェーン・モジュールの取得では、Docker Hub と Go のモジュールプロキシから取得する。どちらかに接続できないと、どの PR もマージできない
 - Dev Container と同じイメージで検査する理由と、ビルドと gofumpt に付けるオプションの理由は、[`golang-check.yml`](.github/workflows/golang-check.yml) のコメントに書いている
