@@ -70,7 +70,8 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`test.yml`](.github/workflows/test.yml) | `.sh` と `.bats` を ShellCheck で検査し、[shfmt](https://github.com/mvdan/sh) の整形に沿っているかを確認し、bats のテストを実行する。shfmt の整形の設定は [`.editorconfig`](.editorconfig) から読む | `test` |
 | [`pr-title.yml`](.github/workflows/pr-title.yml) | PR タイトルが Conventional Commits 形式に沿い、説明を日本語で書いているか。規約は [CONTRIBUTING.md](CONTRIBUTING.md#タイトルとコミットメッセージ) | `pr-title` |
 | [`signed-commits.yml`](.github/workflows/signed-commits.yml) | PR のコミットがすべて、GitHub で Verified と表示される署名付きか。詳しくは [マージの条件](#マージの条件) | `signed-commits` |
-| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | 依存関係と Dev Container のイメージの脆弱性とマルウェア、依存関係のライセンス。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) と [ライセンスの検査](#ライセンスの検査) | `osv-scanner / osv-scan`（PR の検査だけ）・`osv-scanner-licenses` |
+| [`grype.yml`](.github/workflows/grype.yml) | [開発環境](#開発環境) の node と golang のイメージに、修正版のある脆弱性がないか。[Grype](https://github.com/anchore/grype) で検査する。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) | `grype` |
+| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) | 依存関係の脆弱性とマルウェア、依存関係のライセンス。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) と [ライセンスの検査](#ライセンスの検査) | `osv-scanner / osv-scan`（PR の検査だけ）・`osv-scanner-licenses` |
 | [`betterleaks.yml`](.github/workflows/betterleaks.yml) | コミットに含まれるシークレット。詳しくは [シークレットの検査](#シークレットの検査) | `betterleaks` |
 | [`editorconfig.yml`](.github/workflows/editorconfig.yml) | git で管理するファイルが [`.editorconfig`](.editorconfig) の文字コード・改行・インデント・末尾の空白に沿っているか。[editorconfig-checker](https://github.com/editorconfig-checker/editorconfig-checker) で検査する | `editorconfig` |
 | [`actionlint.yml`](.github/workflows/actionlint.yml) | GitHub Actions のワークフローのキー・式・`run:` のスクリプト。[actionlint](https://github.com/rhysd/actionlint) で検査し、`run:` のスクリプトは actionlint から ShellCheck にかける。設定は [`.github/actionlint.yaml`](.github/actionlint.yaml) にある | `actionlint` |
@@ -91,11 +92,11 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`settings-drift.yml`](.github/workflows/settings-drift.yml) | GitHub のルールセット・リポジトリ・セキュリティ・Actions・ラベルの設定が、[`.github/settings`](.github/settings) の定義と一致しているか。詳しくは [定義とのずれの検査](#定義とのずれの検査) | なし |
 | [`govulncheck.yml`](.github/workflows/govulncheck.yml) | [`golang`](golang) の Go のコードが呼び出す、標準ライブラリと依存関係の既知の脆弱性。[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) で検査する。詳しくは [脆弱性とマルウェアの検査](#脆弱性とマルウェアの検査) | なし |
 
-どのワークフローも、PR と `main` への push で動きます。動くタイミングが違うのは、次の 6 つです。
+どのワークフローも、PR と `main` への push で動きます。動くタイミングが違うのは、次の 7 つです。
 
 - `pr-title.yml` は、PR の作成・編集・push・再オープンで動く
 - `signed-commits.yml` は、PR でだけ動く
-- `osv-scanner.yml` は毎日、`lychee.yml` は毎週も動く
+- `osv-scanner.yml`・`grype.yml` は毎日、`lychee.yml` は毎週も動く
 - `settings-drift.yml`・`govulncheck.yml` は、毎日と手動の実行でだけ動く
 
 ### マージの条件
@@ -128,6 +129,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `hadolint` | リポジトリ全体のうち、名前が `Dockerfile`・`Containerfile` のファイル。`Dockerfile.*`・`*.Dockerfile`・`Containerfile.*`・`*.Containerfile` に一致するファイルも含む。`.git` は除く |
 | `check-jsonschema` | [`.devcontainer`](.devcontainer) の下の各ディレクトリにある `devcontainer.json`。[`.github/ISSUE_TEMPLATE`](.github/ISSUE_TEMPLATE) の拡張子が `.yml` のファイル。[`.github/actions`](.github/actions) の下の各ディレクトリにある `action.yml`。[`compose.yaml`](compose.yaml) |
 | `devcontainer` | [`compose.yaml`](compose.yaml) の `node`・`golang` のサービスのイメージ。ランナーと同じ arm64 のイメージだけをビルドする。`go mod tidy` は、[`.devcontainer/golang/tools`](.devcontainer/golang/tools) の下のすべてのディレクトリ |
+| `grype` | [`compose.yaml`](compose.yaml) の `node`・`golang` のサービスのイメージ。OS のパッケージと、イメージに入っているツールなどのバイナリ。修正版のない脆弱性は出さない |
 | `golang-check` | [`golang`](golang) のモジュールのすべてのパッケージ（`./...`）。gofumpt は、その下のすべての `.go`（`vendor`・`testdata` は除く）。gosec は、テストのファイル（`_test.go`）も検査する |
 | `node-check` | [`node`](node) の下のファイル。`.gitignore` に一致するファイルは除く。tsc は、[`node/tsconfig.json`](node/tsconfig.json) の `include` に一致するファイルで、`node_modules` の下を除く。oxfmt は、対応する形式のファイルで、ロックファイルを除く。oxlint は、JavaScript と TypeScript のファイル。knip は、JavaScript と TypeScript のファイルと、`package.json` の依存関係。`next build` は、[`node/app`](node/app) のルートと、そこから読み込むファイル |
 | `oxfmt` | リポジトリ全体のうち、oxfmt が対応する形式のファイル。[`node`](node) の下・`.gitignore` に一致するファイル・ロックファイルは除く |
@@ -406,13 +408,13 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 
 ## 脆弱性とマルウェアの検査
 
-依存関係に既知の脆弱性やマルウェアがないかを、[OSV-Scanner](https://google.github.io/osv-scanner/) と Dependabot で検査しています。結果はどれも Security タブに出ます。Dev Container のイメージも OSV-Scanner で検査しますが、結果はジョブのログにだけ出します。Go のコードは、[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) でも検査し、結果を issue に出します。`main` の OSV-Scanner の検査が失敗したときも、issue で知らせます。
+依存関係に既知の脆弱性やマルウェアがないかを、[OSV-Scanner](https://google.github.io/osv-scanner/) と Dependabot で検査しています。結果はどれも Security タブに出ます。Dev Container のイメージは [Grype](https://github.com/anchore/grype) で検査し、修正版のある脆弱性を issue に出します。Go のコードは、[govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) でも検査し、結果を issue に出します。`main` の OSV-Scanner の検査が失敗したときも、issue で知らせます。
 
 | 仕組み | 実行のタイミング | 結果 |
 | --- | --- | --- |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner` | PR ごと | PR のベースと比べて新しく入ったものがあると失敗する。必須チェックなので、失敗するとマージできない |
 | [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-full` | `main` への push と毎日 | 見つかったものを Code scanning に出し、1 件でもあれば失敗する。失敗すると issue を作る |
-| [`osv-scanner.yml`](.github/workflows/osv-scanner.yml) の `osv-scanner-image` | `main` への push と毎日 | node と golang の Dev Container のイメージで見つかったものをジョブのログに出す。見つかっても失敗しない |
+| [`grype.yml`](.github/workflows/grype.yml) | PR ごと・`main` への push・毎日 | node と golang の Dev Container のイメージで、修正版のある脆弱性だけを出す。見つかっても失敗せず、`main` では issue を作る。必須チェックなので、検査そのものが失敗するとマージできない |
 | Dependabot アラート | アドバイザリが公開されたときと、依存関係を変えて push したとき | 脆弱性を Dependabot のアラートに出す |
 | [`govulncheck.yml`](.github/workflows/govulncheck.yml) | 毎日と手動の実行 | [`golang`](golang) のコードが呼び出す関数に脆弱性があると失敗し、issue を作る。必須チェックではない |
 
@@ -424,7 +426,11 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 - Actions のアクションは SHA で固定しているため、Dependabot のアラートは出ない（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner もデフォルトでは Actions を検査しない
 - Go の標準ライブラリは、OSV-Scanner でも検査する。[`golang/osv-scanner.toml`](golang/osv-scanner.toml) の `ScanGoModVersion` で、[`golang/go.mod`](golang/go.mod) の `toolchain` の版を使う。OSV-Scanner は、デフォルトでは go.mod の Go の版を検査に使わない（[Scan Go Mod Version](https://google.github.io/osv-scanner/configuration/#scan-go-mod-version)）
   - Renovate も、`toolchain` の版で脆弱性を照会し、修正版への PR を作る
-- Dev Container のイメージの検査では、イメージをビルドして、OS パッケージと、イメージに入っている Go のツールなどのバイナリを検査する。見つかっても失敗させない理由と、Code scanning に出さない理由は、[`osv-scanner.yml`](.github/workflows/osv-scanner.yml) のコメントに書いている
+- Dev Container のイメージの検査では、イメージをビルドして、OS パッケージと、イメージに入っている Go のツールなどのバイナリを検査する。修正版のあるものだけを出す理由と、OSV-Scanner でなく Grype を使う理由は、[`grype.yml`](.github/workflows/grype.yml) のコメントに書いている
+  - Grype の脆弱性のデータベースは、実行のたびに Anchore の配信元から取得する。接続できないと、どの PR もマージできない
+  - `main` で見つかると、`grype-report` が issue「fix(devcontainer): 定期検査で見つかった、修正版のあるイメージの脆弱性を直す」を作る。本文には、見つかった脆弱性を表にして載せる
+  - issue には `dependencies` と `security` のラベルを付ける
+  - 開いていれば、本文を最新の結果に書き換え、見つからなくなると閉じる。PR と `main` 以外の実行、報告する前に `main` へ新しいコミットが入った実行は、issue に触れない
 - govulncheck は、標準ライブラリも検査する。Go の脆弱性データベースには、標準ライブラリの脆弱性も載っている（例: [GO-2024-2687](https://pkg.go.dev/vuln/GO-2024-2687)）
   - 標準ライブラリの脆弱性は、golang の Dev Container の Go の版で判定する。理由は、[`govulncheck.yml`](.github/workflows/govulncheck.yml) のコメントに書いている
   - テストのファイルと、Dev Container の Go のツールは検査しない

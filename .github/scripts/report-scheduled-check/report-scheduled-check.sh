@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-usage="使い方: $0 {broken-links | settings-drift | govulncheck | osv-scanner} {<検査の出力> | --resolved}"
+usage="使い方: $0 {broken-links | settings-drift | govulncheck | osv-scanner | grype} {<検査の出力> | --resolved}"
 if [[ $# -ne 2 ]]; then
   echo "${usage}" >&2
   exit 1
@@ -78,6 +78,34 @@ osv-scanner)
 Code scanning で開いているアラート:
 
 ${alerts}"
+  ;;
+grype)
+  title='fix(devcontainer): 定期検査で見つかった、修正版のあるイメージの脆弱性を直す'
+  labels=dependencies,security
+  resolved_comment="[Dev Container のイメージの検査](${run_url}) で、修正版のある脆弱性が見つからなくなりました。"
+  # 検査の出力は、Grype が見つけた脆弱性を 1 件ずつ JSON にして並べたもの。キーを変えるときは、出力を作る grype.yml の jq も合わせる
+  matches=$(jq -rs '
+    # セルの中の | で列が分かれないようにする
+    def cell: gsub("\\|"; "\\|");
+    if length == 0 then
+      "なし。検査そのものが失敗していないか、実行のログを確認してください。"
+    else
+      "| イメージ | パッケージ | 種類 | 入っている版 | 修正版 | 脆弱性 | 深刻度 | 場所 |",
+      "| --- | --- | --- | --- | --- | --- | --- | --- |",
+      (.[] | [
+        .image,
+        .name,
+        .type,
+        .version,
+        (.fixed | join(", ")),
+        (if .url == "" then .id else "[\(.id)](\(.url))" end),
+        .severity,
+        .path
+      ] | map(cell) | "| \(join(" | ")) |")
+    end' <<<"${output}")
+  body="[Dev Container のイメージの検査](${run_url}) で、修正版のある脆弱性が見つかりました。ベースイメージに入っているものはベースイメージを、ツールに入っているものはツールを、修正版を含む版に上げてください。
+
+${matches}"
   ;;
 *)
   echo "${usage}" >&2

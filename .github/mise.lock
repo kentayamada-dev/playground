@@ -78,6 +78,16 @@ url = "https://github.com/suzuki-shunsuke/ghalint/releases/download/v1.5.6/ghali
 url_api = "https://api.github.com/repos/suzuki-shunsuke/ghalint/releases/assets/409631231"
 provenance = "github-attestations"
 
+[[tools.grype]]
+version = "0.121.0"
+backend = "aqua:anchore/grype"
+specifiers = ["0.121.0"]
+
+[tools.grype."platforms.linux-arm64"]
+checksum = "sha256:86f570f75ca947ea3dd6486309232bcff6d78e44ba081ae75ab14eab72be3dae"
+url = "https://github.com/anchore/grype/releases/download/v0.121.0/grype_0.121.0_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/anchore/grype/releases/assets/657365425"
+
 [[tools.hadolint]]
 version = "2.15.1"
 backend = "aqua:hadolint/hadolint"

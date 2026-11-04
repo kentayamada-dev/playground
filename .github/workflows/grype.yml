@@ -1,0 +1,119 @@
+name: Dev Container のイメージの脆弱性
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  # イメージを変えていなくても、入っているパッケージに後から修正版が出るため毎日検査する
+  schedule:
+    - cron: "51 21 * * *"
+  workflow_dispatch:
+
+# 書き込み権限はジョブごとに与え、あとから足したジョブに引き継がせない https://docs.zizmor.sh/audits/#excessive-permissions
+permissions: {}
+
+# 同じ PR に push し直したら古い実行を取り消す。PR 以外は実行ごとにグループを分け、待っている実行も後から来た実行に取り消されないようにする
+# https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  # ベースイメージの OS パッケージには修正版のない脆弱性が多く、こちらでは直せないため、修正版のあるものだけを出す。
+  # OSV-Scanner には修正版のあるものだけに絞る方法がないため、Grype の --only-fixed を使う
+  # 必須チェックの名前はこのジョブ名のため、変えるときは rulesets/main.json も合わせる
+  grype:
+    name: grype
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      matches: ${{ steps.scan.outputs.matches }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
+          persist-credentials: false
+      - uses: $/.github/actions/setup-mise
+        with:
+          install_args: grype
+      # Dockerfile の ARG の値は compose.yaml から渡すため、docker build ではなく Compose でビルドする
+      - run: docker compose build node golang
+      # Grype は見つかっても終了コードが 0 で、検査そのものが失敗したときだけ失敗する。
+      # 報告の本文に要る値だけを、1 件ずつ JSON にして出力に渡す。キーを変えるときは、report-scheduled-check.sh の grype の表も合わせる
+      - id: scan
+        run: |
+          for service in node golang; do
+            grype "docker:$(docker compose config --images "$service")" --only-fixed --output json >"$RUNNER_TEMP/$service.json"
+            jq -c --arg image "$service" '.matches[] | {
+              image: $image,
+              name: .artifact.name,
+              type: .artifact.type,
+              version: .artifact.version,
+              fixed: .vulnerability.fix.versions,
+              id: .vulnerability.id,
+              url: (.vulnerability.dataSource // ""),
+              severity: .vulnerability.severity,
+              path: (.artifact.locations[0].path // "")
+            }' "$RUNNER_TEMP/$service.json" >>"$RUNNER_TEMP/matches.jsonl"
+          done
+          cat "$RUNNER_TEMP/matches.jsonl"
+          # どの行も { で始まる JSON のため、区切りの EOF の行と重ならない
+          {
+            echo 'matches<<EOF'
+            cat "$RUNNER_TEMP/matches.jsonl"
+            echo EOF
+          } >>"$GITHUB_OUTPUT"
+  # main に後から修正版が出た脆弱性では PR の検査が落ちず、失敗の通知も起動した人にしか届かないため、issue で知らせる
+  # https://docs.github.com/en/actions/concepts/workflows-and-actions/notifications-for-workflow-runs
+  grype-report:
+    name: grype-report
+    needs: grype
+    # PR や main 以外で手動実行した結果で、main の issue を書き換えたり閉じたりしない
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 5
+    # 同時に動くと、どちらも開いている issue がないと判断して issue を 2 件作ることがあるため、実行を重ねない
+    concurrency:
+      group: ${{ github.workflow }}-report
+    permissions:
+      contents: read
+      issues: write # report-scheduled-check.sh が、修正版のある脆弱性が見つかれば issue を作るか書き換え、なくなれば閉じるため
+    env:
+      report_script: .github/scripts/report-scheduled-check/report-scheduled-check.sh
+      report_name: grype-matches.jsonl
+    steps:
+      # report ジョブは push の順ではなく検査が終わった順に動くため、古いコミットの結果で issue を書き換えないよう、ブランチの先頭のコミットの実行だけが報告する
+      # https://github.com/kentayamada-dev/playground/pull/398
+      - id: head
+        run: |
+          head_sha=$(gh api "repos/{owner}/{repo}/git/ref/${GITHUB_REF#refs/}" --jq .object.sha)
+          if [[ ${head_sha} == "${GITHUB_SHA}" ]]; then
+            echo latest=true >>"$GITHUB_OUTPUT"
+          else
+            echo "::notice::${GITHUB_REF_NAME} の先頭が ${head_sha} に進んでいるため、報告はそのコミットの実行に任せる"
+            echo latest=false >>"$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
+          persist-credentials: false
+      - if: needs.grype.outputs.matches != '' && steps.head.outputs.latest == 'true'
+        run: |
+          printf '%s\n' "$matches" >"$RUNNER_TEMP/$report_name"
+          "$report_script" grype "$RUNNER_TEMP/$report_name"
+        env:
+          matches: ${{ needs.grype.outputs.matches }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+      - if: needs.grype.outputs.matches == '' && steps.head.outputs.latest == 'true'
+        run: >-
+          "$report_script" grype --resolved
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}

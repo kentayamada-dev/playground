@@ -132,6 +132,10 @@
           {
             "context": "check-jsonschema",
             "integration_id": 15368
+          },
+          {
+            "context": "grype",
+            "integration_id": 15368
           }
         ]
       }
