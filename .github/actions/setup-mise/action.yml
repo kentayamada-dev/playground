@@ -5,7 +5,7 @@ inputs:
     description: 入れるツール。mise.toml の [tools] のキーを空白で区切って並べる
     required: true
 runs:
-  using: composite
+  using: composit
   steps:
     - uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
       with:
