@@ -27,11 +27,8 @@ jobs:
           persist-credentials: false
       # Dockerfile の ARG の値は compose.yaml から渡すため、docker build ではなく Compose でビルドする
       - run: docker compose build
+      # PR でほかのジョブが動かさないツールだけ、起動するかを確かめる。golang-check・node-check でツールを使わなくなったら、ここに足す
       - run: docker compose run --rm golang gopls version
-      - run: docker compose run --rm golang gofumpt --version
-      - run: docker compose run --rm golang staticcheck -version
-      - run: docker compose run --rm golang gosec -version
       - run: docker compose run --rm golang govulncheck -version
       # tools にツールを足したとき、ここに並べ忘れても検査から漏れないよう、ディレクトリをすべて回る
       - run: docker compose run --rm --workdir /workspace/.devcontainer/golang/tools golang sh -c 'for dir in */; do echo "$dir"; (cd "$dir" && go mod tidy -diff) || exit 1; done'
-      - run: docker compose run --rm node pnpm --version

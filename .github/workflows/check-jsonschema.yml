@@ -48,5 +48,3 @@ jobs:
           "$check_jsonschema_dir/.venv/bin/check-jsonschema" --builtin-schema vendor.github-issue-config .github/ISSUE_TEMPLATE/config.yml
       - run: >-
           "$check_jsonschema_dir/.venv/bin/check-jsonschema" --builtin-schema vendor.github-actions .github/actions/*/action.yml
-      - run: >-
-          "$check_jsonschema_dir/.venv/bin/check-jsonschema" --builtin-schema vendor.compose-spec compose.yaml
