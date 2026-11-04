@@ -1,4 +1,4 @@
-name: zizmor
+name: ワークフローのセキュリティ
 
 on:
   pull_request:

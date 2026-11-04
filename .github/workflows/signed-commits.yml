@@ -1,4 +1,4 @@
-name: signed-commits
+name: コミットの署名
 
 on:
   pull_request:

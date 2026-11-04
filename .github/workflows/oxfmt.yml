@@ -1,4 +1,4 @@
-name: oxfmt
+name: フォーマット
 
 on:
   pull_request:

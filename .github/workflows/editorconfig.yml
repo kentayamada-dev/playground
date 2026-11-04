@@ -1,4 +1,4 @@
-name: editorconfig
+name: 文字コード・改行・インデント
 
 on:
   pull_request:

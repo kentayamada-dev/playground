@@ -1,4 +1,4 @@
-name: textlint
+name: 文章の表記
 
 on:
   pull_request:

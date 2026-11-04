@@ -1,4 +1,4 @@
-name: renovate-config-validator
+name: Renovate の設定
 
 on:
   pull_request:

@@ -1,4 +1,4 @@
-name: renovate
+name: 依存関係の更新
 
 on:
   schedule:

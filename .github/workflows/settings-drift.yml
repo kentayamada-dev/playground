@@ -1,4 +1,4 @@
-name: settings-drift
+name: GitHub の設定と定義のずれ
 
 on:
   # GitHub の画面で変えた設定や、定義を変えたあとに反映し忘れた設定は、PR の検査では見つからないため、定期的に検査する
