@@ -59,6 +59,9 @@ jobs:
               severity: .vulnerability.severity
             }' "$RUNNER_TEMP/$service.json" >>"$RUNNER_TEMP/matches.jsonl"
           done
+          # 同じソースパッケージのバイナリパッケージの数だけ同じ行が並び、報告のジョブで 1 つの環境変数に入れると Linux の上限（MAX_ARG_STRLEN）に近づくため、重複を除く
+          # https://github.com/torvalds/linux/blob/v6.12/include/uapi/linux/binfmts.h#L15
+          sort -u -o "$RUNNER_TEMP/matches.jsonl" "$RUNNER_TEMP/matches.jsonl"
           cat "$RUNNER_TEMP/matches.jsonl"
           # どの行も { で始まる JSON のため、区切りの EOF の行と重ならない
           {
