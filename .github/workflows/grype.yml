@@ -22,6 +22,7 @@ concurrency:
 jobs:
   # ベースイメージの OS パッケージには修正版のない脆弱性が多く、こちらでは直せないため、修正版のあるものだけを出す。
   # OSV-Scanner には修正版のあるものだけに絞る方法がないため、Grype の --only-fixed を使う
+  # https://github.com/google/osv-scanner/blob/v2.7.0/cmd/osv-scanner/internal/helper/flags.go https://github.com/anchore/grype/blob/v0.121.0/cmd/grype/cli/commands/root.go#L99-L103
   # 必須チェックの名前はこのジョブ名のため、変えるときは rulesets/main.json も合わせる
   grype:
     name: grype
@@ -41,7 +42,8 @@ jobs:
           install_args: grype
       # Dockerfile の ARG の値は compose.yaml から渡すため、docker build ではなく Compose でビルドする
       - run: docker compose build node golang
-      # Grype は見つかっても終了コードが 0 で、検査そのものが失敗したときだけ失敗する。
+      # Grype は --fail-on を付けなければ見つかっても終了コードが 0 で、検査そのものが失敗したときだけ失敗する
+      # https://github.com/anchore/grype/blob/v0.121.0/cmd/grype/cli/options/grype.go#L199-L200
       # 報告の本文に要る値だけを、1 件ずつ JSON にして出力に渡す。キーを変えるときは、report-scheduled-check.sh の grype の表も合わせる
       - id: scan
         run: |
