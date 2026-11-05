@@ -45,12 +45,14 @@ gh pr list --state open --limit 100 --json number,title,headRefName,createdAt,au
 
 ## 3. main に追いつかせて、マージを待つ
 
-1. PR のブランチを main に追いつかせる
+1. PR のブランチに main を取り込んで、main に追いつかせる
 
    ```bash
-   gh pr update-branch <番号> --rebase
+   gh pr update-branch <番号>
    ```
 
+   - `--rebase` は付けない。リベースで作り直したコミットには GitHub が署名せず、必須チェックで署名の検査に落ちる（[#458](https://github.com/kentayamada-dev/playground/pull/458)）
+   - main を取り込むマージコミットには、GitHub が署名する（[#437](https://github.com/kentayamada-dev/playground/pull/437)）
    - 失敗したら、手順 1 に戻って状態を取り直す
 
 2. 必須のチェックが終わるのを待つ。このコマンドはバックグラウンドで実行する
@@ -71,7 +73,7 @@ gh pr list --state open --limit 100 --json number,title,headRefName,createdAt,au
 ## 4. Renovate に作り直させる
 
 Renovate は、競合した PR を main から作り直す。ただし、ほかの人がコミットしたブランチは作り直さない。
-手順 3 で追いつかせたブランチも、リベースしたコミットのコミッターが自分になるため、これに当たる。
+手順 3 で追いつかせたブランチも、main を取り込んだマージコミットの作者が自分になるため、これに当たる。
 
 1. Renovate のワークフローを手動で実行する。出力される run の URL の末尾の数字が、run の ID になる
 
