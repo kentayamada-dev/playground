@@ -23,7 +23,7 @@ jobs:
     # renovate.yml で動かす Renovate と同じイメージで検査し、設定の解釈を本番の実行とそろえる。
     # docker:// のアクションは Actions の許可設定で起動できないため、ジョブのコンテナで動かす https://github.com/kentayamada-dev/playground/pull/161
     container:
-      image: renovate/renovate:44.181.1@sha256:823dc5036b911696c27faacf7664219b28e6e15826405720df29aad208d19f25
+      image: renovate/renovate:44.181.3@sha256:00f4f69be3060d6ad1ff3481a0e44490aba37ab17c501cbf2de179bc3751dc78
       # イメージの既定のユーザー（12021）は、ランナーの作業ディレクトリに書き込めず actions/checkout が失敗するため https://github.com/kentayamada-dev/playground/pull/161
       options: --user root
     steps:
