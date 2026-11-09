@@ -14,7 +14,7 @@ editorconfig-checker = "4.0.2"
 "github:mvdan/sh" = "3.14.1"
 # mise のレジストリでは aqua バックエンドだが、aqua レジストリの定義の cosign と SLSA provenance にはキー・バンドル・署名者の指定がなく、mise が検証に使えないため、github バックエンドで入れる
 # https://github.com/aquaproj/aqua-registry/blob/2db5a70b0c3e770bc9f61515cbefca7b13c405a8/pkgs/suzuki-shunsuke/ghalint/registry.yaml https://github.com/jdx/mise/blob/v2026.10.8/src/backend/aqua.rs#L1495-L1531
-"github:suzuki-shunsuke/ghalint" = "1.5.6"
+"github:suzuki-shunsuke/ghalint" = "v1.5.7"
 hadolint = "2.15.1"
 jq = "1.8.2"
 lychee = "0.24.2"

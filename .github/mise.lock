@@ -68,14 +68,14 @@ url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/547320869"
 provenance = "github-attestations"
 
 [[tools."github:suzuki-shunsuke/ghalint"]]
-version = "1.5.6"
+version = "1.5.7"
 backend = "github:suzuki-shunsuke/ghalint"
-specifiers = ["1.5.6"]
+specifiers = ["v1.5.7"]
 
 [tools."github:suzuki-shunsuke/ghalint"."platforms.linux-arm64"]
-checksum = "sha256:203a22c70b40bb161626973ad2a8dd06aeb736699fc8e03dd425dee8ff3406e6"
-url = "https://github.com/suzuki-shunsuke/ghalint/releases/download/v1.5.6/ghalint_1.5.6_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/suzuki-shunsuke/ghalint/releases/assets/409631231"
+checksum = "sha256:0123356892fb6e62ed0c7deba7b06e57af29a7447d41e51d0d71f8fcb3ecbbea"
+url = "https://github.com/suzuki-shunsuke/ghalint/releases/download/v1.5.7/ghalint_1.5.7_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/suzuki-shunsuke/ghalint/releases/assets/676756686"
 provenance = "github-attestations"
 
 [[tools.hadolint]]
