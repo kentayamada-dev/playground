@@ -1,11 +1,7 @@
 {
   "name": "kentayamada-renovate",
-  "url": "https://github.com/kentayamada-dev/playground",
-  "hook_attributes": {
-    "url": "https://github.com/kentayamada-dev/playground",
-    "active": false
-  },
-  "redirect_url": "https://github.com/kentayamada-dev/playground",
+  "url": "https://github.com/kentayamada-dev",
+  "redirect_url": "https://github.com/kentayamada-dev",
   "public": false,
   "default_permissions": {
     "contents": "write",
