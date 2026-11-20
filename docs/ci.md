@@ -252,7 +252,7 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 - `429`・`502`・`503`・`504` は成功として扱う
 - `mise.lock` と `uv.lock` の URL は、[`.github/lychee.toml`](../.github/lychee.toml) で検査から除く
 - コンテナのなかのサーバーのアドレス（`http://localhost:3000` など）も、`.github/lychee.toml` で検査から除く
-- Takumi Guard のレジストリのルート（`https://npm.flatt.tech/`）も、`.github/lychee.toml` で検査から除く
+- Takumi Guard のレジストリ（`https://npm.flatt.tech/`）の URL も、`.github/lychee.toml` で検査から除く
 - 理由は、[`lychee.yml`](../.github/workflows/lychee.yml) と `.github/lychee.toml` のコメントに書いている
 - HTTPS で開けるリンクを `http://` で書いていると、失敗する（`require_https`、[lychee.example.toml](https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee.example.toml#L98-L99)）。PR の検査は `--offline` でネットワークを使わないため、この検査は効かない
 - 通らないリンクがあると、issue で知らせる（[検査の失敗を知らせる issue](#検査の失敗を知らせる-issue)）
