@@ -75,7 +75,9 @@ EOF
   echo '{"full_name": "kentayamada-dev/playground", "html_url": "https://github.com/kentayamada-dev/playground", "owner": {"login": "kentayamada-dev", "type": "User"}}' >"${STUB_DIR}/repository.json"
   echo abc123 >"${STUB_DIR}/code"
   # pem の \n は JSON のエスケープのまま書き込む
-  printf '%s\n' '{"id": 1, "slug": "kentayamada-dev-renovate", "client_id": "Iv23liAbc", "html_url": "https://github.com/apps/kentayamada-dev-renovate", "pem": "line1\nline2\n"}' >"${STUB_DIR}/app.json"
+  # html_url は、実在しない github.com の URL だと外部リンクの定期検査でリンク切れになるため、lychee が検査しない example.com にする
+  # https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee-lib/src/filter/mod.rs#L20-L26
+  printf '%s\n' '{"id": 1, "slug": "kentayamada-dev-renovate", "client_id": "Iv23liAbc", "html_url": "https://example.com/apps/kentayamada-dev-renovate", "pem": "line1\nline2\n"}' >"${STUB_DIR}/app.json"
 }
 
 # フォームの manifest の値を、HTML のエスケープを戻して取り出す
@@ -108,7 +110,7 @@ path_without() {
 @test "登録したあと、App のインストール画面を開き、選ぶリポジトリを示す" {
   run -0 "${script}" <<<"https://github.com/kentayamada-dev/playground?code=abc123"
 
-  grep -qx 'https://github.com/apps/kentayamada-dev-renovate/installations/new' "${STUB_DIR}/opened"
+  grep -qx 'https://example.com/apps/kentayamada-dev-renovate/installations/new' "${STUB_DIR}/opened"
   [[ ${output} == *"kentayamada-dev/playground を選んで"* ]]
 }
 
@@ -203,7 +205,7 @@ EOF
 
 @test "GH_REPO が設定されていても、ほかのリポジトリには登録せず、このリポジトリに登録する" {
   mkdir -p "${STUB_DIR}/other-repo"
-  echo '{"full_name": "someone/other", "html_url": "https://github.com/someone/other", "owner": {"login": "someone", "type": "User"}}' >"${STUB_DIR}/other-repo/repository.json"
+  echo '{"full_name": "someone/other", "html_url": "https://example.com/someone/other", "owner": {"login": "someone", "type": "User"}}' >"${STUB_DIR}/other-repo/repository.json"
   export GH_REPO=someone/other
 
   run -0 "${script}" <<<"https://github.com/kentayamada-dev/playground?code=abc123"
