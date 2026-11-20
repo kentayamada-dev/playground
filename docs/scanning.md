@@ -16,7 +16,9 @@
   - pnpm は、1 つ目の文書に pnpm 本体の版を書く。依存関係があるのは 2 つ目の文書（[Reading pnpm-lock.yaml](https://pnpm.io/lockfile)）
   - yamllint の `uv.lock` は、依存関係グラフが読むファイルの一覧にない（[Dependency graph supported package ecosystems](https://docs.github.com/en/code-security/reference/supply-chain-security/dependency-graph-supported-package-ecosystems)）
 - Dependabot のマルウェアアラートは有効にしていない。Dependabot が読むパッケージは、すべて OSV-Scanner でも検査しているため
-- Actions のアクションは SHA で固定しているため、Dependabot のアラートは出ない（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner もデフォルトでは Actions を検査しない
+- Dependabot のアラートは、版のタグで参照するアクションにだけ出る（[Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)）。OSV-Scanner は、デフォルトでは Actions を検査しない
+  - ワークフローのステップのアクションは、版のタグで参照するので対象になる
+  - 再利用ワークフローと、アクションの定義（`action.yml`）が使うアクションは、SHA で固定しているので出ない
 - Go の標準ライブラリは、OSV-Scanner でも検査する。[`golang/osv-scanner.toml`](../golang/osv-scanner.toml) の `ScanGoModVersion` で、[`golang/go.mod`](../golang/go.mod) の `toolchain` の版を使う。OSV-Scanner は、デフォルトでは go.mod の Go の版を検査に使わない（[Scan Go Mod Version](https://google.github.io/osv-scanner/configuration/#scan-go-mod-version)）
   - Renovate も、`toolchain` の版で脆弱性を照会し、修正版への PR を作る
 - Dev Container のイメージの脆弱性は検査しない。イメージの中身は、ベースイメージと pnpm と Go のツールで、どれも Renovate が新しい版に上げる
