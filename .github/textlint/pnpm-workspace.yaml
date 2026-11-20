@@ -11,7 +11,11 @@ trustPolicy: no-downgrade
 # https://pnpm.io/registries
 registries:
   https://npm.flatt.tech/:
-    scopes: ["@", "@jsr"]
+    # Renovate が脆弱性の PR で minimumReleaseAgeExclude を足すと、pnpm がフロー形式の配列を [ "@", "@jsr" ] に書き直して yamllint と oxfmt に落ちるため、ブロック形式で書く
+    # https://github.com/kentayamada-dev/playground/pull/524
+    scopes:
+      - "@"
+      - "@jsr"
   # npm.flatt.tech に prefix を宣言すると、pnpm v12.16.0 以降はすべてのパッケージを npmjs: 付きの版でロックファイルに記録し、osv-scanner がライセンスと脆弱性を照会できなくなるため、npmjs: は .invalid に向けて失敗させる
   # https://pnpm.io/settings/dependency-resolution#named-registries-in-the-lockfile https://github.com/google/osv-scalibr/blob/06c2fa5686cd43020855d81b68ec6ceca6a5a5fc/extractor/filesystem/language/javascript/pnpmlock/pnpmlock.go#L109-L121
   https://npmjs.invalid/:
