@@ -2,9 +2,17 @@ include_fragments = "anchor-only"
 no_progress = true
 require_https = true
 
-# node と golang のサーバーがコンテナのなかで待ち受けるアドレスで、CI からは接続できないため
-# このファイルも検査の対象で、localhost の行からは http://localhost/ が拾われるため、ポートの有無によらず一致させる
-exclude = ['^http://localhost\b', '^http://golang:8080\b']
+exclude = [
+  # コンテナのなかのサーバーが待ち受けるアドレスで、CI からは接続できないため
+  # このファイルも検査の対象で、localhost の行からは http://localhost/ が拾われるため、ポートの有無によらず一致させる
+  '^http://localhost\b',
+  '^http://golang:8080\b',
+  '^http://meta:8080\b',
+  # Takumi Guard のレジストリで、パッケージのパスがないルートは 400（invalid package path）を返すため https://github.com/kentayamada-dev/playground/issues/496
+  # この行から拾われる URL にも一致させるため、. をエスケープせず、末尾に $ を付けない。\. ならホスト名が npm で切れ、$ なら末尾に $ が付いた URL が拾われる
+  # https://github.com/robinst/linkify/blob/0.11.0/src/domains.rs#L164-L168 https://github.com/robinst/linkify/blob/0.11.0/src/url.rs#L289
+  '^https://npm.flatt.tech/',
+]
 
 # 渡したグロブの * と ** は、デフォルトでは . で始まるファイルとディレクトリに一致せず、.github などを見落とすため
 # https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/lychee-lib/src/types/input/resolver.rs#L121-L123
