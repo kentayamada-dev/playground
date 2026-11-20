@@ -15,6 +15,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | [`renovate-config-validator.yml`](../.github/workflows/renovate-config-validator.yml) | [`.github/renovate.json5`](../.github/renovate.json5) の構文と、オプションの名前・値。Renovate の [renovate-config-validator](https://docs.renovatebot.com/config-validation/) で検査する | `renovate-config-validator` |
 | [`zizmor.yml`](../.github/workflows/zizmor.yml) | GitHub Actions のワークフローのセキュリティ上の問題。テンプレートインジェクション・広すぎる権限・checkout の資格情報の残留・フォークにしかないコミットへの固定などを、[zizmor](https://github.com/zizmorcore/zizmor) で検査する | `zizmor` |
 | [`ghalint.yml`](../.github/workflows/ghalint.yml) | GitHub Actions のワークフローが、すべてのジョブに `timeout-minutes` を書いているか、シークレットを必要なステップだけに渡しているかなど。[ghalint](https://github.com/suzuki-shunsuke/ghalint) で検査する | `ghalint` |
+| [`actions-lock.yml`](../.github/workflows/actions-lock.yml) | [`actions.lock`](../.github/workflows/actions.lock) に、すべてのワークフローが使うアクションが載っているか。載っているコミットを、実行時に GitHub が拒否しないか。[gh-actions-lock](https://github.com/github/gh-actions-lock) で検査する。詳しくは [actions-lock](#actions-lock) | `actions-lock` |
 | [`lychee.yml`](../.github/workflows/lychee.yml) | リポジトリのすべてのファイルに書いたリンクが切れていないか。[lychee](https://github.com/lycheeverse/lychee) で検査する。PR と `main` への push ではリポジトリ内のリンクだけ、毎週の実行では外部のリンクも検査する | `lychee`（リポジトリ内のリンクの検査だけ） |
 | [`typos.yml`](../.github/workflows/typos.yml) | リポジトリのすべてのファイルの英単語の綴り。[typos](https://github.com/crate-ci/typos) で検査する。設定は [`.github/typos.toml`](../.github/typos.toml) にある | `typos` |
 | [`markdownlint.yml`](../.github/workflows/markdownlint.yml) | すべての `.md` の書式。見出しのレベル・リストの記号・表の列数・空行・コードブロックの言語の指定など。[markdownlint](https://github.com/DavidAnson/markdownlint) で検査する。設定は [`.github/markdownlint-cli2.jsonc`](../.github/markdownlint-cli2.jsonc) にある | `markdownlint` |
@@ -58,6 +59,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `actionlint` | すべてのワークフロー |
 | `zizmor` | すべてのワークフローと、リポジトリ内のアクション（`action.yml`） |
 | `ghalint` | すべてのワークフローと、リポジトリのルートから 3 階層までのディレクトリにあるアクション（`action.yml`） |
+| `actions-lock` | すべてのワークフローと、そこから `$/` で使うリポジトリ内のアクション（`action.yml`） |
 | `renovate-config-validator` | [`.github/renovate.json5`](../.github/renovate.json5) |
 | `lychee` | リポジトリ全体。`.git` と、`.github/mise.lock`・`.github/yamllint/uv.lock`・`.github/check-jsonschema/uv.lock` は除く |
 | `typos` | リポジトリ全体。`.git` と、`typos.toml`・`pyproject.toml` など typos の設定ファイルと同じ名前のファイルは除く |
@@ -83,6 +85,7 @@ GitHub Actions で、次のとおり検査します。必須チェックが通�
 | `textlint`・`oxfmt`・`jscpd` | Takumi Guard のレジストリ |
 | `yamllint` | PyPI |
 | `check-jsonschema` | PyPI・GitHub（`devcontainer.json` のスキーマ） |
+| `actions-lock` | GitHub（gh-actions-lock のリリースと、アクションのタグとコミットを調べる API） |
 | `renovate-config-validator` | Docker Hub |
 | `golang-check` | Docker Hub・Go のモジュールプロキシ |
 | `node-check` | Docker Hub・Takumi Guard のレジストリ・Google Fonts（`next build` が取得する `next/font/google` のフォント。[Font Module](https://nextjs.org/docs/app/api-reference/components/font)） |
@@ -145,6 +148,18 @@ zizmor の監査にない次のポリシーのために使います（[Policies]
 
 - `job_timeout_minutes_is_required` は、すべてのジョブに `timeout-minutes` を求める
 - `workflow_secrets`・`job_secrets` は、シークレットをワークフロー・ジョブの `env` に置かせない
+
+### actions-lock
+
+- ワークフローのステップの `uses:` は版のタグで書き、コミットへの固定は [`actions.lock`](../.github/workflows/actions.lock) に任せる
+  - `actions.lock` は、コミットとアクションのリポジトリの ID を記録する。実行時は、タグが指す先ではなく記録したコミットを使い、リポジトリが差し替わっていれば拒否する（[Workflow dependency lockfiles](https://docs.github.com/en/actions/concepts/security/workflow-dependency-lockfiles)）
+- 次の `uses:` は `actions.lock` で固定されないため、完全なコミット SHA で固定する。zizmor と ghalint も、SHA での固定を求める
+  - 再利用ワークフローの呼び出し（`jobs.<job_id>.uses`）
+  - アクションの定義（`action.yml`）の `uses:`。呼び出す側が `actions.lock` を持つとは限らない（[ghalint v1.6.0](https://github.com/suzuki-shunsuke/ghalint/releases/tag/v1.6.0)）
+- ワークフローの `uses:` を足したり変えたりしたら、リポジトリのルートで `gh actions-lock` を実行し、`actions.lock` を作り直す
+  - Renovate がアクションを更新する PR では、Renovate が `actions.lock` も作り直す
+- gh-actions-lock は、gh の拡張機能として版を指定して入れる。手元でも、`gh extension install github/gh-actions-lock --pin <版>` で CI と同じ版を入れる
+  - 版は Renovate では上がらないので、手で上げる。上げ方は [`actions-lock.yml`](../.github/workflows/actions-lock.yml) のコメントに書いている
 
 ### lychee
 

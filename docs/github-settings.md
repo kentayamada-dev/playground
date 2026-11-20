@@ -75,7 +75,7 @@ gh secret set SETTINGS_READ_TOKEN --repo kentayamada-dev/playground
 | 項目 | 設定 |
 | --- | --- |
 | 実行できるアクション | GitHub 公式・検証済み作成者のアクションと、`patterns_allowed` に書いたアクション・再利用ワークフローだけ。ほかの作成者のアクションや、再利用ワークフローを使うときは、`patterns_allowed` に足す |
-| アクションのバージョン | 完全なコミット SHA で固定する |
+| アクションのバージョン | 完全なコミット SHA で固定する。[`actions.lock`](../.github/workflows/actions.lock) に載せたワークフローは、`actions.lock` の固定でこの条件を満たす（[Require lockfile](https://docs.github.com/en/actions/how-tos/administer/control-workflow-execution#require-lockfile)）。詳しくは [actions-lock](ci.md#actions-lock) |
 | フォークからの PR | 外部の貢献者の PR のワークフローは、毎回承認してから動く |
 | `GITHUB_TOKEN` の権限 | `permissions` を書かないワークフローでは読み取りだけ。ワークフローから PR を承認できない |
 
