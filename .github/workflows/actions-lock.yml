@@ -26,7 +26,7 @@ jobs:
           # 後のステップで git の認証を使わないため、資格情報をディスクに残さない https://docs.zizmor.sh/audits/#artipacked
           persist-credentials: false
       # 版を変えるときは、renovate.json5 の constraints.ghActionsLock も合わせる
-      - run: gh extension install github/gh-actions-lock --pin v0.5.1
+      - run: gh extension install github/gh-actions-lock --pin v0.0.0-nonexistent
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # --verify-local は lockfile に載っているかしか見ず、載っているコミットを実行時に GitHub が拒否するかは確かめないため、--verify を使う
