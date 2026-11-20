@@ -6,7 +6,9 @@ minimumReleaseAgeIgnoreMissingTime: false
 trustPolicy: no-downgrade
 registries:
   https://npm.flatt.tech/:
-    scopes: ["@", "@jsr"]
+    scopes:
+      - "@"
+      - "@jsr"
   https://npmjs.invalid/:
     prefix: npmjs
   https://gh.invalid/:
@@ -14,3 +16,6 @@ registries:
 # コンテナでは node_modules と同じボリュームに置き、ハードリンクできるようにする。指定しないと、/workspace のバインドマウントの直下（リポジトリのルート）に作るため
 # https://pnpm.io/settings/store
 storeDir: node_modules/.pnpm-store
+minimumReleaseAgeExclude:
+  # Renovate security update: next@16.4.5
+  - next@16.4.5

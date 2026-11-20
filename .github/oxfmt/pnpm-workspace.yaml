@@ -6,7 +6,9 @@ minimumReleaseAgeIgnoreMissingTime: false
 trustPolicy: no-downgrade
 registries:
   https://npm.flatt.tech/:
-    scopes: ["@", "@jsr"]
+    scopes:
+      - "@"
+      - "@jsr"
   https://npmjs.invalid/:
     prefix: npmjs
   https://gh.invalid/:
